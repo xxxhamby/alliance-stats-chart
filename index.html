@@ -182,29 +182,25 @@
             <div id="message-box" class="mt-4 p-3 rounded-lg text-sm hidden"></div>
         </div>
         
-        <!-- CSV Import Section -->
+        <!-- Hidden CSV Input for Bulk Upload -->
         <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">2. Bulk Import from CSV</h2>
-            <p class="text-gray-600 mb-4">Upload a CSV file containing your full alliance stat list. This action will **overwrite** all current data loaded locally in Mock Mode.</p>
-            <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Bulk Data Management (Advanced)</h2>
+            <p class="text-gray-600 mb-4">Use this section to bulk import a CSV of data directly to the live chart via the browser console.</p>
+            <div class="flex items-start space-x-4">
                 <input type="file" id="csv-file-input" accept=".csv" class="hidden" 
-                       onchange="document.getElementById('csv-file-name').textContent = this.files[0] ? this.files[0].name : 'No file selected'">
+                       onchange="document.getElementById('csv-file-name-display').textContent = this.files[0] ? this.files[0].name : 'No file selected'">
                 
                 <label for="csv-file-input" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-150">
                     Choose CSV File
                 </label>
-                <span id="csv-file-name" class="text-sm text-gray-600">No file selected</span>
-                
-                <button type="button" onclick="handleCsvUpload()" id="csv-upload-button"
-                        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-50 disabled:cursor-not-allowed">
-                    Load Data from CSV
-                </button>
+                <span id="csv-file-name-display" class="text-sm text-gray-600 mt-2">No file selected</span>
             </div>
             <p class="mt-4 text-xs text-gray-500">
-                Expected CSV Header Order (separated by commas): 
-                <span class="font-mono bg-gray-100 p-1 rounded">Player,Infantry Att,Infantry Def,Infantry Let,Infantry HP,Cavalry Att,Cavalry Def,Cavalry Let,Cavalry HP,Archer Att,Archer Def,Archer Let,Archer HP</span>
+                To start the bulk upload, **select your CSV file above**, open the browser console (F12), and type: 
+                <code class="font-mono bg-gray-100 p-1 rounded-md text-sm text-indigo-700">BULK_UPLOAD_CSV_TO_FIREBASE()</code>
             </p>
         </div>
+
 
         <!-- Statistics Chart -->
         <div class="bg-white p-6 rounded-xl shadow-lg">
@@ -266,8 +262,8 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { initializeApp, getApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, setLogLevel, serverTimestamp, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // Global state for Firebase and data
@@ -305,21 +301,21 @@
         };
         // -----------------------------------------------------------
 
+        // NOTE: initialAuthToken is REMOVED from use in this version to avoid auth/configuration-not-found error on GitHub Pages.
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
         
         // Determine the actual config to use:
         const DUMMY_FIREBASE_CONFIG = { apiKey: 'dummy', authDomain: 'dummy', projectId: 'dummy', storageBucket: 'dummy', messagingSenderId: 'dummy', appId: 'dummy' };
         
         let firebaseConfig;
 
-        // 1. Check for Canvas Environment Config (Highest Priority)
-        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-            firebaseConfig = JSON.parse(__firebase_config);
-        // 2. Check for User's Custom Config (Public Host Priority)
-        } else if (USER_FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY_HERE' && USER_FIREBASE_CONFIG.projectId !== 'YOUR_PROJECT_ID_HERE') {
+        // The Fix: Always prioritize the USER_FIREBASE_CONFIG if it looks like a real key is present.
+        const isUserConfigProvided = USER_FIREBASE_CONFIG.apiKey.length > 10;
+
+        if (isUserConfigProvided) {
             firebaseConfig = USER_FIREBASE_CONFIG;
-        // 3. Fallback to Mock Mode (Lowest Priority)
+        } else if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            firebaseConfig = JSON.parse(__firebase_config);
         } else {
             firebaseConfig = DUMMY_FIREBASE_CONFIG;
         }
@@ -387,30 +383,39 @@
             return parsedData;
         }
         
+        // Function to handle the standard Mock Mode CSV upload (local data only)
         window.handleCsvUpload = function() {
-            if (firebaseConfig.apiKey !== 'dummy') {
-                showMessage('CSV import is only available in Mock Mode (no live Firebase connection). Use the manual form for live updates.', 'error');
+             // CSV upload is now fully removed for simplicity and security.
+             showMessage('CSV import is disabled. Please use the manual form above to enter or edit stats.', 'error');
+        };
+
+        // --- NEW BULK UPLOAD FUNCTION FOR LIVE FIREBASE (CONSOLE ONLY) ---
+        window.BULK_UPLOAD_CSV_TO_FIREBASE = async function() {
+            if (!isAuthReady || !db || !userId) {
+                showMessage('Database is not connected. Please wait for the green success message before running this command.', 'error');
+                console.error("BULK_UPLOAD_CSV_TO_FIREBASE failed: Authentication not ready.");
                 return;
             }
-            
+            if (!isUserConfigProvided) {
+                showMessage('This function is only for the live Firebase site. Please ensure your keys are set.', 'error');
+                return;
+            }
+
             const fileInput = document.getElementById('csv-file-input');
             const file = fileInput.files[0];
 
             if (!file) {
-                showMessage('Please select a CSV file first.', 'error');
+                showMessage('Please select a CSV file using the "Choose CSV File" button first!', 'error');
+                console.error("BULK_UPLOAD_CSV_TO_FIREBASE failed: No file selected.");
                 return;
             }
             
-            if (file.type && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
-                 // Allow text/plain as a common fallback for CSV
-                 if (file.type !== 'text/plain') {
-                    showMessage(`Invalid file type: ${file.type}. Please upload a CSV file.`, 'error');
-                    return;
-                 }
-            }
+            // Temporary message box update for confirmation
+            showMessage('Reading CSV file... Confirming data.', 'info');
+
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const csvText = e.target.result;
                     const newStats = parseCsv(csvText);
@@ -419,20 +424,44 @@
                         showMessage('CSV file parsed successfully, but no valid player data rows were found.', 'error');
                         return;
                     }
+
+                    showMessage(`Starting bulk import of ${newStats.length} entries to Firebase... DO NOT close this window.`, 'info');
                     
-                    // Overwrite local mock data
-                    stats = newStats;
-                    renderTable();
-                    showMessage(`Successfully loaded ${newStats.length} entries from CSV! The table is now updated.`, 'success');
+                    const artifactId = firebaseConfig.projectId;
+                    const statsRef = collection(db, `artifacts/${artifactId}/public/data/game_stats`);
+                    let successCount = 0;
+
+                    for (const stat of newStats) {
+                         const docData = {
+                            ...stat,
+                            timestamp: serverTimestamp(),
+                            userId: userId,
+                            fileName: 'CSV Bulk Import',
+                        };
+                        try {
+                            // Using a temporary variable name so we don't block the UI too long
+                            await addDoc(statsRef, docData);
+                            successCount++;
+                            showMessage(`Importing... Saved ${successCount} of ${newStats.length} entries.`, 'info');
+                        } catch (e) {
+                            console.error(`Error saving entry for ${stat.playerName}:`, e);
+                            // We continue even if one fails
+                        }
+                    }
+
+                    showMessage(`Bulk Import Complete! Successfully saved ${successCount} entries to your live Firebase chart.`, 'success');
+                    console.log(`Bulk Import Complete. Total entries saved: ${successCount}`);
 
                 } catch (error) {
                     console.error('CSV Processing Error:', error);
-                    showMessage(`Error processing CSV: ${error.message}. Check file format.`, 'error');
+                    showMessage(`Fatal Error during CSV processing: ${error.message}.`, 'error');
                 }
             };
             reader.readAsText(file);
         };
-        
+        // --- END BULK UPLOAD FUNCTION ---
+
+
         // --- HARDCODED INITIAL DATA (Returns empty array as CSV is the new mock source) ---
         function getInitialMockData() {
             return [];
@@ -441,18 +470,8 @@
         // --- Firebase Initialization and Auth ---
         function initFirebase() {
             
-            // Re-check configuration source to avoid "configuration-not-found" error when running on GitHub Pages
-            let finalConfig = firebaseConfig;
-            let isMockConfig = firebaseConfig.apiKey === 'dummy';
-            
-            if (isMockConfig && USER_FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
-                // If we detected mock config but the user provided a real one, use the user's config.
-                finalConfig = USER_FIREBASE_CONFIG;
-                isMockConfig = false;
-            }
-
-            if (isMockConfig) {
-                authStatusElement.textContent = "⚠️ Database running in Mock Mode. Use the CSV feature to load data locally, or the form to add temporary data.";
+            if (firebaseConfig.apiKey === DUMMY_FIREBASE_CONFIG.apiKey) {
+                authStatusElement.textContent = "⚠️ Database running in Mock Mode. Please use the manual entry form to add temporary data.";
                 uploadButton.disabled = false;
                 isAuthReady = true;
                 console.warn("Running with dummy Firebase configuration. Data will not persist externally.");
@@ -462,26 +481,31 @@
             }
 
             // --- LIVE FIREBASE CONNECTION ---
-            app = initializeApp(finalConfig); // Use the determined finalConfig
+            
+            // FIX: Ensure initializeApp is only called once.
+            if (!getApps().length) {
+                app = initializeApp(firebaseConfig); 
+            } else {
+                app = getApp();
+            }
+
             db = getFirestore(app);
             auth = getAuth(app);
             setLogLevel('debug');
 
+            // --- Simplified Authentication Logic ---
+            // Removed dependency on the unused 'initialAuthToken' to prevent auth/configuration-not-found error.
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     userId = user.uid;
                     isAuthReady = true; 
-                    authStatusElement.textContent = `✅ Database Connected to ${finalConfig.projectId}. Your ID: ${userId}. (Data is public)`;
+                    authStatusElement.textContent = `✅ Database Connected to ${firebaseConfig.projectId}. Your ID: ${userId}. (Data is public)`;
                     uploadButton.disabled = false; 
                     setupRealtimeListener();
                 } else {
                     try {
-                        // Sign in anonymously if not already signed in
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
+                        // Sign in anonymously: This is the critical step for public access.
+                        await signInAnonymously(auth);
                     } catch (error) {
                         console.error("Authentication failed:", error);
                         authStatusElement.textContent = `❌ Authentication Failed: ${error.message}`;
@@ -616,7 +640,7 @@
         // --- Data Saving (New Document) ---
         async function saveNewStat(stat) {
             // Check for mock config
-            if (firebaseConfig.apiKey === 'dummy') {
+            if (firebaseConfig.apiKey === DUMMY_FIREBASE_CONFIG.apiKey) {
                 stats.push({ id: crypto.randomUUID(), ...stat, timestamp: new Date() });
                 renderTable();
                 return;
@@ -626,9 +650,7 @@
                 throw new Error('Database not ready. Please wait for connection.');
             }
             
-            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
-                                ? __app_id 
-                                : firebaseConfig.projectId;
+            const artifactId = isUserConfigProvided ? firebaseConfig.projectId : appId;
 
             try {
                 const statsRef = collection(db, `artifacts/${artifactId}/public/data/game_stats`);
@@ -662,9 +684,7 @@
                 throw new Error('Database not ready. Please wait for connection.');
             }
             
-            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
-                                ? __app_id 
-                                : firebaseConfig.projectId;
+            const artifactId = isUserConfigProvided ? firebaseConfig.projectId : appId;
 
             try {
                 const docRef = doc(db, `artifacts/${artifactId}/public/data/game_stats`, docId);
@@ -708,9 +728,7 @@
             const confirmed = await showConfirmationModal(playerName);
             if (!confirmed) return;
 
-            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
-                                ? __app_id 
-                                : firebaseConfig.projectId;
+            const artifactId = isUserConfigProvided ? firebaseConfig.projectId : appId;
                                 
             const docRef = doc(db, `artifacts/${artifactId}/public/data/game_stats`, docId);
             
@@ -725,11 +743,9 @@
 
         // --- Real-time Data Listener ---
         function setupRealtimeListener() {
-            if (!db && firebaseConfig.apiKey !== 'dummy') return; 
+            if (!db && firebaseConfig.apiKey === 'dummy') return; 
             
-            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
-                                ? __app_id 
-                                : firebaseConfig.projectId;
+            const artifactId = isUserConfigProvided ? firebaseConfig.projectId : appId;
 
             // Use local array if in mock mode
             if (firebaseConfig.apiKey === 'dummy') {
@@ -738,7 +754,10 @@
                 return;
             }
 
-            const statsRef = collection(db, `artifacts/${artifactId}/public/data/game_stats`);
+            const collectionPath = `artifacts/${artifactId}/public/data/game_stats`; // Path used for collection
+            console.log(`[Firestore] Setting up listener on path: ${collectionPath}`); // Log the exact path
+            
+            const statsRef = collection(db, collectionPath);
             const q = query(statsRef);
 
             onSnapshot(q, (snapshot) => {
@@ -752,7 +771,8 @@
                 renderTable();
             }, (error) => {
                 console.error("Error listening to Firestore:", error);
-                showMessage(`Error loading shared data: ${error.message}`, 'error');
+                // Enhanced error message guiding user to the Security Rules fix
+                showMessage(`Error loading shared data: ${error.message}. Please check your PUBLISHED Firebase Security Rules!`, 'error'); 
             });
         }
 
@@ -791,7 +811,7 @@
             statsBody.innerHTML = '';
             const totalColumns = 17; 
             if (sortedStats.length === 0) {
-                statsBody.innerHTML = `<tr><td colspan="${totalColumns}" class="p-4 text-center text-gray-500">No statistics uploaded yet. Use the form above or the CSV import feature.</td></tr>`;
+                statsBody.innerHTML = `<tr><td colspan="${totalColumns}" class="p-4 text-center text-gray-500">No statistics uploaded yet. Use the form above to enter stats.</td></tr>`;
                 return;
             }
 
