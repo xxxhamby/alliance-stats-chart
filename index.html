@@ -71,19 +71,30 @@
     </style>
 </head>
 
-<body class="flex flex-col h-screen p-4 md:p-6">
+<body class="flex flex-col h-screen p-4 md:p-6 space-y-4">
 
-    <!-- Header (10%) -->
-    <header class="text-center flex-shrink-0 h-[10vh]">
+    <!-- Header -->
+    <header class="text-center flex-shrink-0">
         <h1 class="text-3xl md:text-4xl font-bold text-white">Alliance Stat Comparison</h1>
         <p id="db-status" class="text-sm text-gray-400 mt-2">Connecting to database...</p>
     </header>
 
-    <!-- Data Entry (25%) -->
-    <div id="manual-entry" class="card p-4 rounded-lg shadow-lg mb-4 flex-shrink-0 h-[25vh]">
+    <!-- Instructions -->
+    <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
+        <h3 class="text-md font-semibold text-center text-yellow-400 mb-2">Instructions for Stat Submission</h3>
+        <ul class="text-xs text-gray-300 grid grid-cols-2 md:grid-cols-4 gap-x-4 text-center">
+            <li><i class="fas fa-shield-alt mr-1 text-red-500"></i> **Rule 1:** NO BUFFS active.</li>
+            <li><i class="fas fa-crosshairs mr-1 text-blue-500"></i> **Rule 2:** Test rally an alt with NO troops.</li>
+            <li><i class="fas fa-user-friends mr-1 text-green-500"></i> **Rule 3:** Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
+            <li><i class="fas fa-calendar-check mr-1 text-indigo-500"></i> **Rule 4:** Update at least once a week.</li>
+        </ul>
+    </div>
+
+    <!-- Data Entry -->
+    <div id="manual-entry" class="card p-4 rounded-lg shadow-lg flex-shrink-0">
         <form onsubmit="event.preventDefault(); handleSaveOrUpdate();">
             <div class="flex justify-between items-center mb-3">
-                 <h2 class="text-xl font-semibold text-white">Manual Data Entry</h2>
+                 <h2 class="text-lg font-semibold text-white">Manual Data Entry</h2>
                  <p class="text-xs text-gray-400 italic">Tip: Use the 'Tab' key to move through inputs in the correct order.</p>
             </div>
             <div class="flex gap-4 items-end mb-3">
@@ -136,7 +147,7 @@
         </form>
     </div>
 
-    <!-- Chart (65%) -->
+    <!-- Chart -->
     <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
         <div class="flex justify-between items-center mb-3 flex-shrink-0">
             <h2 class="text-xl font-semibold text-white">Alliance Comparison Chart</h2>
@@ -248,7 +259,7 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
-                    dbStatus.textContent = `✅ Database Connected to ${appId}.`;
+                    dbStatus.textContent = `✅ Connected`; // SIMPLIFIED MESSAGE
                     dbStatus.className = 'text-sm text-green-400 mt-2';
                     setupRealtimeListener();
                 } else {
@@ -309,7 +320,7 @@
         const resetForm = () => {
             document.querySelector('form').reset();
             currentEditId = null;
-            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save My Stats';
+            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Stats';
             cancelEditBtn.classList.add('hidden');
         };
 
