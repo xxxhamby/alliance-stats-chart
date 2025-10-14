@@ -232,9 +232,7 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, Timestamp, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- 🔑 PRODUCTION CONFIGURATION (EDIT THIS SECTION) 🔑 ---
-        // This is where you paste your own Firebase project configuration.
-        // Get this from your Firebase project settings -> "Add app" -> "Web".
+        // --- 🔑 PRODUCTION CONFIGURATION 🔑 ---
         const USER_FIREBASE_CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
@@ -264,36 +262,18 @@
         const modalMessage = document.getElementById('modal-message');
 
         // --- INITIALIZATION ---
-
-        // Robust Firebase initialization
         const initFirebase = async () => {
-            let firebaseConfig;
-            let isLiveMode = false;
-
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                 try {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                    appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
-                    console.log("Running in Canvas environment.");
-                } catch (e) {
-                    console.error("Failed to parse Canvas Firebase config, falling back to user config.");
-                    firebaseConfig = USER_FIREBASE_CONFIG;
-                    isLiveMode = true;
-                }
-            } else {
-                console.log("Running in standalone/production mode.");
-                firebaseConfig = USER_FIREBASE_CONFIG;
-                isLiveMode = true;
-            }
+            // FIX: Simplified initialization to always use the user's provided config.
+            // This prevents conflicts when deploying to live environments like GitHub Pages.
+            const firebaseConfig = USER_FIREBASE_CONFIG;
+            appId = firebaseConfig.projectId;
+            console.log("Forcing production mode configuration.");
 
             if (!firebaseConfig || !firebaseConfig.projectId) {
-                dbStatus.textContent = '❌ Firebase configuration missing. App is in local Mock Mode.';
-                dbStatus.className = 'text-sm text-yellow-400 mt-2';
-                return; // Stop if no valid config
+                dbStatus.textContent = '❌ Firebase configuration missing. Cannot connect.';
+                dbStatus.className = 'text-sm text-red-400 mt-2';
+                return; 
             }
-            
-            appId = isLiveMode ? firebaseConfig.projectId : appId;
-
 
             if (!getApps().length) {
                 initializeApp(firebaseConfig);
@@ -319,7 +299,6 @@
         };
         
         // --- DATA MANAGEMENT ---
-
         const setupRealtimeListener = () => {
             if (!db || !appId) {
                 console.error("Firestore DB or App ID not initialized for listener.");
@@ -353,7 +332,7 @@
                     statEntry.totalScore = calculateTotalScore(statEntry);
                     currentStats.push(statEntry);
                 });
-                renderTable();
+                sortAndRender();
             }, (error) => {
                 console.error("Error listening to Firestore:", error);
                 dbStatus.textContent = `❌ Error loading shared data: ${error.message}. Check Firestore Rules.`;
@@ -407,11 +386,7 @@
         const renderTable = () => {
             const tableBody = document.getElementById('stats-table-body');
             if (!tableBody) return;
-
-            // Apply sorting before rendering
-            sortStats(currentSort.column, true); 
             
-            // Add rank after sorting
             const rankedStats = currentStats.map((stat, index) => ({ ...stat, rank: index + 1 }));
 
             tableBody.innerHTML = rankedStats.map(stat => {
@@ -443,27 +418,17 @@
             }).join('');
         };
         
-        const sortStats = (column, keepDirection = false) => {
-            if (!keepDirection) {
-                if (currentSort.column === column) {
-                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-                } else {
-                    currentSort.column = column;
-                    currentSort.direction = (column === 'playerName' || column === 'rank') ? 'asc' : 'desc';
-                }
-            }
-
-            currentStats.sort((a, b) => {
-                const valA = a[column];
-                const valB = b[column];
+        // FIX: Combine sort and render to prevent infinite loops
+        const sortAndRender = () => {
+             currentStats.sort((a, b) => {
+                const valA = a[currentSort.column];
+                const valB = b[currentSort.column];
                 let comparison = 0;
-
                 if (typeof valA === 'string') {
                     comparison = valA.localeCompare(valB);
                 } else {
                     comparison = valA - valB;
                 }
-
                 return currentSort.direction === 'asc' ? comparison : -comparison;
             });
             renderTable();
@@ -485,7 +450,6 @@
         };
         
         // --- MODAL CONTROLS ---
-
         const showModal = (title, message) => {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
@@ -503,8 +467,6 @@
         };
 
         // --- EVENT HANDLER FUNCTIONS (ATTACHED TO WINDOW) ---
-
-        // FIX: Attach functions to window to make them accessible from HTML inline handlers
         window.handleSaveOrUpdate = async () => {
             const statData = getFormData();
             if (!statData.playerName) return;
@@ -524,10 +486,14 @@
 
         window.enterEditMode = (docId) => {
             const statToEdit = currentStats.find(s => s.id === docId);
-            if (!statToEdit) return;
+            if (!statToEdit) {
+                console.error("Could not find stat with ID:", docId);
+                return;
+            }
 
             currentEditId = docId;
             playerNameInput.value = statToEdit.playerName;
+            // FIX: Corrected typo from statToToEdit to statToEdit
             document.getElementById('infAttack').value = statToEdit.infAttack;
             document.getElementById('infDefense').value = statToEdit.infDefense;
             document.getElementById('infLethality').value = statToEdit.infLethality;
@@ -573,7 +539,7 @@
                     playerStats[stat.playerName] = [];
                 }
                 playerStats[stat.playerName].push(stat);
-            });
+});
 
             const docsToDelete = [];
             for (const playerName in playerStats) {
@@ -603,18 +569,22 @@
         };
         
         window.refreshChart = () => {
-            // Re-sort and re-render the existing local data
-            renderTable();
+            sortAndRender();
         };
         
-        // FIX: Make sorting function globally accessible
-        window.sortStats = sortStats;
+        window.sortStats = (column) => {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = (column === 'playerName' || column === 'rank') ? 'asc' : 'desc';
+            }
+            sortAndRender();
+        };
 
         // --- STARTUP ---
         document.addEventListener('DOMContentLoaded', initFirebase);
-
     </script>
 </body>
 </html>
-
 
