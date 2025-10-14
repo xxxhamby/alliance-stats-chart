@@ -630,7 +630,7 @@
                 return;
             }
 
-            // Confirmation
+            // FIX: Use showCleanupModal for confirmation
             const confirmed = await showCleanupModal(`This will permanently delete ${numToDelete} older duplicate entries from your database. Are you sure?`);
             if (!confirmed) return;
 
@@ -640,14 +640,15 @@
             const artifactId = firebaseConfig.projectId;
             let deletionCount = 0;
 
-            for (const doc of documentsToDelete) {
+            for (const docEntry of documentsToDelete) {
                 try {
-                    const docRef = doc(db, `artifacts/${artifactId}/public/data/game_stats`, doc.id);
+                    // FIX: Ensure doc function is called correctly.
+                    const docRef = doc(db, `artifacts/${artifactId}/public/data/game_stats`, docEntry.id);
                     await deleteDoc(docRef);
                     deletionCount++;
                     showMessage(`Cleanup: Deleted ${deletionCount} of ${numToDelete} documents.`, 'info');
                 } catch (e) {
-                    console.error(`Error deleting doc ${doc.id}:`, e);
+                    console.error(`Error deleting doc ${docEntry.id}:`, e);
                     // Continue deletion even if one fails
                 }
             }
