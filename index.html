@@ -7,12 +7,12 @@
     <title>Alliance Stat Comparison Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         html,
         body {
             height: 100%;
             overflow: hidden;
-            /* Prevent body scroll */
         }
 
         body {
@@ -27,24 +27,31 @@
         }
 
         .table-header th {
-            padding: 8px 12px;
+            padding: 8px 10px;
             position: sticky;
             top: 0;
             background-color: #1f2937;
+            white-space: nowrap;
+            cursor: pointer;
         }
 
         .table-row td {
-            padding: 8px 12px;
+            padding: 8px 10px;
             white-space: nowrap;
         }
-
-        .btn {
-            transition: all 0.2s ease-in-out;
+        
+        .table-row {
+            cursor: pointer;
         }
 
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
         }
 
         .input-field {
@@ -53,20 +60,18 @@
             color: #e5e7eb;
             padding: 6px 10px;
         }
-
-        .input-field:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 2px #1e40af;
+        
+        .stat-delta {
+            font-size: 0.7rem;
+            margin-left: 4px;
+            font-weight: bold;
         }
 
-        .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 50;
+        .history-entry {
+            transition: background-color 0.2s;
         }
-
-        .modal-content {
-            z-index: 100;
+        .history-entry:hover {
+            background-color: #374151;
         }
     </style>
 </head>
@@ -81,12 +86,13 @@
 
     <!-- Instructions -->
     <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
-        <h3 class="text-md font-semibold text-center text-yellow-400 mb-2">Instructions for Stat Submission</h3>
-        <ul class="text-xs text-gray-300 grid grid-cols-2 md:grid-cols-4 gap-x-4 text-center">
+        <h3 class="text-md font-semibold text-center text-yellow-400 mb-2">Instructions & Info</h3>
+        <ul class="text-xs text-gray-300 grid grid-cols-1 md:grid-cols-5 gap-x-4 text-center">
             <li><i class="fas fa-shield-alt mr-1 text-red-500"></i> **Rule 1:** NO BUFFS active.</li>
             <li><i class="fas fa-crosshairs mr-1 text-blue-500"></i> **Rule 2:** Test rally an alt with NO troops.</li>
             <li><i class="fas fa-user-friends mr-1 text-green-500"></i> **Rule 3:** Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
             <li><i class="fas fa-calendar-check mr-1 text-indigo-500"></i> **Rule 4:** Update at least once a week.</li>
+            <li class="hidden md:block"><i class="fas fa-calculator mr-1 text-yellow-500"></i> **True Score Formula:** Lethality x1.2, Health x1.1</li>
         </ul>
     </div>
 
@@ -95,7 +101,7 @@
         <form onsubmit="event.preventDefault(); handleSaveOrUpdate();">
             <div class="flex justify-between items-center mb-3">
                  <h2 class="text-lg font-semibold text-white">Manual Data Entry</h2>
-                 <p class="text-xs text-gray-400 italic">Tip: Use the 'Tab' key to move through inputs in the correct order.</p>
+                 <p class="text-xs text-gray-400 italic">Tip: Use 'Tab' or 'Enter' to move through inputs in order.</p>
             </div>
             <div class="flex gap-4 items-end mb-3">
                 <div class="flex-grow">
@@ -113,7 +119,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6">
-                <!-- Infantry -->
+                <!-- Unit Inputs -->
                 <div class="space-y-2">
                     <h3 class="font-bold text-md text-center text-blue-400">Infantry (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
@@ -123,7 +129,6 @@
                         <input type="number" step="0.01" id="infHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Infantry Health">
                     </div>
                 </div>
-                <!-- Cavalry -->
                 <div class="space-y-2">
                     <h3 class="font-bold text-md text-center text-green-400">Cavalry (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
@@ -133,7 +138,6 @@
                         <input type="number" step="0.01" id="cavHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Cavalry Health">
                     </div>
                 </div>
-                <!-- Archer -->
                 <div class="space-y-2">
                     <h3 class="font-bold text-md text-center text-red-400">Archer (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
@@ -151,35 +155,32 @@
     <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
         <div class="flex justify-between items-center mb-3 flex-shrink-0">
             <h2 class="text-xl font-semibold text-white">Alliance Comparison Chart</h2>
-            <div class="flex items-center space-x-2">
-                <button onclick="refreshChart()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-md btn text-sm">
-                    <i class="fas fa-sync-alt mr-1"></i>Refresh
-                </button>
-                <button onclick="cleanDuplicateData()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-md btn text-sm">
-                    <i class="fas fa-broom mr-1"></i>Clean Duplicates
-                </button>
-            </div>
+            <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled>
+                <i class="fas fa-chart-bar mr-2"></i>Compare Selected (0)
+            </button>
         </div>
         <div class="overflow-y-auto flex-grow">
             <table class="w-full text-left text-sm">
                 <thead class="table-header text-xs text-gray-300 uppercase">
                     <tr>
-                        <th class="cursor-pointer" onclick="sortStats('rank')">Rank</th>
-                        <th class="cursor-pointer" onclick="sortStats('playerName')">Player</th>
-                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th>
-                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th>
-                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th>
-                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
-                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th>
-                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th>
-                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th>
-                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
-                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th>
-                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th>
-                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th>
-                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
-                        <th class="cursor-pointer" onclick="sortStats('totalScore')">Score ▼</th>
-                        <th class="cursor-pointer" onclick="sortStats('date')">Date</th>
+                        <th class="w-12 text-center" title="Compare Players"><i class="fas fa-search"></i></th>
+                        <th class="w-12 text-center" onclick="sortStats('rank')">#</th>
+                        <th onclick="sortStats('playerName')">Player</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
+                        <th onclick="sortStats('trueScore')">True Score ▼</th>
+                        <th onclick="sortStats('realScore')">Real Score</th>
+                        <th onclick="sortStats('date')">Last Update</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -190,10 +191,9 @@
         </div>
     </div>
 
-
-    <!-- Custom Modal -->
-    <div id="custom-modal" class="fixed inset-0 flex items-center justify-center modal-backdrop hidden">
-        <div class="modal-content bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-700">
+    <!-- Modals -->
+    <div id="custom-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-700">
             <h3 id="modal-title" class="text-lg font-bold text-white mb-4">Confirm Action</h3>
             <p id="modal-message" class="text-gray-300 mb-6">Are you sure?</p>
             <div class="flex justify-end space-x-4">
@@ -203,13 +203,36 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="history-modal-title" class="text-lg font-bold text-white">Update History</h3>
+                <button id="history-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div id="history-modal-body" class="overflow-y-auto space-y-2">
+                <!-- History entries will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="chart-modal-title" class="text-lg font-bold text-white">Stat Comparison</h3>
+                <button id="chart-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="flex-grow relative">
+                <canvas id="comparison-chart-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+
     <script type="module">
         import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, Timestamp, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- 🔑 PRODUCTION CONFIGURATION 🔑 ---
         const USER_FIREBASE_CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
@@ -219,90 +242,69 @@
             appId: "1:866174182881:web:aef54fc8da562d8b541ea0"
         };
         
-        // --- GLOBAL VARIABLES & STATE ---
-        let db;
-        let auth;
-        let userId = null;
-        let appId = null;
-        let currentStats = []; // Local cache of all stats from the database
-        let currentSort = { column: 'totalScore', direction: 'desc' };
-        let currentEditId = null; // Holds the doc ID of the stat being edited
+        let db, auth, userId = null, appId = null;
+        let allStats = [];
+        let latestStats = [];
+        let selectedForComparison = [];
+        let currentSort = { column: 'trueScore', direction: 'desc' };
+        let currentEditId = null;
+        let comparisonChart = null;
         
         const dbStatus = document.getElementById('db-status');
         const playerNameInput = document.getElementById('playerName');
         const submitBtn = document.getElementById('submit-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const compareBtn = document.getElementById('compare-selected-btn');
+        
         const modal = document.getElementById('custom-modal');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
 
-        // --- INITIALIZATION ---
+        const historyModal = document.getElementById('history-modal');
+        const historyModalTitle = document.getElementById('history-modal-title');
+        const historyModalBody = document.getElementById('history-modal-body');
+        const historyModalCloseBtn = document.getElementById('history-modal-close-btn');
+
+        const chartModal = document.getElementById('chart-modal');
+        const chartModalTitle = document.getElementById('chart-modal-title');
+        const chartModalCloseBtn = document.getElementById('chart-modal-close-btn');
+
         const initFirebase = async () => {
-            const firebaseConfig = USER_FIREBASE_CONFIG;
-            appId = firebaseConfig.projectId;
-            
-            if (!firebaseConfig || !firebaseConfig.projectId) {
-                dbStatus.textContent = '❌ Firebase configuration missing. Cannot connect.';
-                dbStatus.className = 'text-sm text-red-400 mt-2';
-                return; 
-            }
-
-            if (!getApps().length) {
-                initializeApp(firebaseConfig);
-            }
-
+            appId = USER_FIREBASE_CONFIG.projectId;
+            if (!getApps().length) initializeApp(USER_FIREBASE_CONFIG);
             db = getFirestore();
             auth = getAuth();
 
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, user => {
                 if (user) {
                     userId = user.uid;
-                    dbStatus.textContent = `✅ Connected`; // SIMPLIFIED MESSAGE
+                    dbStatus.textContent = `✅ Connected`;
                     dbStatus.className = 'text-sm text-green-400 mt-2';
                     setupRealtimeListener();
                 } else {
-                    signInAnonymously(auth).catch((error) => {
-                        console.error("Anonymous sign-in failed:", error);
-                        dbStatus.textContent = `❌ Anonymous sign-in failed. Check Firebase Auth settings.`;
-                        dbStatus.className = 'text-sm text-red-400 mt-2';
-                    });
+                    signInAnonymously(auth).catch(error => console.error("Auth Failed:", error));
                 }
             });
         };
         
-        // --- DATA MANAGEMENT ---
         const setupRealtimeListener = () => {
-            if (!db || !appId) return;
             const collectionPath = `artifacts/${appId}/public/data/game_stats`;
-            
-            const q = collection(db, collectionPath);
-            onSnapshot(q, (querySnapshot) => {
-                currentStats = [];
-                querySnapshot.forEach((doc) => {
+            onSnapshot(collection(db, collectionPath), querySnapshot => {
+                allStats = querySnapshot.docs.map(doc => {
                     const data = doc.data();
-                    const statEntry = {
-                        id: doc.id,
-                        playerName: data.playerName,
-                        infAttack: data.infAttack, infDefense: data.infDefense, infLethality: data.infLethality, infHp: data.infHp,
-                        cavAttack: data.cavAttack, cavDefense: data.cavDefense, cavLethality: data.cavLethality, cavHp: data.cavHp,
-                        arcAttack: data.arcAttack, arcDefense: data.arcDefense, arcLethality: data.arcLethality, arcHp: data.arcHp,
-                        date: data.date ? data.date.toDate() : new Date(),
-                    };
-                    statEntry.totalScore = calculateTotalScore(statEntry);
-                    currentStats.push(statEntry);
+                    const statEntry = { id: doc.id, ...data, date: data.date ? data.date.toDate() : new Date() };
+                    statEntry.trueScore = calculateTrueScore(statEntry);
+                    statEntry.realScore = calculateRealScore(statEntry);
+                    return statEntry;
                 });
-                sortAndRender();
-            }, (error) => {
-                console.error("Error listening to Firestore:", error);
-                dbStatus.textContent = `❌ Error loading shared data: ${error.message}. Check Firestore Rules.`;
-                dbStatus.className = 'text-sm text-red-400 mt-2';
+                processAndRender();
             });
         };
 
         const getFormData = () => ({
-            playerName: playerNameInput.value.trim(),
+            playerName: playerNameInput.value.trim().toLowerCase(),
             infAttack: parseFloat(document.getElementById('infAttack').value) || 0,
             infDefense: parseFloat(document.getElementById('infDefense').value) || 0,
             infLethality: parseFloat(document.getElementById('infLethality').value) || 0,
@@ -317,57 +319,56 @@
             arcHp: parseFloat(document.getElementById('arcHp').value) || 0,
         });
         
-        const resetForm = () => {
-            document.querySelector('form').reset();
-            currentEditId = null;
-            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Stats';
-            cancelEditBtn.classList.add('hidden');
+        const processAndRender = () => {
+            const playerGroups = {};
+            allStats.forEach(stat => {
+                const name = stat.playerName.toLowerCase();
+                if (!playerGroups[name]) playerGroups[name] = [];
+                playerGroups[name].push(stat);
+            });
+
+            latestStats = Object.values(playerGroups).map(group => {
+                group.sort((a, b) => b.date - a.date);
+                return group[0];
+            });
+            sortAndRender();
         };
 
-        const saveNewStat = async (statData) => {
-            if (!db) return;
-            statData.date = serverTimestamp();
-            const collectionPath = `artifacts/${appId}/public/data/game_stats`;
-            await addDoc(collection(db, collectionPath), statData);
-        };
-        
-        const updateStat = async (docId, statData) => {
-            if (!db) return;
-            statData.date = serverTimestamp();
-            const collectionPath = `artifacts/${appId}/public/data/game_stats`;
-            const docRef = doc(db, collectionPath, docId);
-            await setDoc(docRef, statData);
-        };
-
-        // --- UI & INTERACTION ---
-        
         const renderTable = () => {
             const tableBody = document.getElementById('stats-table-body');
-            if (!tableBody) return;
-            
-            const rankedStats = currentStats.map((stat, index) => ({ ...stat, rank: index + 1 }));
+            const rankedStats = latestStats.map((stat, index) => ({ ...stat, rank: index + 1 }));
+            const disableCheckboxes = selectedForComparison.length >= 5;
 
             tableBody.innerHTML = rankedStats.map(stat => {
+                const playerHistory = allStats.filter(s => s.playerName === stat.playerName).sort((a, b) => b.date - a.date);
+                const previousStat = playerHistory.length > 1 ? playerHistory[1] : null;
+                const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
+                
+                const statCells = statKeys.map(key => {
+                    let deltaHtml = '';
+                    if (previousStat) {
+                        const delta = (stat[key] - previousStat[key]).toFixed(1);
+                        if (delta > 0) deltaHtml = `<span class="stat-delta text-green-400">(+${delta})</span>`;
+                        else if (delta < 0) deltaHtml = `<span class="stat-delta text-red-400">(${delta})</span>`;
+                    }
+                    return `<td>${stat[key]}% ${deltaHtml}</td>`;
+                }).join('');
+
+                const isChecked = selectedForComparison.includes(stat.playerName);
+                const isDisabled = disableCheckboxes && !isChecked;
+
                 const formattedDate = stat.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
                 return `
-                    <tr class="table-row odd:bg-[#2d3748] even:bg-[#1f2937] hover:bg-gray-700">
-                        <td>${stat.rank}</td>
+                    <tr class="table-row odd:bg-[#2d3748] even:bg-[#1f2937] hover:bg-gray-700" ondblclick="showSinglePlayerChart('${stat.playerName}')">
+                        <td class="text-center"><input type="checkbox" class="form-checkbox h-4 w-4 bg-gray-700 border-gray-600" value="${stat.playerName}" onchange="handleCompareSelect(this)" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}></td>
+                        <td class="font-bold text-center">${stat.rank}</td>
                         <td class="font-semibold text-white">${stat.playerName}</td>
-                        <td>${stat.infAttack}%</td>
-                        <td>${stat.infDefense}%</td>
-                        <td>${stat.infLethality}%</td>
-                        <td>${stat.infHp}%</td>
-                        <td>${stat.cavAttack}%</td>
-                        <td>${stat.cavDefense}%</td>
-                        <td>${stat.cavLethality}%</td>
-                        <td>${stat.cavHp}%</td>
-                        <td>${stat.arcAttack}%</td>
-                        <td>${stat.arcDefense}%</td>
-                        <td>${stat.arcLethality}%</td>
-                        <td>${stat.arcHp}%</td>
-                        <td class="font-bold text-yellow-400">${stat.totalScore.toLocaleString()}</td>
+                        ${statCells}
+                        <td class="font-bold text-yellow-400">${stat.trueScore.toLocaleString()}</td>
+                        <td class="font-bold text-gray-300">${stat.realScore.toLocaleString()}</td>
                         <td class="text-xs text-gray-400">${formattedDate}</td>
                         <td>
+                             <button onclick="showHistory('${stat.playerName}')" class="text-indigo-400 hover:text-indigo-300 mr-2"><i class="fas fa-history"></i></button>
                              <button onclick="enterEditMode('${stat.id}')" class="text-blue-400 hover:text-blue-300 mr-2"><i class="fas fa-pencil-alt"></i></button>
                              <button onclick="deleteStat('${stat.id}', '${stat.playerName}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash-alt"></i></button>
                         </td>
@@ -377,27 +378,17 @@
         };
         
         const sortAndRender = () => {
-             currentStats.sort((a, b) => {
+             latestStats.sort((a, b) => {
                 const valA = a[currentSort.column];
                 const valB = b[currentSort.column];
-                let comparison = 0;
-                if (typeof valA === 'string') {
-                    comparison = valA.localeCompare(valB);
-                } else {
-                    comparison = valA - valB;
-                }
+                let comparison = (typeof valA === 'string') ? valA.localeCompare(valB) : valA - valB;
                 return currentSort.direction === 'asc' ? comparison : -comparison;
             });
             renderTable();
         };
 
-        const calculateTotalScore = (stats) => {
-            const weights = {
-                lethality: 1.2,
-                hp: 1.1,
-                attack: 1.0,
-                defense: 1.0,
-            };
+        const calculateTrueScore = (stats) => {
+            const weights = { lethality: 1.2, hp: 1.1, attack: 1.0, defense: 1.0 };
             let total = 0;
             total += (stats.infAttack + stats.cavAttack + stats.arcAttack) * weights.attack;
             total += (stats.infDefense + stats.cavDefense + stats.arcDefense) * weights.defense;
@@ -405,126 +396,244 @@
             total += (stats.infHp + stats.cavHp + stats.arcHp) * weights.hp;
             return Math.round(total);
         };
+
+        const calculateRealScore = (stats) => {
+            let total = 0;
+            const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
+            statKeys.forEach(key => total += (stats[key] || 0));
+            return Math.round(total);
+        };
         
         const showModal = (title, message) => {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             modal.classList.remove('hidden');
-            return new Promise((resolve) => {
-                modalConfirmBtn.onclick = () => {
-                    modal.classList.add('hidden');
-                    resolve(true);
-                };
-                modalCancelBtn.onclick = () => {
-                    modal.classList.add('hidden');
-                    resolve(false);
-                };
+            return new Promise(resolve => {
+                modalConfirmBtn.onclick = () => { modal.classList.add('hidden'); resolve(true); };
+                modalCancelBtn.onclick = () => { modal.classList.add('hidden'); resolve(false); };
             });
         };
 
-        // --- EVENT HANDLER FUNCTIONS (ATTACHED TO WINDOW) ---
         window.handleSaveOrUpdate = async () => {
             const statData = getFormData();
             if (!statData.playerName) return;
-
             try {
+                const collectionPath = `artifacts/${appId}/public/data/game_stats`;
                 if (currentEditId) {
-                    await updateStat(currentEditId, statData);
+                    await setDoc(doc(db, collectionPath, currentEditId), { ...statData, date: serverTimestamp() });
                 } else {
-                    await saveNewStat(statData);
+                    await addDoc(collection(db, collectionPath), { ...statData, date: serverTimestamp() });
                 }
                 resetForm();
-            } catch (error) {
-                console.error("Error saving data:", error);
-                showModal('Error', `Failed to save data: ${error.message}`);
-            }
+            } catch (error) { showModal('Error', `Failed to save data: ${error.message}`); }
         };
 
         window.enterEditMode = (docId) => {
-            const statToEdit = currentStats.find(s => s.id === docId);
-            if (!statToEdit) {
-                console.error("Could not find stat with ID:", docId);
-                return;
-            }
-
+            const statToEdit = allStats.find(s => s.id === docId);
+            if (!statToEdit) return;
             currentEditId = docId;
             playerNameInput.value = statToEdit.playerName;
-            document.getElementById('infAttack').value = statToEdit.infAttack;
-            document.getElementById('infDefense').value = statToEdit.infDefense;
-            document.getElementById('infLethality').value = statToEdit.infLethality;
-            document.getElementById('infHp').value = statToEdit.infHp;
-            document.getElementById('cavAttack').value = statToEdit.cavAttack;
-            document.getElementById('cavDefense').value = statToEdit.cavDefense;
-            document.getElementById('cavLethality').value = statToEdit.cavLethality;
-            document.getElementById('cavHp').value = statToEdit.cavHp;
-            document.getElementById('arcAttack').value = statToEdit.arcAttack;
-            document.getElementById('arcDefense').value = statToEdit.arcDefense;
-            document.getElementById('arcLethality').value = statToEdit.arcLethality;
-            document.getElementById('arcHp').value = statToEdit.arcHp;
-            
+            ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'].forEach(id => {
+                document.getElementById(id).value = statToEdit[id];
+            });
             submitBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Update Stats';
             cancelEditBtn.classList.remove('hidden');
             window.scrollTo(0, 0);
         };
 
-        window.cancelEdit = () => {
-            resetForm();
+        window.resetForm = () => {
+            document.querySelector('form').reset();
+            currentEditId = null;
+            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Stats';
+            cancelEditBtn.classList.add('hidden');
         };
+        window.cancelEdit = resetForm;
+
 
         window.deleteStat = async (docId, playerName) => {
-            const confirmed = await showModal('Confirm Deletion', `Are you sure you want to delete the entry for ${playerName}?`);
+            const confirmed = await showModal('Confirm Deletion', `This will delete ALL entries for ${playerName}. This action cannot be undone. Are you sure?`);
             if (confirmed) {
-                try {
-                    const collectionPath = `artifacts/${appId}/public/data/game_stats`;
-                    await deleteDoc(doc(db, collectionPath, docId));
-                } catch (error) {
-                     console.error(`Error deleting doc ${docId}:`, error);
-                     showModal('Error', `Failed to delete data: ${error.message}`);
+                const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase());
+                for(const stat of playerHistory) {
+                    try {
+                        await deleteDoc(doc(db, `artifacts/${appId}/public/data/game_stats`, stat.id));
+                    } catch (error) {
+                        console.error(`Failed to delete doc ${stat.id}`, error);
+                    }
                 }
             }
         };
 
-        window.cleanDuplicateData = async () => {
-            const confirmed = await showModal('Confirm Cleanup', 'This will find all entries for the same player, keep only the newest one, and delete all older duplicates. Are you sure?');
-            if (!confirmed) return;
-
-            const playerStats = {};
-            currentStats.forEach(stat => {
-                if (!playerStats[stat.playerName]) {
-                    playerStats[stat.playerName] = [];
+        window.showHistory = (playerName) => {
+            const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()).sort((a,b) => b.date - a.date);
+            historyModalTitle.textContent = `Update History for ${playerName}`;
+            historyModalBody.innerHTML = '';
+            
+            playerHistory.forEach((stat, index) => {
+                const prevStat = playerHistory[index + 1];
+                let growthHtml = '';
+                if(prevStat) {
+                    const growth = stat.realScore - prevStat.realScore;
+                    const growthColor = growth >= 0 ? 'text-green-400' : 'text-red-400';
+                    growthHtml = `<span class="font-bold ${growthColor}">(${growth >= 0 ? '+' : ''}${growth})</span>`;
                 }
-                playerStats[stat.playerName].push(stat);
+
+                const formattedDate = stat.date.toLocaleString();
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'p-3 rounded-md border border-gray-700 cursor-pointer history-entry';
+                entryDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold">${formattedDate}</span>
+                        <div>
+                            <span class="text-gray-400">Real Score:</span>
+                            <span class="font-bold text-white">${stat.realScore.toLocaleString()}</span>
+                            ${growthHtml}
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden"></div>
+                `;
+                
+                entryDiv.onclick = (e) => {
+                    const detailsDiv = e.currentTarget.querySelector('.grid');
+                    if(detailsDiv.classList.contains('hidden')) {
+                        detailsDiv.classList.remove('hidden');
+                        detailsDiv.innerHTML = `
+                            <div><strong>Inf:</strong> ${stat.infAttack}/${stat.infDefense}/${stat.infLethality}/${stat.infHp}</div>
+                            <div><strong>Cav:</strong> ${stat.cavAttack}/${stat.cavDefense}/${stat.cavLethality}/${stat.cavHp}</div>
+                            <div><strong>Arc:</strong> ${stat.arcAttack}/${stat.arcDefense}/${stat.arcLethality}/${stat.arcHp}</div>
+                        `;
+                    } else {
+                        detailsDiv.classList.add('hidden');
+                    }
+                };
+                historyModalBody.appendChild(entryDiv);
             });
 
-            const docsToDelete = [];
-            for (const playerName in playerStats) {
-                if (playerStats[playerName].length > 1) {
-                    playerStats[playerName].sort((a, b) => b.date - a.date); // Sort newest first
-                    const toDelete = playerStats[playerName].slice(1); // All except the newest
-                    toDelete.forEach(stat => docsToDelete.push(stat.id));
-                }
-            }
-
-            if (docsToDelete.length === 0) {
-                showModal('Cleanup Complete', 'No duplicate entries were found.');
-                return;
-            }
-
-            let deletedCount = 0;
-            for (const docId of docsToDelete) {
-                try {
-                    const collectionPath = `artifacts/${appId}/public/data/game_stats`;
-                    await deleteDoc(doc(db, collectionPath, docId));
-                    deletedCount++;
-                } catch (error) {
-                    console.error(`Error deleting doc ${docId}:`, error);
-                }
-            }
-            showModal('Cleanup Complete', `Successfully removed ${deletedCount} old/duplicate entries.`);
+            historyModal.classList.remove('hidden');
         };
         
-        window.refreshChart = () => {
-            sortAndRender();
+        historyModalCloseBtn.onclick = () => historyModal.classList.add('hidden');
+
+        const calculateAllianceAverages = () => {
+            const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
+            const averages = {};
+            statKeys.forEach(k => averages[k] = 0);
+            if (latestStats.length === 0) return averages;
+            latestStats.forEach(player => statKeys.forEach(key => averages[key] += player[key] || 0));
+            statKeys.forEach(key => averages[key] = parseFloat((averages[key] / latestStats.length).toFixed(1)));
+            return averages;
+        };
+
+        window.showSinglePlayerChart = (playerName) => {
+            const playerStat = latestStats.find(s => s.playerName === playerName.toLowerCase());
+            if (!playerStat) return;
+
+            const allianceAverages = calculateAllianceAverages();
+            chartModalTitle.textContent = `Stat Comparison for ${playerName}`;
+            
+            const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
+            const labels = ['Inf Atk', 'Inf Def', 'Inf Let', 'Inf HP', 'Cav Atk', 'Cav Def', 'Cav Let', 'Cav HP', 'Arc Atk', 'Arc Def', 'Arc Let', 'Arc HP'];
+            
+            const datasets = [{
+                label: playerName,
+                data: statKeys.map(key => playerStat[key]),
+                backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                borderColor: 'rgba(59, 130, 246, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Alliance Average',
+                data: statKeys.map(key => allianceAverages[key]),
+                backgroundColor: 'rgba(107, 114, 128, 0.7)',
+                borderColor: 'rgba(107, 114, 128, 1)',
+                borderWidth: 1
+            }];
+            
+            const ctx = document.getElementById('comparison-chart-canvas').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }
+                    },
+                    plugins: { legend: { labels: { color: '#e5e7eb' } } }
+                }
+            });
+            chartModal.classList.remove('hidden');
+        };
+        
+        const showComparisonChart = () => {
+            if (selectedForComparison.length === 0) return;
+            
+            const allianceAverages = calculateAllianceAverages();
+            chartModalTitle.textContent = `Comparing ${selectedForComparison.length} players`;
+            
+            const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
+            const labels = ['Inf Atk', 'Inf Def', 'Inf Let', 'Inf HP', 'Cav Atk', 'Cav Def', 'Cav Let', 'Cav HP', 'Arc Atk', 'Arc Def', 'Arc Let', 'Arc HP'];
+            
+            const playerColors = ['rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(139, 92, 246, 0.7)'];
+            const borderColors = ['rgba(59, 130, 246, 1)', 'rgba(239, 68, 68, 1)', 'rgba(245, 158, 11, 1)', 'rgba(16, 185, 129, 1)', 'rgba(139, 92, 246, 1)'];
+            
+            const datasets = selectedForComparison.map((playerName, index) => {
+                const playerStat = latestStats.find(s => s.playerName === playerName);
+                return {
+                    label: playerName,
+                    data: playerStat ? statKeys.map(key => playerStat[key]) : [],
+                    backgroundColor: playerColors[index % playerColors.length],
+                    borderColor: borderColors[index % borderColors.length],
+                    borderWidth: 1
+                };
+            });
+
+            datasets.push({
+                label: 'Alliance Average',
+                data: statKeys.map(key => allianceAverages[key]),
+                backgroundColor: 'rgba(107, 114, 128, 0.7)',
+                borderColor: 'rgba(107, 114, 128, 1)',
+                borderWidth: 1
+            });
+            
+            const ctx = document.getElementById('comparison-chart-canvas').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+
+            comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }
+                    },
+                    plugins: { legend: { labels: { color: '#e5e7eb' } } }
+                }
+            });
+
+            chartModal.classList.remove('hidden');
+        };
+        
+        compareBtn.onclick = showComparisonChart;
+        chartModalCloseBtn.onclick = () => chartModal.classList.add('hidden');
+
+        window.handleCompareSelect = (checkbox) => {
+            const playerName = checkbox.value;
+            if (checkbox.checked) {
+                if(selectedForComparison.length < 5) selectedForComparison.push(playerName);
+            } else {
+                selectedForComparison = selectedForComparison.filter(p => p !== playerName);
+            }
+            
+            compareBtn.textContent = `Compare Selected (${selectedForComparison.length})`;
+            compareBtn.disabled = selectedForComparison.length === 0;
+            
+            // Re-render to update checkbox disabled states
+            renderTable();
         };
         
         window.sortStats = (column) => {
@@ -532,12 +641,11 @@
                 currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
             } else {
                 currentSort.column = column;
-                currentSort.direction = (column === 'playerName' || column === 'rank') ? 'asc' : 'desc';
+                currentSort.direction = (['playerName', 'rank'].includes(column)) ? 'asc' : 'desc';
             }
             sortAndRender();
         };
 
-        // --- STARTUP ---
         document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
 </body>
