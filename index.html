@@ -88,10 +88,10 @@
     <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
         <h3 class="text-xl font-bold text-center text-yellow-400 mb-2">Instructions & Info</h3>
         <ul class="text-lg font-bold text-gray-300 grid grid-cols-1 md:grid-cols-5 gap-x-4 text-center items-start">
-            <li><i class="fas fa-shield-alt text-4xl text-red-500 mb-2"></i><br>Rule 1: NO BUFFS active.</li>
+            <li><i class="fas fa-file-medical text-4xl text-red-500 mb-2"></i><br>Rule 1: NO BUFFS active.</li>
             <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br>Rule 2: Test rally an alt with NO troops.</li>
-            <li><i class="fas fa-user-friends text-4xl text-green-500 mb-2"></i><br>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
-            <li><i class="fas fa-calendar-check text-4xl text-indigo-500 mb-2"></i><br>Rule 4: Update at least once a week.</li>
+            <li><i class="fas fa-users text-4xl text-purple-500 mb-2"></i><br>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
+            <li><i class="fas fa-calendar-check text-4xl text-green-500 mb-2"></i><br>Rule 4: Update at least once a week.</li>
             <li class="hidden md:block"><i class="fas fa-calculator text-4xl text-yellow-500 mb-2"></i><br>True Score Formula: Lethality x1.2, Health x1.1</li>
         </ul>
     </div>
@@ -121,7 +121,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6">
                 <!-- Unit Inputs -->
                 <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-blue-400">Infantry (%)</h3>
+                    <h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i>Infantry (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
                         <input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Infantry Attack">
                         <input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Infantry Defense">
@@ -130,7 +130,7 @@
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-green-400">Cavalry (%)</h3>
+                    <h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i>Cavalry (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
                         <input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Cavalry Attack">
                         <input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Cavalry Defense">
@@ -139,7 +139,7 @@
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-red-400">Archer (%)</h3>
+                    <h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i>Archer (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
                         <input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Archer Attack">
                         <input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Archer Defense">
@@ -155,9 +155,14 @@
     <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
         <div class="flex justify-between items-center mb-3 flex-shrink-0">
             <h2 class="text-xl font-semibold text-white">Alliance Comparison Chart</h2>
-            <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled>
-                <i class="fas fa-chart-bar mr-2 text-lg"></i>Compare Selected (0)
-            </button>
+            <div class="flex space-x-2">
+                <button id="analytics-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md btn">
+                    <i class="fas fa-trophy mr-2 text-lg"></i>Alliance Analytics
+                </button>
+                <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled>
+                    <i class="fas fa-chart-bar mr-2 text-lg"></i>Compare Selected (0)
+                </button>
+            </div>
         </div>
         <div class="overflow-y-auto flex-grow">
             <table class="w-full text-left text-sm">
@@ -198,8 +203,23 @@
                 <h3 id="history-modal-title" class="text-lg font-bold text-white">Update History</h3>
                 <button id="history-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
-            <div id="history-modal-body" class="overflow-y-auto space-y-2">
+            <div id="history-modal-body" class="overflow-y-auto space-y-2 flex-grow">
                 <!-- History entries will be injected here -->
+            </div>
+            <div class="mt-6 pt-4 border-t border-gray-700 flex-shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="text-md font-semibold">Real Score Over Time</h4>
+                    <select id="history-time-filter" class="input-field rounded-md text-sm">
+                        <option value="all">All Time</option>
+                        <option value="1m">Last Month</option>
+                        <option value="3m">Last 3 Months</option>
+                        <option value="6m">Last 6 Months</option>
+                        <option value="1y">Last Year</option>
+                    </select>
+                </div>
+                <div class="relative h-64">
+                    <canvas id="history-chart-canvas"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -212,6 +232,18 @@
             </div>
             <div class="flex-grow relative">
                 <canvas id="comparison-chart-canvas"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">Alliance Analytics</h3>
+                <button id="analytics-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div id="analytics-modal-body" class="overflow-y-auto space-y-6">
+                <!-- Analytics content will be injected here -->
             </div>
         </div>
     </div>
@@ -239,7 +271,7 @@
             projectId: "alliance-stats-96973",
             storageBucket: "alliance-stats-96973.appspot.com",
             messagingSenderId: "866174182881",
-            appId: "1:866174182881:web:aef54fc8da562d8b541ea0"
+            appId: "1:866174182881:web:aef54fc8da562d8b_541ea0"
         };
         
         let db, auth, userId = null, appId = null;
@@ -249,6 +281,8 @@
         let currentSort = { column: 'trueScore', direction: 'desc' };
         let currentEditId = null;
         let comparisonChart = null;
+        let analyticsChart = null;
+        let historyChart = null;
         
         const dbStatus = document.getElementById('db-status');
         const playerNameInput = document.getElementById('playerName');
@@ -270,6 +304,11 @@
         const chartModal = document.getElementById('chart-modal');
         const chartModalTitle = document.getElementById('chart-modal-title');
         const chartModalCloseBtn = document.getElementById('chart-modal-close-btn');
+        
+        const analyticsModal = document.getElementById('analytics-modal');
+        const analyticsModalBody = document.getElementById('analytics-modal-body');
+        const analyticsModalCloseBtn = document.getElementById('analytics-modal-close-btn');
+        const analyticsBtn = document.getElementById('analytics-btn');
 
         const initFirebase = async () => {
             appId = USER_FIREBASE_CONFIG.projectId;
@@ -334,6 +373,29 @@
             sortAndRender();
         };
 
+        const getSpecialization = (stat) => {
+            const troopScores = {
+                inf: stat.infAttack + stat.infDefense + stat.infLethality + stat.infHp,
+                cav: stat.cavAttack + stat.cavDefense + stat.cavLethality + stat.cavHp,
+                arc: stat.arcAttack + stat.arcDefense + stat.arcLethality + stat.arcHp
+            };
+
+            const sortedTroops = Object.entries(troopScores).sort((a, b) => b[1] - a[1]);
+            const [highestType, highestScore] = sortedTroops[0];
+            const [, secondHighestScore] = sortedTroops[1];
+            
+            if (!secondHighestScore || highestScore < secondHighestScore * 1.15) {
+                return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' };
+            }
+
+            switch(highestType) {
+                case 'inf': return { key: 'infantry', icon: 'fa-shield-alt', color: 'text-blue-400', title: 'Infantry Specialist' };
+                case 'cav': return { key: 'cavalry', icon: 'fa-horse', color: 'text-green-400', title: 'Cavalry Specialist' };
+                case 'arc': return { key: 'archer', icon: 'fa-bullseye', color: 'text-red-400', title: 'Archer Specialist' };
+                default: return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' };
+            }
+        };
+
         const renderTable = () => {
             const tableBody = document.getElementById('stats-table-body');
             const rankedStats = latestStats.map((stat, index) => ({ ...stat, rank: index + 1 }));
@@ -356,13 +418,17 @@
 
                 const isChecked = selectedForComparison.includes(stat.playerName);
                 const isDisabled = disableCheckboxes && !isChecked;
+                const specialization = getSpecialization(stat);
 
                 const formattedDate = stat.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
                 return `
                     <tr class="table-row odd:bg-[#2d3748] even:bg-[#1f2937] hover:bg-gray-700" ondblclick="showSinglePlayerChart('${stat.playerName}')">
                         <td class="text-center"><input type="checkbox" class="form-checkbox h-4 w-4 bg-gray-700 border-gray-600" value="${stat.playerName}" onchange="handleCompareSelect(this)" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''}></td>
                         <td class="font-bold text-center">${stat.rank}</td>
-                        <td class="font-semibold text-white">${stat.playerName}</td>
+                        <td class="font-semibold text-white">
+                            <i class="fas ${specialization.icon} ${specialization.color} mr-2" title="${specialization.title}"></i>
+                            ${stat.playerName}
+                        </td>
                         ${statCells}
                         <td class="font-bold text-yellow-400">${stat.trueScore.toLocaleString()}</td>
                         <td class="font-bold text-gray-300">${stat.realScore.toLocaleString()}</td>
@@ -464,6 +530,45 @@
             }
         };
 
+        const renderHistoryGraph = (fullHistory, filter) => {
+            const canvas = document.getElementById('history-chart-canvas');
+            if (!canvas) return;
+            
+            const now = new Date();
+            let cutoffDate = new Date(0); // The beginning of time
+            if (filter === '1m') cutoffDate.setMonth(now.getMonth() - 1);
+            else if (filter === '3m') cutoffDate.setMonth(now.getMonth() - 3);
+            else if (filter === '6m') cutoffDate.setMonth(now.getMonth() - 6);
+            else if (filter === '1y') cutoffDate.setFullYear(now.getFullYear() - 1);
+
+            const filteredHistory = fullHistory.filter(stat => stat.date >= cutoffDate).sort((a,b) => a.date - b.date);
+
+            if (historyChart) historyChart.destroy();
+            historyChart = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: filteredHistory.map(s => s.date.toLocaleDateString()),
+                    datasets: [{
+                        label: 'Real Score',
+                        data: filteredHistory.map(s => s.realScore),
+                        borderColor: '#facc15', // yellow-400
+                        backgroundColor: 'rgba(250, 204, 21, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#e5e7eb' }, grid: { color: 'transparent' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        };
+
         window.showHistory = (playerName) => {
             const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()).sort((a,b) => b.date - a.date);
             historyModalTitle.textContent = `Update History for ${playerName}`;
@@ -498,7 +603,7 @@
                 
                 const mainInfo = entryDiv.querySelector('.flex');
                 mainInfo.onclick = (e) => {
-                     if (e.target.closest('button')) return; // Don't toggle if button was clicked
+                     if (e.target.closest('button')) return; 
                     const detailsDiv = entryDiv.querySelector('.grid');
                     if(detailsDiv.classList.contains('hidden')) {
                         detailsDiv.classList.remove('hidden');
@@ -515,6 +620,8 @@
             });
 
             historyModal.classList.remove('hidden');
+            renderHistoryGraph(playerHistory, 'all');
+            document.getElementById('history-time-filter').onchange = (e) => renderHistoryGraph(playerHistory, e.target.value);
         };
         
         historyModalCloseBtn.onclick = () => historyModal.classList.add('hidden');
@@ -527,9 +634,7 @@
                     showModal('Error', 'Could not find the historical data to revert.');
                     return;
                 }
-
                 const { id, date, trueScore, realScore, ...newStatData } = statToRevert;
-                
                 try {
                     await addDoc(collection(db, `artifacts/${appId}/public/data/game_stats`), { ...newStatData, date: serverTimestamp() });
                     historyModal.classList.add('hidden');
@@ -555,7 +660,6 @@
 
             const allianceAverages = calculateAllianceAverages();
             chartModalTitle.textContent = `Stat Comparison for ${playerName}`;
-            
             const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
             const labels = ['Inf Atk', 'Inf Def', 'Inf Let', 'Inf HP', 'Cav Atk', 'Cav Def', 'Cav Let', 'Cav HP', 'Arc Atk', 'Arc Def', 'Arc Let', 'Arc HP'];
             
@@ -575,76 +679,124 @@
             
             const ctx = document.getElementById('comparison-chart-canvas').getContext('2d');
             if (comparisonChart) comparisonChart.destroy();
-
-            comparisonChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } },
-                        x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }
-                    },
-                    plugins: { legend: { labels: { color: '#e5e7eb' } } }
-                }
-            });
+            comparisonChart = new Chart(ctx, { type: 'bar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }, x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } } }, plugins: { legend: { labels: { color: '#e5e7eb' } } } } });
             chartModal.classList.remove('hidden');
         };
         
         const showComparisonChart = () => {
             if (selectedForComparison.length === 0) return;
-            
             const allianceAverages = calculateAllianceAverages();
             chartModalTitle.textContent = `Comparing ${selectedForComparison.length} players`;
-            
             const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
             const labels = ['Inf Atk', 'Inf Def', 'Inf Let', 'Inf HP', 'Cav Atk', 'Cav Def', 'Cav Let', 'Cav HP', 'Arc Atk', 'Arc Def', 'Arc Let', 'Arc HP'];
-            
             const playerColors = ['rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)', 'rgba(245, 158, 11, 0.7)', 'rgba(16, 185, 129, 0.7)', 'rgba(139, 92, 246, 0.7)'];
             const borderColors = ['rgba(59, 130, 246, 1)', 'rgba(239, 68, 68, 1)', 'rgba(245, 158, 11, 1)', 'rgba(16, 185, 129, 1)', 'rgba(139, 92, 246, 1)'];
             
             const datasets = selectedForComparison.map((playerName, index) => {
                 const playerStat = latestStats.find(s => s.playerName === playerName);
-                return {
-                    label: playerName,
-                    data: playerStat ? statKeys.map(key => playerStat[key]) : [],
-                    backgroundColor: playerColors[index % playerColors.length],
-                    borderColor: borderColors[index % borderColors.length],
-                    borderWidth: 1
-                };
+                return { label: playerName, data: playerStat ? statKeys.map(key => playerStat[key]) : [], backgroundColor: playerColors[index % playerColors.length], borderColor: borderColors[index % borderColors.length], borderWidth: 1 };
             });
 
-            datasets.push({
-                label: 'Alliance Average',
-                data: statKeys.map(key => allianceAverages[key]),
-                backgroundColor: 'rgba(107, 114, 128, 0.7)',
-                borderColor: 'rgba(107, 114, 128, 1)',
-                borderWidth: 1
-            });
+            datasets.push({ label: 'Alliance Average', data: statKeys.map(key => allianceAverages[key]), backgroundColor: 'rgba(107, 114, 128, 0.7)', borderColor: 'rgba(107, 114, 128, 1)', borderWidth: 1 });
             
             const ctx = document.getElementById('comparison-chart-canvas').getContext('2d');
             if (comparisonChart) comparisonChart.destroy();
-
-            comparisonChart = new Chart(ctx, {
-                type: 'bar',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } },
-                        x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }
-                    },
-                    plugins: { legend: { labels: { color: '#e5e7eb' } } }
-                }
-            });
-
+            comparisonChart = new Chart(ctx, { type: 'bar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }, x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } } }, plugins: { legend: { labels: { color: '#e5e7eb' } } } } });
             chartModal.classList.remove('hidden');
         };
         
         compareBtn.onclick = showComparisonChart;
         chartModalCloseBtn.onclick = () => chartModal.classList.add('hidden');
+
+        analyticsBtn.onclick = () => {
+            analyticsModalBody.innerHTML = ''; // Clear previous content
+
+            // Section 1: Top Lists
+            const rallyLeaders = [...latestStats].sort((a,b) => b.trueScore - a.trueScore).slice(0, 10);
+            let rallyHtml = '<div><h4 class="text-lg font-semibold text-yellow-400 mb-2">Top 10 Rally Leaders (by True Score)</h4><ol class="list-decimal list-inside space-y-1">';
+            rallyLeaders.forEach(p => rallyHtml += `<li>${p.playerName} - ${p.trueScore.toLocaleString()}</li>`);
+            rallyHtml += '</ol></div>';
+
+            const playerGroups = {};
+            allStats.forEach(stat => {
+                if (!playerGroups[stat.playerName]) playerGroups[stat.playerName] = [];
+                playerGroups[stat.playerName].push(stat);
+            });
+            const improvements = [];
+            for (const name in playerGroups) {
+                if(playerGroups[name].length > 1) {
+                    const sortedHistory = playerGroups[name].sort((a,b) => b.date - a.date);
+                    const improvement = sortedHistory[0].realScore - sortedHistory[1].realScore;
+                    if (improvement > 0) improvements.push({ name, improvement });
+                }
+            }
+            const mostImproved = improvements.sort((a,b) => b.improvement - a.improvement).slice(0, 3);
+            let improvedHtml = '<div><h4 class="text-lg font-semibold text-green-400 mb-2">Most Improved Players (by Real Score)</h4><ol class="list-decimal list-inside space-y-1">';
+             if (mostImproved.length > 0) mostImproved.forEach(p => improvedHtml += `<li>${p.name} <span class="text-green-400 font-bold">(+${p.improvement.toLocaleString()})</span></li>`);
+            else improvedHtml += '<li class="italic text-gray-400">Not enough historical data yet.</li>';
+            improvedHtml += '</ol></div>';
+            
+            const topListsContainer = document.createElement('div');
+            topListsContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+            topListsContainer.innerHTML = rallyHtml + improvedHtml;
+            analyticsModalBody.appendChild(topListsContainer);
+            
+            // Section 2: Specialization Breakdown
+            const specCounts = { infantry: 0, cavalry: 0, archer: 0, balanced: 0 };
+            latestStats.forEach(stat => {
+                const spec = getSpecialization(stat);
+                specCounts[spec.key]++;
+            });
+
+            const breakdownContainer = document.createElement('div');
+            breakdownContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6 items-center';
+            
+            const chartContainer = document.createElement('div');
+            chartContainer.innerHTML = '<h4 class="text-lg font-semibold text-indigo-400 mb-2">Alliance Composition</h4><div class="relative h-64"><canvas id="analytics-chart-canvas"></canvas></div>';
+            breakdownContainer.appendChild(chartContainer);
+
+            // Top players by troop type
+            const topByTroopContainer = document.createElement('div');
+            const troopTypes = ['inf', 'cav', 'arc'];
+            let topByTroopHtml = '';
+            troopTypes.forEach(type => {
+                const topPlayers = [...latestStats].sort((a,b) => (b[`${type}Attack`] + b[`${type}Defense`] + b[`${type}Lethality`] + b[`${type}Hp`]) - (a[`${type}Attack`] + a[`${type}Defense`] + a[`${type}Lethality`] + a[`${type}Hp`])).slice(0,3);
+                let title = type === 'inf' ? 'Infantry' : type === 'cav' ? 'Cavalry' : 'Archer';
+                topByTroopHtml += `<div class="mb-4"><h5 class="text-md font-semibold text-gray-300 mb-1">Top 3 ${title} Players</h5><ol class="list-decimal list-inside text-sm">`;
+                topPlayers.forEach(p => topByTroopHtml += `<li>${p.playerName}</li>`);
+                topByTroopHtml += `</ol></div>`;
+            });
+            topByTroopContainer.innerHTML = topByTroopHtml;
+            breakdownContainer.appendChild(topByTroopContainer);
+            
+            analyticsModalBody.appendChild(breakdownContainer);
+            analyticsModal.classList.remove('hidden');
+            
+            // Render Pie Chart
+            const ctx = document.getElementById('analytics-chart-canvas').getContext('2d');
+            if(analyticsChart) analyticsChart.destroy();
+            analyticsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Infantry', 'Cavalry', 'Archer', 'Balanced'],
+                    datasets: [{
+                        data: [specCounts.infantry, specCounts.cavalry, specCounts.archer, specCounts.balanced],
+                        backgroundColor: ['#60a5fa', '#4ade80', '#f87171', '#9ca3af'],
+                        borderColor: '#1f2937',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { color: '#e5e7eb' } }
+                    }
+                }
+            });
+        };
+        analyticsModalCloseBtn.onclick = () => analyticsModal.classList.add('hidden');
+
 
         window.handleCompareSelect = (checkbox) => {
             const playerName = checkbox.value;
@@ -657,7 +809,6 @@
             compareBtn.textContent = `Compare Selected (${selectedForComparison.length})`;
             compareBtn.disabled = selectedForComparison.length === 0;
             
-            // Re-render to update checkbox disabled states
             renderTable();
         };
         
