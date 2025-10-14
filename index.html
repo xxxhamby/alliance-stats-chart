@@ -8,6 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            /* Prevent body scroll */
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #111827;
@@ -19,17 +26,16 @@
             border: 1px solid #374151;
         }
 
-        .table-header,
-        .table-row {
-            border-bottom: 1px solid #374151;
-        }
-
         .table-header th {
-            padding: 12px 16px;
+            padding: 8px 12px;
+            position: sticky;
+            top: 0;
+            background-color: #1f2937;
         }
 
         .table-row td {
-            padding: 12px 16px;
+            padding: 8px 12px;
+            white-space: nowrap;
         }
 
         .btn {
@@ -45,6 +51,7 @@
             background-color: #374151;
             border: 1px solid #4b5563;
             color: #e5e7eb;
+            padding: 6px 10px;
         }
 
         .input-field:focus {
@@ -64,155 +71,114 @@
     </style>
 </head>
 
-<body class="p-4 md:p-8">
-    <div class="max-w-7xl mx-auto">
+<body class="flex flex-col h-screen p-4 md:p-6">
 
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-white">Alliance Stat Comparison</h1>
-            <p id="db-status" class="text-sm text-gray-400 mt-2">Connecting to database...</p>
-        </header>
+    <!-- Header (10%) -->
+    <header class="text-center flex-shrink-0 h-[10vh]">
+        <h1 class="text-3xl md:text-4xl font-bold text-white">Alliance Stat Comparison</h1>
+        <p id="db-status" class="text-sm text-gray-400 mt-2">Connecting to database...</p>
+    </header>
 
-        <!-- Section 1: Manual Data Entry -->
-        <div id="manual-entry" class="card p-6 rounded-lg shadow-lg mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-white">1. Manual Data Entry</h2>
-            <form class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end" onsubmit="event.preventDefault(); handleSaveOrUpdate();">
-                <!-- Player Name -->
-                <div>
+    <!-- Data Entry (25%) -->
+    <div id="manual-entry" class="card p-4 rounded-lg shadow-lg mb-4 flex-shrink-0 h-[25vh]">
+        <form onsubmit="event.preventDefault(); handleSaveOrUpdate();">
+            <div class="flex justify-between items-center mb-3">
+                 <h2 class="text-xl font-semibold text-white">Manual Data Entry</h2>
+                 <p class="text-xs text-gray-400 italic">Tip: Use the 'Tab' key to move through inputs in the correct order.</p>
+            </div>
+            <div class="flex gap-4 items-end mb-3">
+                <div class="flex-grow">
                     <label for="playerName" class="block text-sm font-medium text-gray-300 mb-1">Player Name</label>
-                    <input type="text" id="playerName" placeholder="Enter player name" required class="w-full p-2 rounded-md input-field">
+                    <input type="text" id="playerName" placeholder="Enter player name" required class="w-full rounded-md input-field">
                 </div>
-
-                <!-- Spacer Column -->
-                <div class="hidden md:block"></div>
-                <div class="hidden md:block"></div>
-                <div class="hidden md:block"></div>
-
-                <!-- Submit Button -->
-                <div class="flex items-end space-x-2">
-                     <button type="submit" id="submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md btn">
-                        <i class="fas fa-save mr-2"></i>Save My Stats
+                <div class="flex items-end space-x-2 flex-shrink-0">
+                    <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md btn">
+                        <i class="fas fa-save mr-2"></i>Save Stats
                     </button>
-                    <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn hidden">
+                    <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn hidden">
                         <i class="fas fa-times mr-2"></i>Cancel
                     </button>
                 </div>
+            </div>
 
-                <!-- Unit Stat Headers -->
-                <div class="col-span-1 md:col-span-5 grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-4 mt-4">
-                    <!-- Infantry -->
-                    <div class="p-4 rounded-lg bg-gray-800 border border-gray-700">
-                        <h3 class="font-bold text-lg text-center text-blue-400 mb-3">Infantry Stats (%)</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label for="infAttack" class="text-sm">Attack</label>
-                                <input type="number" step="0.01" id="infAttack" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="infDefense" class="text-sm">Defense</label>
-                                <input type="number" step="0.01" id="infDefense" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="infLethality" class="text-sm">Lethality</label>
-                                <input type="number" step="0.01" id="infLethality" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="infHp" class="text-sm">Health</label>
-                                <input type="number" step="0.01" id="infHp" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cavalry -->
-                    <div class="p-4 rounded-lg bg-gray-800 border border-gray-700">
-                        <h3 class="font-bold text-lg text-center text-green-400 mb-3">Cavalry Stats (%)</h3>
-                         <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label for="cavAttack" class="text-sm">Attack</label>
-                                <input type="number" step="0.01" id="cavAttack" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="cavDefense" class="text-sm">Defense</label>
-                                <input type="number" step="0.01" id="cavDefense" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="cavLethality" class="text-sm">Lethality</label>
-                                <input type="number" step="0.01" id="cavLethality" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="cavHp" class="text-sm">Health</label>
-                                <input type="number" step="0.01" id="cavHp" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Archer -->
-                    <div class="p-4 rounded-lg bg-gray-800 border border-gray-700">
-                        <h3 class="font-bold text-lg text-center text-red-400 mb-3">Archer Stats (%)</h3>
-                         <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label for="arcAttack" class="text-sm">Attack</label>
-                                <input type="number" step="0.01" id="arcAttack" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="arcDefense" class="text-sm">Defense</label>
-                                <input type="number" step="0.01" id="arcDefense" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="arcLethality" class="text-sm">Lethality</label>
-                                <input type="number" step="0.01" id="arcLethality" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                            <div>
-                                <label for="arcHp" class="text-sm">Health</label>
-                                <input type="number" step="0.01" id="arcHp" placeholder="0.0" required class="w-full mt-1 p-2 rounded-md input-field">
-                            </div>
-                        </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6">
+                <!-- Infantry -->
+                <div class="space-y-2">
+                    <h3 class="font-bold text-md text-center text-blue-400">Infantry (%)</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Infantry Attack">
+                        <input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Infantry Defense">
+                        <input type="number" step="0.01" id="infLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Infantry Lethality">
+                        <input type="number" step="0.01" id="infHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Infantry Health">
                     </div>
                 </div>
-            </form>
-        </div>
-
-        <!-- Section 2: Shared Data Chart -->
-        <div class="card p-6 rounded-lg shadow-lg">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-white">2. Alliance Comparison Chart</h2>
-                 <div class="flex items-center space-x-2">
-                    <button onclick="refreshChart()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md btn">
-                        <i class="fas fa-sync-alt mr-2"></i>Refresh Chart
-                    </button>
-                    <button onclick="cleanDuplicateData()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md btn">
-                        <i class="fas fa-broom mr-2"></i>Clean Old/Duplicate Data
-                    </button>
+                <!-- Cavalry -->
+                <div class="space-y-2">
+                    <h3 class="font-bold text-md text-center text-green-400">Cavalry (%)</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Cavalry Attack">
+                        <input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Cavalry Defense">
+                        <input type="number" step="0.01" id="cavLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Cavalry Lethality">
+                        <input type="number" step="0.01" id="cavHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Cavalry Health">
+                    </div>
+                </div>
+                <!-- Archer -->
+                <div class="space-y-2">
+                    <h3 class="font-bold text-md text-center text-red-400">Archer (%)</h3>
+                    <div class="grid grid-cols-4 gap-2">
+                        <input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Archer Attack">
+                        <input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Archer Defense">
+                        <input type="number" step="0.01" id="arcLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Archer Lethality">
+                        <input type="number" step="0.01" id="arcHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Archer Health">
+                    </div>
                 </div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="table-header text-xs text-gray-300 uppercase bg-gray-700">
-                        <tr>
-                            <th class="cursor-pointer" onclick="sortStats('rank')">Rank</th>
-                            <th class="cursor-pointer" onclick="sortStats('playerName')">Player</th>
-                            <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th>
-                            <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th>
-                            <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th>
-                            <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
-                            <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th>
-                            <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th>
-                            <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th>
-                            <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
-                            <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th>
-                            <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th>
-                            <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th>
-                            <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
-                            <th class="cursor-pointer" onclick="sortStats('totalScore')">Total Score ▼</th>
-                            <th class="cursor-pointer" onclick="sortStats('date')">Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stats-table-body">
-                        <!-- Rows will be injected by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
+        </form>
     </div>
+
+    <!-- Chart (65%) -->
+    <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center mb-3 flex-shrink-0">
+            <h2 class="text-xl font-semibold text-white">Alliance Comparison Chart</h2>
+            <div class="flex items-center space-x-2">
+                <button onclick="refreshChart()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-md btn text-sm">
+                    <i class="fas fa-sync-alt mr-1"></i>Refresh
+                </button>
+                <button onclick="cleanDuplicateData()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-md btn text-sm">
+                    <i class="fas fa-broom mr-1"></i>Clean Duplicates
+                </button>
+            </div>
+        </div>
+        <div class="overflow-y-auto flex-grow">
+            <table class="w-full text-left text-sm">
+                <thead class="table-header text-xs text-gray-300 uppercase">
+                    <tr>
+                        <th class="cursor-pointer" onclick="sortStats('rank')">Rank</th>
+                        <th class="cursor-pointer" onclick="sortStats('playerName')">Player</th>
+                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th>
+                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th>
+                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th>
+                        <th class="cursor-pointer bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
+                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th>
+                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th>
+                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th>
+                        <th class="cursor-pointer bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
+                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th>
+                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th>
+                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th>
+                        <th class="cursor-pointer bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
+                        <th class="cursor-pointer" onclick="sortStats('totalScore')">Score ▼</th>
+                        <th class="cursor-pointer" onclick="sortStats('date')">Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="stats-table-body">
+                    <!-- Rows will be injected by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 
     <!-- Custom Modal -->
     <div id="custom-modal" class="fixed inset-0 flex items-center justify-center modal-backdrop hidden">
@@ -263,12 +229,9 @@
 
         // --- INITIALIZATION ---
         const initFirebase = async () => {
-            // FIX: Simplified initialization to always use the user's provided config.
-            // This prevents conflicts when deploying to live environments like GitHub Pages.
             const firebaseConfig = USER_FIREBASE_CONFIG;
             appId = firebaseConfig.projectId;
-            console.log("Forcing production mode configuration.");
-
+            
             if (!firebaseConfig || !firebaseConfig.projectId) {
                 dbStatus.textContent = '❌ Firebase configuration missing. Cannot connect.';
                 dbStatus.className = 'text-sm text-red-400 mt-2';
@@ -285,7 +248,7 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     userId = user.uid;
-                    dbStatus.textContent = `✅ Database Connected to ${appId}. User: ${userId.substring(0, 8)}...`;
+                    dbStatus.textContent = `✅ Database Connected to ${appId}.`;
                     dbStatus.className = 'text-sm text-green-400 mt-2';
                     setupRealtimeListener();
                 } else {
@@ -300,12 +263,8 @@
         
         // --- DATA MANAGEMENT ---
         const setupRealtimeListener = () => {
-            if (!db || !appId) {
-                console.error("Firestore DB or App ID not initialized for listener.");
-                return;
-            }
+            if (!db || !appId) return;
             const collectionPath = `artifacts/${appId}/public/data/game_stats`;
-            console.log(`[Firestore] Setting up listener on path: ${collectionPath}`);
             
             const q = collection(db, collectionPath);
             onSnapshot(q, (querySnapshot) => {
@@ -315,18 +274,9 @@
                     const statEntry = {
                         id: doc.id,
                         playerName: data.playerName,
-                        infAttack: data.infAttack,
-                        infDefense: data.infDefense,
-                        infLethality: data.infLethality,
-                        infHp: data.infHp,
-                        cavAttack: data.cavAttack,
-                        cavDefense: data.cavDefense,
-                        cavLethality: data.cavLethality,
-                        cavHp: data.cavHp,
-                        arcAttack: data.arcAttack,
-                        arcDefense: data.arcDefense,
-                        arcLethality: data.arcLethality,
-                        arcHp: data.arcHp,
+                        infAttack: data.infAttack, infDefense: data.infDefense, infLethality: data.infLethality, infHp: data.infHp,
+                        cavAttack: data.cavAttack, cavDefense: data.cavDefense, cavLethality: data.cavLethality, cavHp: data.cavHp,
+                        arcAttack: data.arcAttack, arcDefense: data.arcDefense, arcLethality: data.arcLethality, arcHp: data.arcHp,
                         date: data.date ? data.date.toDate() : new Date(),
                     };
                     statEntry.totalScore = calculateTotalScore(statEntry);
@@ -340,24 +290,21 @@
             });
         };
 
-        const getFormData = () => {
-            const data = {
-                playerName: playerNameInput.value.trim(),
-                infAttack: parseFloat(document.getElementById('infAttack').value) || 0,
-                infDefense: parseFloat(document.getElementById('infDefense').value) || 0,
-                infLethality: parseFloat(document.getElementById('infLethality').value) || 0,
-                infHp: parseFloat(document.getElementById('infHp').value) || 0,
-                cavAttack: parseFloat(document.getElementById('cavAttack').value) || 0,
-                cavDefense: parseFloat(document.getElementById('cavDefense').value) || 0,
-                cavLethality: parseFloat(document.getElementById('cavLethality').value) || 0,
-                cavHp: parseFloat(document.getElementById('cavHp').value) || 0,
-                arcAttack: parseFloat(document.getElementById('arcAttack').value) || 0,
-                arcDefense: parseFloat(document.getElementById('arcDefense').value) || 0,
-                arcLethality: parseFloat(document.getElementById('arcLethality').value) || 0,
-                arcHp: parseFloat(document.getElementById('arcHp').value) || 0,
-            };
-            return data;
-        };
+        const getFormData = () => ({
+            playerName: playerNameInput.value.trim(),
+            infAttack: parseFloat(document.getElementById('infAttack').value) || 0,
+            infDefense: parseFloat(document.getElementById('infDefense').value) || 0,
+            infLethality: parseFloat(document.getElementById('infLethality').value) || 0,
+            infHp: parseFloat(document.getElementById('infHp').value) || 0,
+            cavAttack: parseFloat(document.getElementById('cavAttack').value) || 0,
+            cavDefense: parseFloat(document.getElementById('cavDefense').value) || 0,
+            cavLethality: parseFloat(document.getElementById('cavLethality').value) || 0,
+            cavHp: parseFloat(document.getElementById('cavHp').value) || 0,
+            arcAttack: parseFloat(document.getElementById('arcAttack').value) || 0,
+            arcDefense: parseFloat(document.getElementById('arcDefense').value) || 0,
+            arcLethality: parseFloat(document.getElementById('arcLethality').value) || 0,
+            arcHp: parseFloat(document.getElementById('arcHp').value) || 0,
+        });
         
         const resetForm = () => {
             document.querySelector('form').reset();
@@ -390,11 +337,11 @@
             const rankedStats = currentStats.map((stat, index) => ({ ...stat, rank: index + 1 }));
 
             tableBody.innerHTML = rankedStats.map(stat => {
-                const formattedDate = stat.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                const formattedDate = stat.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
                 return `
-                    <tr class="table-row hover:bg-gray-800">
+                    <tr class="table-row odd:bg-[#2d3748] even:bg-[#1f2937] hover:bg-gray-700">
                         <td>${stat.rank}</td>
-                        <td class="font-semibold">${stat.playerName}</td>
+                        <td class="font-semibold text-white">${stat.playerName}</td>
                         <td>${stat.infAttack}%</td>
                         <td>${stat.infDefense}%</td>
                         <td>${stat.infLethality}%</td>
@@ -410,7 +357,7 @@
                         <td class="font-bold text-yellow-400">${stat.totalScore.toLocaleString()}</td>
                         <td class="text-xs text-gray-400">${formattedDate}</td>
                         <td>
-                             <button onclick="enterEditMode('${stat.id}')" class="text-blue-400 hover:text-blue-300 mr-3"><i class="fas fa-pencil-alt"></i></button>
+                             <button onclick="enterEditMode('${stat.id}')" class="text-blue-400 hover:text-blue-300 mr-2"><i class="fas fa-pencil-alt"></i></button>
                              <button onclick="deleteStat('${stat.id}', '${stat.playerName}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
@@ -418,7 +365,6 @@
             }).join('');
         };
         
-        // FIX: Combine sort and render to prevent infinite loops
         const sortAndRender = () => {
              currentStats.sort((a, b) => {
                 const valA = a[currentSort.column];
@@ -449,7 +395,6 @@
             return Math.round(total);
         };
         
-        // --- MODAL CONTROLS ---
         const showModal = (title, message) => {
             modalTitle.textContent = title;
             modalMessage.textContent = message;
@@ -493,7 +438,6 @@
 
             currentEditId = docId;
             playerNameInput.value = statToEdit.playerName;
-            // FIX: Corrected typo from statToToEdit to statToEdit
             document.getElementById('infAttack').value = statToEdit.infAttack;
             document.getElementById('infDefense').value = statToEdit.infDefense;
             document.getElementById('infLethality').value = statToEdit.infLethality;
@@ -539,7 +483,7 @@
                     playerStats[stat.playerName] = [];
                 }
                 playerStats[stat.playerName].push(stat);
-});
+            });
 
             const docsToDelete = [];
             for (const playerName in playerStats) {
