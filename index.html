@@ -480,21 +480,26 @@
 
                 const formattedDate = stat.date.toLocaleString();
                 const entryDiv = document.createElement('div');
-                entryDiv.className = 'p-3 rounded-md border border-gray-700 cursor-pointer history-entry';
+                entryDiv.className = 'p-3 rounded-md border border-gray-700 history-entry';
                 entryDiv.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <span class="font-semibold">${formattedDate}</span>
                         <div>
-                            <span class="text-gray-400">Real Score:</span>
-                            <span class="font-bold text-white">${stat.realScore.toLocaleString()}</span>
-                            ${growthHtml}
+                            <span class="font-semibold">${formattedDate}</span>
+                            <div>
+                                <span class="text-gray-400">Real Score:</span>
+                                <span class="font-bold text-white">${stat.realScore.toLocaleString()}</span>
+                                ${growthHtml}
+                            </div>
                         </div>
+                        <button class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn" onclick="revertToStat('${stat.id}', '${stat.playerName}')"><i class="fas fa-undo"></i> Revert</button>
                     </div>
-                    <div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden"></div>
+                    <div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden cursor-pointer"></div>
                 `;
                 
-                entryDiv.onclick = (e) => {
-                    const detailsDiv = e.currentTarget.querySelector('.grid');
+                const mainInfo = entryDiv.querySelector('.flex');
+                mainInfo.onclick = (e) => {
+                     if (e.target.closest('button')) return; // Don't toggle if button was clicked
+                    const detailsDiv = entryDiv.querySelector('.grid');
                     if(detailsDiv.classList.contains('hidden')) {
                         detailsDiv.classList.remove('hidden');
                         detailsDiv.innerHTML = `
@@ -513,6 +518,26 @@
         };
         
         historyModalCloseBtn.onclick = () => historyModal.classList.add('hidden');
+
+        window.revertToStat = async (docId, playerName) => {
+            const confirmed = await showModal('Confirm Revert', `This will copy the stats from this historical entry and save it as the new latest entry for ${playerName}. This is non-destructive. Are you sure?`);
+            if (confirmed) {
+                const statToRevert = allStats.find(s => s.id === docId);
+                if (!statToRevert) {
+                    showModal('Error', 'Could not find the historical data to revert.');
+                    return;
+                }
+
+                const { id, date, trueScore, realScore, ...newStatData } = statToRevert;
+                
+                try {
+                    await addDoc(collection(db, `artifacts/${appId}/public/data/game_stats`), { ...newStatData, date: serverTimestamp() });
+                    historyModal.classList.add('hidden');
+                } catch (error) {
+                    showModal('Error', `Failed to revert stats: ${error.message}`);
+                }
+            }
+        };
 
         const calculateAllianceAverages = () => {
             const statKeys = ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'];
