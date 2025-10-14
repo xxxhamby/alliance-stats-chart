@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alliance Stat Comparison</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px; 
+        }
+        .stats-table th {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        .stats-table th.stat-header {
+            border-bottom: 2px solid #fff;
+            padding: 8px 4px;
+        }
+        .stats-table th:hover {
+            background-color: #3f51b5;
+        }
+        .stats-table th.sorted-asc::after {
+            content: " ▲";
+        }
+        .stats-table th.sorted-desc::after {
+            content: " ▼";
+        }
+        .upload-button {
+            transition: all 0.3s ease;
+        }
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .rank-column {
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        .total-score {
+            font-weight: 800;
+            background-color: #e0e7ff;
+            color: #3730a3;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="container mx-auto">
+        <header class="text-center mb-8 p-6 bg-indigo-700 text-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-bold">Alliance Unit Stat Comparison Dashboard</h1>
+            <p class="mt-2 text-indigo-300">Compare Attack, Defense, Health, and Lethality bonuses between alliance members.</p>
+        </header>
+
+        <!-- User Information & Status -->
+        <div class="bg-white p-4 mb-6 rounded-lg shadow-md border-l-4 border-indigo-500">
+            <p id="auth-status" class="text-sm font-medium text-gray-700">Connecting to database...</p>
+        </div>
+
+        <!-- Manual Data Entry Form -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">1. Enter or Edit Unit Stat Bonuses</h2>
+            <p class="text-gray-600 mb-4">Type the bonus percentages below to add a new entry or click "Edit" on the chart to modify an existing one.</p>
+            
+            <form id="stat-form" class="space-y-6" onsubmit="event.preventDefault(); handleSaveOrUpdate();">
+                <!-- Player Name Input -->
+                <div>
+                    <label for="playerName" class="block text-sm font-medium text-gray-700">Player Name (Required)</label>
+                    <input type="text" id="playerName" name="playerName" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                </div>
+                
+                <div class="grid grid-cols-3 gap-6">
+                    <!-- Infantry Stats -->
+                    <fieldset class="p-4 border border-red-300 rounded-lg bg-red-50">
+                        <legend class="text-lg font-semibold text-red-700 px-2">Infantry</legend>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="infantryAttack" class="block text-xs font-medium text-red-700">Attack %</label>
+                                <input type="number" id="infantryAttack" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-red-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="infantryDefense" class="block text-xs font-medium text-red-700">Defense %</label>
+                                <input type="number" id="infantryDefense" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-red-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="infantryLethality" class="block text-xs font-medium text-red-700">Lethality %</label>
+                                <input type="number" id="infantryLethality" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-red-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="infantryHealth" class="block text-xs font-medium text-red-700">Health % (HP)</label>
+                                <input type="number" id="infantryHealth" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-red-300 shadow-sm p-2 text-sm">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Cavalry Stats -->
+                    <fieldset class="p-4 border border-blue-300 rounded-lg bg-blue-50">
+                        <legend class="text-lg font-semibold text-blue-700 px-2">Cavalry</legend>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="cavalryAttack" class="block text-xs font-medium text-blue-700">Attack %</label>
+                                <input type="number" id="cavalryAttack" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-blue-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="cavalryDefense" class="block text-xs font-medium text-blue-700">Defense %</label>
+                                <input type="number" id="cavalryDefense" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-blue-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="cavalryLethality" class="block text-xs font-medium text-blue-700">Lethality %</label>
+                                <input type="number" id="cavalryLethality" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-blue-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="cavalryHealth" class="block text-xs font-medium text-blue-700">Health % (HP)</label>
+                                <input type="number" id="cavalryHealth" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-blue-300 shadow-sm p-2 text-sm">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Archer Stats -->
+                    <fieldset class="p-4 border border-green-300 rounded-lg bg-green-50">
+                        <legend class="text-lg font-semibold text-green-700 px-2">Archer</legend>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="archerAttack" class="block text-xs font-medium text-green-700">Attack %</label>
+                                <input type="number" id="archerAttack" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-green-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="archerDefense" class="block text-xs font-medium text-green-700">Defense %</label>
+                                <input type="number" id="archerDefense" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-green-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="archerLethality" class="block text-xs font-medium text-green-700">Lethality %</label>
+                                <input type="number" id="archerLethality" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-green-300 shadow-sm p-2 text-sm">
+                            </div>
+                            <div>
+                                <label for="archerHealth" class="block text-xs font-medium text-green-700">Health % (HP)</label>
+                                <input type="number" id="archerHealth" min="0" value="0" required
+                                       class="mt-1 block w-full rounded-md border-green-300 shadow-sm p-2 text-sm">
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                
+                <div class="flex space-x-4">
+                    <button type="submit" id="upload-button" 
+                            class="upload-button bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:ring-4 focus:ring-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed flex-grow" disabled>
+                        Save My Stats to Shared Chart
+                    </button>
+                    <button type="button" id="cancel-edit-button" onclick="cancelEditMode()"
+                            class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-6 rounded-lg focus:outline-none focus:ring-4 focus:ring-gray-300">
+                        Cancel Edit Mode
+                    </button>
+                </div>
+            </form>
+
+            <div id="loading-indicator" class="mt-4 hidden">
+                <p class="text-indigo-500">Saving data...</p>
+            </div>
+            <div id="message-box" class="mt-4 p-3 rounded-lg text-sm hidden"></div>
+        </div>
+        
+        <!-- CSV Import Section -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">2. Bulk Import from CSV</h2>
+            <p class="text-gray-600 mb-4">Upload a CSV file containing your full alliance stat list. This action will **overwrite** all current data loaded locally in Mock Mode.</p>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <input type="file" id="csv-file-input" accept=".csv" class="hidden" 
+                       onchange="document.getElementById('csv-file-name').textContent = this.files[0] ? this.files[0].name : 'No file selected'">
+                
+                <label for="csv-file-input" class="cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-150">
+                    Choose CSV File
+                </label>
+                <span id="csv-file-name" class="text-sm text-gray-600">No file selected</span>
+                
+                <button type="button" onclick="handleCsvUpload()" id="csv-upload-button"
+                        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Load Data from CSV
+                </button>
+            </div>
+            <p class="mt-4 text-xs text-gray-500">
+                Expected CSV Header Order (separated by commas): 
+                <span class="font-mono bg-gray-100 p-1 rounded">Player,Infantry Att,Infantry Def,Infantry Let,Infantry HP,Cavalry Att,Cavalry Def,Cavalry Let,Cavalry HP,Archer Att,Archer Def,Archer Let,Archer HP</span>
+            </p>
+        </div>
+
+        <!-- Statistics Chart -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">3. Shared Alliance Statistics (Bonus %)</h2>
+            
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table id="stats-table" class="min-w-full divide-y divide-gray-200 stats-table text-center">
+                    <thead class="bg-indigo-600 text-white text-xs uppercase tracking-wider">
+                        <tr>
+                            <th scope="col" rowspan="2" class="px-3 py-3" data-key="totalScore">Rank</th>
+                            <th scope="col" rowspan="2" class="px-3 py-3" data-key="playerName">Player</th>
+                            <th scope="colgroup" colspan="4" class="stat-header bg-red-600">Infantry</th>
+                            <th scope="colgroup" colspan="4" class="stat-header bg-blue-600">Cavalry</th>
+                            <th scope="colgroup" colspan="4" class="stat-header bg-green-600">Archer</th>
+                            <th scope="col" rowspan="2" class="px-3 py-3 total-score" data-key="totalScore">Total Score</th>
+                            <th scope="col" rowspan="2" class="px-3 py-3" data-key="date">Date</th>
+                            <th scope="col" rowspan="2" class="px-3 py-3 rounded-tr-lg" colspan="2">Actions</th>
+                        </tr>
+                        <tr>
+                            <!-- Infantry Sub-Headers -->
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-red-700" data-key="infantryAttack">Att</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-red-700" data-key="infantryDefense">Def</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-red-700" data-key="infantryLethality">Let</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-red-700" data-key="infantryHealth">HP</th>
+
+                            <!-- Cavalry Sub-Headers -->
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-blue-700" data-key="cavalryAttack">Att</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-blue-700" data-key="cavalryDefense">Def</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-blue-700" data-key="cavalryLethality">Let</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-blue-700" data-key="cavalryHealth">HP</th>
+
+                            <!-- Archer Sub-Headers -->
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-green-700" data-key="archerAttack">Att</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-green-700" data-key="archerDefense">Def</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-green-700" data-key="archerLethality">Let</th>
+                            <th scope="col" class="px-3 py-2 text-left text-xs font-medium bg-green-700" data-key="archerHealth">HP</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-body" class="bg-white divide-y divide-gray-100">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-4 text-xs text-gray-500">*Att=Attack Bonus, Def=Defense Bonus, HP=Health Bonus, Let=Lethality Bonus. **Total Score is the sum of all 12 stats.**</p>
+        </div>
+        
+        <!-- Confirmation Modal (Hidden by default) -->
+        <div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-75 hidden items-center justify-center z-50" aria-modal="true" role="dialog">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                <h3 class="text-xl font-bold mb-4 text-red-700">Confirm Deletion</h3>
+                <p id="modal-message" class="mb-6 text-gray-700">Are you sure you want to delete this entry?</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition">Cancel</button>
+                    <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">Delete</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, setLogLevel, serverTimestamp, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Global state for Firebase and data
+        let app, db, auth;
+        let userId = null;
+        let stats = [];
+        let sortKey = 'totalScore'; 
+        let sortDirection = 'desc';
+        let isAuthReady = false; 
+        let resolveDeletePromise = null; // Used for the modal confirmation promise
+        let docIdToEdit = null; // Stores the ID of the document currently being edited
+        
+        // Keys used for calculating the total score - 12 STATS
+        const ALL_STATS_KEYS = [
+            'infantryAttack', 'infantryDefense', 'infantryLethality', 'infantryHealth',
+            'cavalryAttack', 'cavalryDefense', 'cavalryLethality', 'cavalryHealth',
+            'archerAttack', 'archerDefense', 'archerLethality', 'archerHealth'
+        ];
+        
+        // Maps CSV column order to internal JavaScript object keys
+        const CSV_HEADER_MAP = [
+            'playerName', 'infantryAttack', 'infantryDefense', 'infantryLethality', 'infantryHealth',
+            'cavalryAttack', 'cavalryDefense', 'cavalryLethality', 'cavalryHealth',
+            'archerAttack', 'archerDefense', 'archerLethality', 'archerHealth'
+        ];
+
+        // --- 🔑 PRODUCTION CONFIGURATION (EDIT THIS SECTION) 🔑 ---
+        const USER_FIREBASE_CONFIG = {
+            apiKey: 'AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ', 
+            authDomain: 'alliance-stats-96973.firebaseapp.com', 
+            projectId: 'alliance-stats-96973', 
+            storageBucket: 'alliance-stats-96973.firebasestorage.app',
+            messagingSenderId: '866174182881',
+            appId: '1:866174182881:web:aef54fc8da562d8b541ea0' 
+        };
+        // -----------------------------------------------------------
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : '';
+        
+        // Determine the actual config to use:
+        const DUMMY_FIREBASE_CONFIG = { apiKey: 'dummy', authDomain: 'dummy', projectId: 'dummy', storageBucket: 'dummy', messagingSenderId: 'dummy', appId: 'dummy' };
+        
+        let firebaseConfig;
+
+        // 1. Check for Canvas Environment Config (Highest Priority)
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            firebaseConfig = JSON.parse(__firebase_config);
+        // 2. Check for User's Custom Config (Public Host Priority)
+        } else if (USER_FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY_HERE' && USER_FIREBASE_CONFIG.projectId !== 'YOUR_PROJECT_ID_HERE') {
+            firebaseConfig = USER_FIREBASE_CONFIG;
+        // 3. Fallback to Mock Mode (Lowest Priority)
+        } else {
+            firebaseConfig = DUMMY_FIREBASE_CONFIG;
+        }
+
+
+        const authStatusElement = document.getElementById('auth-status');
+        const statsBody = document.getElementById('stats-body');
+        const messageBox = document.getElementById('message-box');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const uploadButton = document.getElementById('upload-button');
+        const cancelEditButton = document.getElementById('cancel-edit-button');
+        const deleteModal = document.getElementById('delete-modal');
+        const modalMessage = document.getElementById('modal-message');
+        
+        // --- Core Logic: Total Score Calculation ---
+        function calculateTotalScore(stat) {
+            let total = 0;
+            for (const key of ALL_STATS_KEYS) {
+                total += Math.round(Math.abs(parseFloat(stat[key] || 0)));
+            }
+            return Math.round(total);
+        }
+        
+        // --- CSV Parsing Logic ---
+
+        function parseCsv(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length <= 1) {
+                throw new Error("CSV must contain at least a header row and one data row.");
+            }
+
+            const parsedData = [];
+            // Skip the header line
+            const dataLines = lines.slice(1);
+
+            dataLines.forEach((line, index) => {
+                // Use a basic split; users should avoid commas within data fields
+                const values = line.split(',');
+                
+                // Expect 13 values: Player Name + 12 Stats
+                if (values.length !== CSV_HEADER_MAP.length) {
+                    console.warn(`Skipping row ${index + 2} (line: "${line}"): expected ${CSV_HEADER_MAP.length} values, found ${values.length}.`);
+                    return;
+                }
+
+                const stat = { id: crypto.randomUUID(), date: new Date().toISOString() };
+                
+                CSV_HEADER_MAP.forEach((key, i) => {
+                    let value = values[i].trim();
+                    if (key !== 'playerName') {
+                        // Clean up percentage signs and ensure numerical format for stats
+                        value = value.replace(/%/g, '');
+                        stat[key] = Math.round(Math.abs(parseFloat(value) || 0));
+                    } else {
+                        stat[key] = value;
+                    }
+                });
+                
+                if (stat.playerName && stat.playerName !== '') {
+                    stat.totalScore = calculateTotalScore(stat);
+                    parsedData.push(stat);
+                }
+            });
+
+            return parsedData;
+        }
+        
+        window.handleCsvUpload = function() {
+            if (firebaseConfig.apiKey !== 'dummy') {
+                showMessage('CSV import is only available in Mock Mode (no live Firebase connection). Use the manual form for live updates.', 'error');
+                return;
+            }
+            
+            const fileInput = document.getElementById('csv-file-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('Please select a CSV file first.', 'error');
+                return;
+            }
+            
+            if (file.type && file.type !== 'text/csv' && file.type !== 'application/vnd.ms-excel') {
+                 // Allow text/plain as a common fallback for CSV
+                 if (file.type !== 'text/plain') {
+                    showMessage(`Invalid file type: ${file.type}. Please upload a CSV file.`, 'error');
+                    return;
+                 }
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvText = e.target.result;
+                    const newStats = parseCsv(csvText);
+                    
+                    if (newStats.length === 0) {
+                        showMessage('CSV file parsed successfully, but no valid player data rows were found.', 'error');
+                        return;
+                    }
+                    
+                    // Overwrite local mock data
+                    stats = newStats;
+                    renderTable();
+                    showMessage(`Successfully loaded ${newStats.length} entries from CSV! The table is now updated.`, 'success');
+
+                } catch (error) {
+                    console.error('CSV Processing Error:', error);
+                    showMessage(`Error processing CSV: ${error.message}. Check file format.`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        };
+        
+        // --- HARDCODED INITIAL DATA (Returns empty array as CSV is the new mock source) ---
+        function getInitialMockData() {
+            return [];
+        }
+
+        // --- Firebase Initialization and Auth ---
+        function initFirebase() {
+            
+            // Re-check configuration source to avoid "configuration-not-found" error when running on GitHub Pages
+            let finalConfig = firebaseConfig;
+            let isMockConfig = firebaseConfig.apiKey === 'dummy';
+            
+            if (isMockConfig && USER_FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
+                // If we detected mock config but the user provided a real one, use the user's config.
+                finalConfig = USER_FIREBASE_CONFIG;
+                isMockConfig = false;
+            }
+
+            if (isMockConfig) {
+                authStatusElement.textContent = "⚠️ Database running in Mock Mode. Use the CSV feature to load data locally, or the form to add temporary data.";
+                uploadButton.disabled = false;
+                isAuthReady = true;
+                console.warn("Running with dummy Firebase configuration. Data will not persist externally.");
+                setupRealtimeListener(); 
+                setupModalListeners(); 
+                return;
+            }
+
+            // --- LIVE FIREBASE CONNECTION ---
+            app = initializeApp(finalConfig); // Use the determined finalConfig
+            db = getFirestore(app);
+            auth = getAuth(app);
+            setLogLevel('debug');
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    isAuthReady = true; 
+                    authStatusElement.textContent = `✅ Database Connected to ${finalConfig.projectId}. Your ID: ${userId}. (Data is public)`;
+                    uploadButton.disabled = false; 
+                    setupRealtimeListener();
+                } else {
+                    try {
+                        // Sign in anonymously if not already signed in
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Authentication failed:", error);
+                        authStatusElement.textContent = `❌ Authentication Failed: ${error.message}`;
+                    }
+                }
+            });
+            
+            if (!isAuthReady) {
+                setupRealtimeListener();
+            }
+            setupModalListeners();
+        }
+        
+        // --- Modal Confirmation Functions ---
+        function showConfirmationModal(playerName) {
+            modalMessage.textContent = `Are you sure you want to permanently delete the stat entry for ${playerName}?`;
+            deleteModal.classList.remove('hidden');
+            deleteModal.classList.add('flex');
+            
+            return new Promise((resolve) => {
+                resolveDeletePromise = resolve;
+            });
+        }
+
+        function hideConfirmationModal() {
+            deleteModal.classList.add('hidden');
+            deleteModal.classList.remove('flex');
+            resolveDeletePromise = null;
+        }
+
+        function setupModalListeners() {
+            document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+                if (resolveDeletePromise) {
+                    resolveDeletePromise(true);
+                    hideConfirmationModal();
+                }
+            });
+
+            document.getElementById('modal-cancel-btn').addEventListener('click', () => {
+                if (resolveDeletePromise) {
+                    resolveDeletePromise(false);
+                    hideConfirmationModal();
+                }
+            });
+        }
+
+        // --- Edit Mode Functions ---
+
+        window.enterEditMode = function(stat) {
+            document.getElementById('playerName').value = stat.playerName;
+            
+            ALL_STATS_KEYS.forEach(key => {
+                const input = document.getElementById(key);
+                if (input) input.value = Math.round(stat[key] || 0);
+            });
+
+            docIdToEdit = stat.id;
+            uploadButton.textContent = `Update Stats for ${stat.playerName}`;
+            uploadButton.classList.remove('bg-indigo-500');
+            uploadButton.classList.add('bg-orange-500', 'hover:bg-orange-600');
+            cancelEditButton.classList.remove('hidden');
+            document.getElementById('playerName').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        window.cancelEditMode = function() {
+            docIdToEdit = null;
+            document.getElementById('stat-form').reset();
+            uploadButton.textContent = 'Save My Stats to Shared Chart';
+            uploadButton.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+            uploadButton.classList.add('bg-indigo-500');
+            cancelEditButton.classList.add('hidden');
+        }
+        
+        // --- Data Save/Update Handler ---
+        async function handleSaveOrUpdate() {
+            const form = document.getElementById('stat-form');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            loadingIndicator.classList.remove('hidden');
+            messageBox.classList.add('hidden');
+            messageBox.textContent = ''; 
+
+            const safeValue = (id) => Math.round(Math.abs(parseFloat(document.getElementById(id).value) || 0));
+
+            const rawStat = {
+                playerName: document.getElementById('playerName').value.trim(),
+                
+                infantryAttack: safeValue('infantryAttack'),
+                infantryDefense: safeValue('infantryDefense'),
+                infantryLethality: safeValue('infantryLethality'), 
+                infantryHealth: safeValue('infantryHealth'),
+
+                cavalryAttack: safeValue('cavalryAttack'),
+                cavalryDefense: safeValue('cavalryDefense'),
+                cavalryLethality: safeValue('cavalryLethality'), 
+                cavalryHealth: safeValue('cavalryHealth'),
+
+                archerAttack: safeValue('archerAttack'),
+                archerDefense: safeValue('archerDefense'),
+                archerLethality: safeValue('archerLethality'), 
+                archerHealth: safeValue('archerHealth'),
+                
+                fileName: docIdToEdit ? `Manual Update` : `Manual Entry - ${new Date().toLocaleTimeString()}`, 
+                date: new Date().toISOString()
+            };
+            
+            rawStat.totalScore = calculateTotalScore(rawStat);
+            
+            try {
+                if (docIdToEdit) {
+                    await updateStat(rawStat, docIdToEdit);
+                    showMessage(`Success! Stats for ${rawStat.playerName} updated.`, 'success');
+                } else {
+                    await saveNewStat(rawStat);
+                    showMessage(`Success! Stats for ${rawStat.playerName} saved to the chart.`, 'success');
+                }
+                
+                cancelEditMode();
+                
+            } catch (error) {
+                console.error(`Failed to save/update entry:`, error);
+                showMessage(`Error saving stats: ${error.message}`, 'error');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+
+        // --- Data Saving (New Document) ---
+        async function saveNewStat(stat) {
+            // Check for mock config
+            if (firebaseConfig.apiKey === 'dummy') {
+                stats.push({ id: crypto.randomUUID(), ...stat, timestamp: new Date() });
+                renderTable();
+                return;
+            }
+
+            if (!db || !userId) {
+                throw new Error('Database not ready. Please wait for connection.');
+            }
+            
+            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
+                                ? __app_id 
+                                : firebaseConfig.projectId;
+
+            try {
+                const statsRef = collection(db, `artifacts/${artifactId}/public/data/game_stats`);
+                
+                const docData = {
+                    ...stat,
+                    timestamp: serverTimestamp(),
+                    userId: userId,
+                };
+                
+                await addDoc(statsRef, docData);
+
+            } catch (e) {
+                throw new Error(`Error saving data: ${e.message}`);
+            }
+        }
+        
+        // --- Data Updating (Existing Document) ---
+        async function updateStat(stat, docId) {
+            // Check for mock config
+            if (firebaseConfig.apiKey === 'dummy') {
+                const index = stats.findIndex(s => s.id === docId);
+                if (index !== -1) {
+                    stats[index] = { ...stats[index], ...stat, timestamp: new Date() };
+                    renderTable();
+                }
+                return;
+            }
+            
+            if (!db || !userId) {
+                throw new Error('Database not ready. Please wait for connection.');
+            }
+            
+            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
+                                ? __app_id 
+                                : firebaseConfig.projectId;
+
+            try {
+                const docRef = doc(db, `artifacts/${artifactId}/public/data/game_stats`, docId);
+                
+                const updateData = {
+                    ...stat,
+                };
+                
+                await updateDoc(docRef, updateData);
+
+            } catch (e) {
+                throw new Error(`Error updating data: ${e.message}`);
+            }
+        }
+
+
+        // --- Data Deletion ---
+        window.deleteStat = async function(docId, playerName) {
+            // Check for mock config
+            if (firebaseConfig.apiKey === 'dummy') {
+                // Mock Delete Logic:
+                const confirmed = await showConfirmationModal(playerName);
+                if (!confirmed) return; 
+
+                const initialLength = stats.length;
+                stats = stats.filter(s => s.id !== docId);
+                if (stats.length < initialLength) {
+                    showMessage(`Successfully deleted entry for ${playerName} (Local Mock Data).`, 'success');
+                    renderTable();
+                } else {
+                    showMessage(`Error deleting entry for ${playerName} (Not found).`, 'error');
+                }
+                return;
+            }
+            
+            if (!db || !userId) {
+                showMessage('Database not connected. Cannot delete.', 'error');
+                return;
+            }
+
+            const confirmed = await showConfirmationModal(playerName);
+            if (!confirmed) return;
+
+            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
+                                ? __app_id 
+                                : firebaseConfig.projectId;
+                                
+            const docRef = doc(db, `artifacts/${artifactId}/public/data/game_stats`, docId);
+            
+            try {
+                await deleteDoc(docRef);
+                showMessage(`Successfully deleted entry for ${playerName}.`, 'success');
+            } catch (e) {
+                console.error("Error deleting document: ", e);
+                showMessage(`Error deleting entry: ${e.message}. Check Firebase rules.`, 'error');
+            }
+        }
+
+        // --- Real-time Data Listener ---
+        function setupRealtimeListener() {
+            if (!db && firebaseConfig.apiKey !== 'dummy') return; 
+            
+            const artifactId = (typeof __app_id !== 'undefined' && __app_id !== 'default-app-id') 
+                                ? __app_id 
+                                : firebaseConfig.projectId;
+
+            // Use local array if in mock mode
+            if (firebaseConfig.apiKey === 'dummy') {
+                // In Mock Mode, the chart starts empty, and the user must import data via CSV or manual entry.
+                renderTable();
+                return;
+            }
+
+            const statsRef = collection(db, `artifacts/${artifactId}/public/data/game_stats`);
+            const q = query(statsRef);
+
+            onSnapshot(q, (snapshot) => {
+                const fetchedStats = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    data.totalScore = calculateTotalScore(data); 
+                    fetchedStats.push({ id: doc.id, ...data });
+                });
+                stats = fetchedStats;
+                renderTable();
+            }, (error) => {
+                console.error("Error listening to Firestore:", error);
+                showMessage(`Error loading shared data: ${error.message}`, 'error');
+            });
+        }
+
+        // --- Table Rendering and Sorting ---
+        function renderTable() {
+            const sortedStats = [...stats].sort((a, b) => {
+                let aVal = a[sortKey];
+                let bVal = b[sortKey];
+
+                if (sortKey === 'date' || sortKey === 'timestamp') {
+                    const getDateValue = (val) => {
+                        if (val && typeof val.toDate === 'function') return val.toDate().getTime();
+                        if (typeof val === 'string') return new Date(val).getTime();
+                        return 0;
+                    };
+                    
+                    aVal = getDateValue(a.timestamp) || getDateValue(a.date);
+                    bVal = getDateValue(b.timestamp) || getDateValue(b.date);
+                    
+                    if (sortKey === 'date' || sortKey === 'timestamp') {
+                         if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                         if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                    }
+                    
+                } else {
+                    const numA = parseFloat(aVal) || 0;
+                    const numB = parseFloat(bVal) || 0;
+
+                    if (numA < numB) return sortDirection === 'asc' ? -1 : 1;
+                    if (numA > numB) return sortDirection === 'asc' ? 1 : -1;
+                }
+                
+                return 0;
+            });
+            
+            statsBody.innerHTML = '';
+            const totalColumns = 17; 
+            if (sortedStats.length === 0) {
+                statsBody.innerHTML = `<tr><td colspan="${totalColumns}" class="p-4 text-center text-gray-500">No statistics uploaded yet. Use the form above or the CSV import feature.</td></tr>`;
+                return;
+            }
+
+            sortedStats.forEach((stat, index) => {
+                const row = document.createElement('tr');
+                row.classList.add('hover:bg-indigo-50', 'transition-colors');
+                
+                const rank = index + 1;
+                const formatBonus = (num) => (typeof num === 'number') ? `${Math.round(num).toLocaleString()}%` : '0%';
+                
+                const formatDate = (stat) => {
+                    let date;
+                    if (stat.timestamp && typeof stat.timestamp.toDate === 'function') {
+                        date = stat.timestamp.toDate();
+                    } else if (stat.date) {
+                        date = new Date(stat.date);
+                    }
+                    return date && !isNaN(date) ? date.toLocaleDateString() : 'N/A';
+                };
+                
+                const statJson = JSON.stringify(stat).replace(/"/g, '&quot;');
+                
+                row.innerHTML = `
+                    <td class="px-3 py-3 whitespace-nowrap text-sm rank-column">${rank}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm font-semibold text-gray-700">${stat.playerName || 'Unknown'}</td>
+                    
+                    <!-- Infantry (Att, Def, Let, HP) -->
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-red-600">${formatBonus(stat.infantryAttack)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-red-600">${formatBonus(stat.infantryDefense)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-red-600">${formatBonus(stat.infantryLethality)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-red-600">${formatBonus(stat.infantryHealth)}</td>
+
+                    <!-- Cavalry (Att, Def, Let, HP) -->
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-blue-600">${formatBonus(stat.cavalryAttack)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-blue-600">${formatBonus(stat.cavalryDefense)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-blue-600">${formatBonus(stat.cavalryLethality)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-blue-600">${formatBonus(stat.cavalryHealth)}</td>
+
+                    <!-- Archer (Att, Def, Let, HP) -->
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-green-600">${formatBonus(stat.archerAttack)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-green-600">${formatBonus(stat.archerDefense)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-green-600">${formatBonus(stat.archerLethality)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-green-600">${formatBonus(stat.archerHealth)}</td>
+                    
+                    <!-- Total Score -->
+                    <td class="px-3 py-3 whitespace-nowrap text-sm total-score">${stat.totalScore.toLocaleString()}</td>
+
+                    <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-500">${formatDate(stat)}</td>
+                    
+                    <!-- Edit Button -->
+                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <button onclick='enterEditMode(${statJson})' 
+                                title="Edit this entry"
+                                class="text-indigo-500 hover:text-indigo-700 font-bold p-1 rounded-full bg-indigo-100 hover:bg-indigo-200 transition">
+                            <!-- SVG Pen Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                                <path d="M21.731 2.269a2.662 2.662 0 0 0-3.774 0l-14.512 14.513a2.662 2.662 0 0 0-.693 1.166l-1.3 4.295a.75.75 0 0 0 .976.976l4.295-1.3a2.662 2.662 0 0 0 1.166-.693l14.513-14.512a2.662 2.662 0 0 0 0-3.774zM18.5 4.5l-13 13 1.5 1.5 13-13z" />
+                            </svg>
+                        </button>
+                    </td>
+
+                    <!-- Delete Button -->
+                    <td class="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                        <button onclick="deleteStat('${stat.id}', '${stat.playerName}')" 
+                                title="Remove this entry"
+                                class="text-red-500 hover:text-red-700 font-bold p-1 rounded-full bg-red-100 hover:bg-red-200 transition">
+                            <!-- SVG Trash Icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+                                <path fill-rule="evenodd" d="M16.5 4.475a.75.75 0 0 1 .7.13 8.25 8.25 0 1 1-13.843 3.528.75.75 0 0 1-.299.043.75.75 0 0 1-.72-1.066 9.75 9.75 0 1 0 16.326-4.145.75.75 0 0 1-.684-.01zM7.5 12a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V12zm4.5-5.25a.75.75 0 0 0-1.5 0v10.5a.75.75 0 0 0 1.5 0V6.75zm4.5 5.25a.75.75 0 0 0-1.5 0v5.25a.75.75 0 0 0 1.5 0V12z" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                statsBody.appendChild(row);
+            });
+
+            // 3. Update header classes
+            document.querySelectorAll('#stats-table th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+                if (th.getAttribute('data-key') === sortKey) {
+                    th.classList.add(sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        function handleSort(key) {
+            if (sortKey === key) {
+                if (key === 'totalScore' || ALL_STATS_KEYS.includes(key)) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                }
+            } else {
+                sortKey = key;
+                sortDirection = (key === 'totalScore' || ALL_STATS_KEYS.includes(key)) ? 'desc' : 'asc';
+            }
+            renderTable();
+        }
+
+        document.querySelectorAll('#stats-table th').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.getAttribute('data-key');
+                if (key) handleSort(key);
+            });
+        });
+
+        // --- Utility Functions ---
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800', 'bg-blue-100', 'text-blue-800');
+            
+            if (type === 'error') {
+                messageBox.classList.remove('bg-green-100', 'bg-blue-100');
+                messageBox.classList.add('bg-red-100', 'text-red-800');
+            } else if (type === 'success') {
+                messageBox.classList.remove('bg-red-100', 'bg-blue-100');
+                messageBox.classList.add('bg-green-100', 'text-green-800');
+            } else { // info
+                messageBox.classList.remove('bg-red-100', 'bg-green-100');
+                messageBox.classList.add('bg-blue-100', 'text-blue-800');
+            }
+            messageBox.classList.remove('hidden');
+        }
+
+        // --- Initialization ---
+        window.onload = initFirebase;
+        
+    </script>
+</body>
+</html>
