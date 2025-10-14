@@ -770,6 +770,23 @@
             breakdownContainer.appendChild(topByTroopContainer);
             
             analyticsModalBody.appendChild(breakdownContainer);
+
+            // NEW SECTION: Recent 5 Entries
+            const recentEntriesContainer = document.createElement('div');
+            const recentEntries = [...allStats].sort((a,b) => b.date - a.date).slice(0, 5);
+            let recentHtml = '<div><h4 class="text-lg font-semibold text-cyan-400 mb-2">Last 5 New Entries</h4><ul class="space-y-1 text-sm list-disc list-inside">';
+            if (recentEntries.length > 0) {
+                recentEntries.forEach(p => {
+                    const formattedDate = p.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    recentHtml += `<li><span class="font-semibold text-white">${p.playerName}</span> submitted on <span class="text-gray-400">${formattedDate}</span></li>`;
+                });
+            } else {
+                recentHtml += '<li class="italic text-gray-400">No entries yet.</li>';
+            }
+            recentHtml += '</ul></div>';
+            recentEntriesContainer.innerHTML = recentHtml;
+            analyticsModalBody.appendChild(recentEntriesContainer);
+            
             analyticsModal.classList.remove('hidden');
             
             // Render Pie Chart
