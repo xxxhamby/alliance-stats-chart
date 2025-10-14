@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alliance Stat Comparison Dashboard</title>
+    <title>Alliance Stats</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -86,13 +86,13 @@
 
     <!-- Instructions -->
     <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
-        <h3 class="text-md font-semibold text-center text-yellow-400 mb-2">Instructions & Info</h3>
-        <ul class="text-xs text-gray-300 grid grid-cols-1 md:grid-cols-5 gap-x-4 text-center">
-            <li><i class="fas fa-shield-alt mr-1 text-red-500"></i> **Rule 1:** NO BUFFS active.</li>
-            <li><i class="fas fa-crosshairs mr-1 text-blue-500"></i> **Rule 2:** Test rally an alt with NO troops.</li>
-            <li><i class="fas fa-user-friends mr-1 text-green-500"></i> **Rule 3:** Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
-            <li><i class="fas fa-calendar-check mr-1 text-indigo-500"></i> **Rule 4:** Update at least once a week.</li>
-            <li class="hidden md:block"><i class="fas fa-calculator mr-1 text-yellow-500"></i> **True Score Formula:** Lethality x1.2, Health x1.1</li>
+        <h3 class="text-xl font-bold text-center text-yellow-400 mb-2">Instructions & Info</h3>
+        <ul class="text-lg font-bold text-gray-300 grid grid-cols-1 md:grid-cols-5 gap-x-4 text-center items-start">
+            <li><i class="fas fa-shield-alt text-4xl text-red-500 mb-2"></i><br>Rule 1: NO BUFFS active.</li>
+            <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br>Rule 2: Test rally an alt with NO troops.</li>
+            <li><i class="fas fa-user-friends text-4xl text-green-500 mb-2"></i><br>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
+            <li><i class="fas fa-calendar-check text-4xl text-indigo-500 mb-2"></i><br>Rule 4: Update at least once a week.</li>
+            <li class="hidden md:block"><i class="fas fa-calculator text-4xl text-yellow-500 mb-2"></i><br>True Score Formula: Lethality x1.2, Health x1.1</li>
         </ul>
     </div>
 
@@ -110,10 +110,10 @@
                 </div>
                 <div class="flex items-end space-x-2 flex-shrink-0">
                     <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md btn">
-                        <i class="fas fa-save mr-2"></i>Save Stats
+                        <i class="fas fa-save mr-2 text-lg"></i>Save Stats
                     </button>
                     <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn hidden">
-                        <i class="fas fa-times mr-2"></i>Cancel
+                        <i class="fas fa-times mr-2 text-lg"></i>Cancel
                     </button>
                 </div>
             </div>
@@ -156,14 +156,14 @@
         <div class="flex justify-between items-center mb-3 flex-shrink-0">
             <h2 class="text-xl font-semibold text-white">Alliance Comparison Chart</h2>
             <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled>
-                <i class="fas fa-chart-bar mr-2"></i>Compare Selected (0)
+                <i class="fas fa-chart-bar mr-2 text-lg"></i>Compare Selected (0)
             </button>
         </div>
         <div class="overflow-y-auto flex-grow">
             <table class="w-full text-left text-sm">
                 <thead class="table-header text-xs text-gray-300 uppercase">
                     <tr>
-                        <th class="w-12 text-center" title="Compare Players"><i class="fas fa-search"></i></th>
+                        <th class="w-12 text-center" title="Compare Players"><i class="fas fa-search text-2xl"></i></th>
                         <th class="w-12 text-center" onclick="sortStats('rank')">#</th>
                         <th onclick="sortStats('playerName')">Player</th>
                         <th class="bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th>
@@ -368,9 +368,9 @@
                         <td class="font-bold text-gray-300">${stat.realScore.toLocaleString()}</td>
                         <td class="text-xs text-gray-400">${formattedDate}</td>
                         <td>
-                             <button onclick="showHistory('${stat.playerName}')" class="text-indigo-400 hover:text-indigo-300 mr-2"><i class="fas fa-history"></i></button>
-                             <button onclick="enterEditMode('${stat.id}')" class="text-blue-400 hover:text-blue-300 mr-2"><i class="fas fa-pencil-alt"></i></button>
-                             <button onclick="deleteStat('${stat.id}', '${stat.playerName}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash-alt"></i></button>
+                             <button onclick="showHistory('${stat.playerName}')" class="text-indigo-400 hover:text-indigo-300 mr-2 text-xl"><i class="fas fa-history"></i></button>
+                             <button onclick="enterEditMode('${stat.id}')" class="text-blue-400 hover:text-blue-300 mr-2 text-xl"><i class="fas fa-pencil-alt"></i></button>
+                             <button onclick="deleteStat('${stat.id}', '${stat.playerName}')" class="text-red-400 hover:text-red-300 text-xl"><i class="fas fa-trash-alt"></i></button>
                         </td>
                     </tr>
                 `;
@@ -491,7 +491,7 @@
                                 ${growthHtml}
                             </div>
                         </div>
-                        <button class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn" onclick="revertToStat('${stat.id}', '${stat.playerName}')"><i class="fas fa-undo"></i> Revert</button>
+                        <button class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn" onclick="revertToStat('${stat.id}', '${stat.playerName}')"><i class="fas fa-undo text-lg"></i> Revert</button>
                     </div>
                     <div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden cursor-pointer"></div>
                 `;
@@ -675,6 +675,4 @@
     </script>
 </body>
 </html>
-"
-we should make the title shorter
 
