@@ -84,31 +84,28 @@
 <body class="flex flex-col min-h-screen p-4 md:p-6 space-y-4">
 
     <!-- Header -->
-    <header class="text-center flex-shrink-0">
-        <div class="flex justify-between items-start">
-            <div class="w-1/3 text-left">
-                 <button id="features-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn">
-                    <i class="fas fa-star mr-2 text-lg"></i><span data-translate-key="features">Features</span>
-                </button>
-            </div>
-            <div class="w-1/3">
-                <h1 class="text-3xl md:text-4xl font-bold text-white" data-translate-key="main_title">Alliance Stat Comparison</h1>
-                <p id="db-status" class="text-sm text-gray-400 mt-2" data-translate-key="db_connecting">Connecting to database...</p>
-            </div>
-            <div class="w-1/3 flex justify-end">
-                <div id="language-switcher" class="flex space-x-3">
-                    <img src="https://flagcdn.com/w40/us.png" class="flag h-6" title="English" data-lang="en">
-                    <img src="https://flagcdn.com/w40/es.png" class="flag h-6" title="Español" data-lang="es">
-                    <img src="https://flagcdn.com/w40/cn.png" class="flag h-6" title="中文" data-lang="zh">
-                    <img src="https://flagcdn.com/w40/ph.png" class="flag h-6" title="Filipino" data-lang="tl">
-                    <img src="https://flagcdn.com/w40/sa.png" class="flag h-6" title="العربية" data-lang="ar">
-                    <img src="https://flagcdn.com/w40/pt.png" class="flag h-6" title="Português" data-lang="pt">
-                    <img src="https://flagcdn.com/w40/tr.png" class="flag h-6" title="Türkçe" data-lang="tr">
-                    <img src="https://flagcdn.com/w40/kr.png" class="flag h-6" title="한국어" data-lang="ko">
-                    <img src="https://flagcdn.com/w40/fr.png" class="flag h-6" title="Français" data-lang="fr">
-                    <img src="https://flagcdn.com/w40/ir.png" class="flag h-6" title="فارسی" data-lang="fa">
-                </div>
-            </div>
+    <header class="text-center flex-shrink-0 space-y-3">
+        <div class="flex justify-between items-center">
+            <button id="features-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold p-3 rounded-md btn">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+             <!-- This div is a spacer to balance the header -->
+            <div class="w-12 h-12"></div>
+        </div>
+
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight" data-translate-key="main_title">Alliance Stat Comparison</h1>
+        
+        <div id="language-switcher" class="flex justify-center space-x-3 pt-2">
+            <img src="https://flagcdn.com/w40/us.png" class="flag h-6" title="English" data-lang="en">
+            <img src="https://flagcdn.com/w40/es.png" class="flag h-6" title="Español" data-lang="es">
+            <img src="https://flagcdn.com/w40/cn.png" class="flag h-6" title="中文" data-lang="zh">
+            <img src="https://flagcdn.com/w40/ph.png" class="flag h-6" title="Filipino" data-lang="tl">
+            <img src="https://flagcdn.com/w40/sa.png" class="flag h-6" title="العربية" data-lang="ar">
+            <img src="https://flagcdn.com/w40/pt.png" class="flag h-6" title="Português" data-lang="pt">
+            <img src="https://flagcdn.com/w40/tr.png" class="flag h-6" title="Türkçe" data-lang="tr">
+            <img src="https://flagcdn.com/w40/kr.png" class="flag h-6" title="한국어" data-lang="ko">
+            <img src="https://flagcdn.com/w40/fr.png" class="flag h-6" title="Français" data-lang="fr">
+            <img src="https://flagcdn.com/w40/ir.png" class="flag h-6" title="فارسی" data-lang="fa">
         </div>
     </header>
 
@@ -224,7 +221,8 @@
         </div>
     </div>
     
-    <footer class="text-center text-xs text-gray-500">
+    <footer class="flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
+        <p id="db-status" class="text-sm" data-translate-key="db_connecting">Connecting to database...</p>
         <button id="changelog-btn" class="hover:text-gray-400" data-translate-key="changelog">Change Log</button>
     </footer>
 
@@ -255,12 +253,20 @@
                 <button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div class="overflow-y-auto space-y-4 text-gray-300">
-                <div>
-                    <h4 class="font-bold text-yellow-400">Version 2.0 (Current)</h4>
+                 <div>
+                    <h4 class="font-bold text-yellow-400">Version 2.1 (Current)</h4>
                     <ul class="list-disc list-inside text-sm mt-1">
-                        <li>Added Features list and Change Log.</li>
-                        <li>Added visual flag banner for language selection.</li>
+                        <li>Redesigned header and footer for cleaner layout.</li>
+                        <li>Replaced language dropdown with a visual flag banner.</li>
+                        <li>Added Features list and Change Log modals.</li>
                         <li>Added Korean, French, and Persian translations.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-yellow-400">Version 2.0</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                         <li>Added comprehensive Alliance Analytics dashboard.</li>
+                        <li>Added Troop Specialization identifiers.</li>
                     </ul>
                 </div>
                 <div>
@@ -282,13 +288,6 @@
                     <ul class="list-disc list-inside text-sm mt-1">
                         <li>Added "Revert" function to player history log.</li>
                         <li>Cleaned up UI (shorter title, better instructions).</li>
-                    </ul>
-                </div>
-                 <div>
-                    <h4 class="font-bold text-yellow-400">Version 1.6</h4>
-                    <ul class="list-disc list-inside text-sm mt-1">
-                        <li>Added multi-select comparison chart.</li>
-                        <li>Added double-click shortcut for single player comparison.</li>
                     </ul>
                 </div>
             </div>
@@ -364,6 +363,12 @@
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+        // --- 🔑 PRODUCTION CONFIGURATION 🔑 ---
+        // IMPORTANT SECURITY NOTE: These keys are meant to be public for web clients. 
+        // Firebase security is handled by your project's Security Rules and the authorized
+        // domains you set in the Firebase console, not by hiding these keys.
+        // The "Public leak" warning from GitHub is a general check and can be acknowledged
+        // as long as your Firestore rules are secure (e.g., allow read/write: if request.auth != null;).
         const USER_FIREBASE_CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
@@ -400,7 +405,7 @@
                 main_title: "동맹 통계 비교", db_connecting: "데이터베이스에 연결 중...", db_connected: "✅ 연결됨", instructions_title: "지침 및 정보", rule1: "규칙 1: 버프 없음", rule2: "규칙 2: 병력 없는 부계정으로 집결 테스트", rule3: "규칙 3: 5레벨 스킬을 가진 첸코 4명 사용", rule4: "규칙 4: 최소 주 1회 업데이트", rule5: "진정한 점수 공식: 치명타 x1.2, 체력 x1.1", entry_title: "수동 데이터 입력", entry_tip: "팁: 'Tab' 또는 'Enter'를 사용하여 순서대로 이동", player_name: "플레이어 이름", player_name_placeholder: "플레이어 이름 입력", save_stats: "통계 저장", cancel: "취소", infantry: "보병", cavalry: "기병", archer: "궁수", chart_title: "동맹 비교 차트", analytics: "동맹 분석", compare_selected: "선택 항목 비교", th_player: "플레이어", th_inf_att: "보병 공격", th_inf_def: "보병 방어", th_inf_let: "보병 치명", th_inf_hp: "보병 체력", th_cav_att: "기병 공격", th_cav_def: "기병 방어", th_cav_let: "기병 치명", th_cav_hp: "기병 체력", th_arc_att: "궁수 공격", th_arc_def: "궁수 방어", th_arc_let: "궁수 치명", th_arc_hp: "궁수 체력", th_true_score: "진정한 점수", th_real_score: "실제 점수", th_last_update: "마지막 업데이트", th_actions: "작업", confirm: "확인", history_graph_title: "시간에 따른 실제 점수", all_time: "모든 시간", last_month: "지난 달", last_3_months: "지난 3개월", last_6_months: "지난 6개월", last_year: "작년", update_stats: "통계 업데이트", confirm_deletion_title: "삭제 확인", confirm_deletion_msg: "{playerName}의 모든 항목을 삭제합니다. 이 작업은 되돌릴 수 없습니다. 확실합니까?", confirm_revert_title: "복원 확인", confirm_revert_msg: "이 기록 항목의 통계를 복사하여 {playerName}의 최신 항목으로 저장합니다. 이 작업은 파괴적이지 않습니다. 확실합니까?", revert: "복원", history_for: "{playerName}의 업데이트 기록", real_score_label: "실제 점수:", top_10_rally: "상위 10 집결 지휘관 (진정한 점수 기준)", most_improved: "가장 많이 발전한 플레이어 (실제 점수 기준)", no_history: "아직 충분한 기록 데이터가 없습니다.", alliance_comp: "동맹 구성", top_3_inf: "상위 3 보병 플레이어", top_3_cav: "상위 3 기병 플레이어", top_3_arc: "상위 3 궁수 플레이어", last_5_entries: "최근 5개 새 항목", submitted_on: "제출 날짜", no_entries_yet: "아직 항목 없음", features: "기능", changelog: "변경 로그", features_list: `<li>가중치 적용된 "진정한 점수" 순위 (치명타 x1.2, 체력 x1.1).</li><li>빨강/초록 표시기로 자동 통계 증감 추적.</li><li>복원 기능이 있는 상세하고 확장 가능한 플레이어 기록 로그.</li><li>단일 플레이어 대 동맹 평균 비교 차트 (행 더블 클릭).</li><li>다중 플레이어 비교 차트 (최대 5명).</li><li>부대 전문화 식별자 (보병, 기병, 궁수, 균형).</li><li>포괄적인 동맹 분석 대시보드.</li><li>지속적인 선택이 가능한 다국어 지원.</li>`
             },
             fr: {
-                main_title: "Comparaison des statistiques de l'alliance", db_connecting: "Connexion à la base de données...", db_connected: "✅ Connecté", instructions_title: "Instructions et informations", rule1: "Règle 1 : AUCUN BUFF actif.", rule2: "Règle 2 : Tester un ralliement sur un compte secondaire SANS troupes.", rule3: "Règle 3 : Utiliser 4 Chenkos avec la compétence 'Stand of Arms' niveau 5.", rule4: "Règle 4 : Mettre à jour au moins une fois par semaine.", rule5: "Formule du score réel : Létalité x1.2, Santé x1.1", entry_title: "Saisie manuelle des données", entry_tip: "Astuce : Utilisez 'Tab' ou 'Entrée' pour vous déplacer dans les champs.", player_name: "Nom du joueur", player_name_placeholder: "Entrez le nom du joueur", save_stats: "Enregistrer", cancel: "Annuler", infantry: "Infanterie", cavalry: "Cavalerie", archer: "Archer", chart_title: "Tableau de comparaison de l'alliance", analytics: "Analyses de l'alliance", compare_selected: "Comparer la sélection", th_player: "Joueur", th_inf_att: "Att Inf", th_inf_def: "Déf Inf", th_inf_let: "Lét Inf", th_inf_hp: "PV Inf", th_cav_att: "Att Cav", th_cav_def: "Déf Cav", th_cav_let: "Lét Cav", th_cav_hp: "PV Cav", th_arc_att: "Att Arc", th_arc_def: "Déf Arc", th_arc_let: "Lét Arc", th_arc_hp: "PV Arc", th_true_score: "Score réel", th_real_score: "Score brut", th_last_update: "Dernière MàJ", th_actions: "Actions", confirm: "Confirmer", history_graph_title: "Score brut au fil du temps", all_time: "Toujours", last_month: "Le mois dernier", last_3_months: "Les 3 derniers mois", last_6_months: "Les 6 derniers mois", last_year: "L'année dernière", update_stats: "Mettre à jour", confirm_deletion_title: "Confirmer la suppression", confirm_deletion_msg: "Ceci supprimera TOUTES les entrées pour {playerName}. Cette action est irréversible. Êtes-vous sûr ?", confirm_revert_title: "Confirmer l'annulation", confirm_revert_msg: "Ceci copiera les statistiques de cette entrée historique et l'enregistrera comme la nouvelle entrée la plus récente pour {playerName}. Cette action n'est pas destructive. Êtes-vous sûr ?", revert: "Annuler", history_for: "Historique des mises à jour pour {playerName}", real_score_label: "Score brut:", top_10_rally: "Top 10 des leaders de ralliement (par score réel)", most_improved: "Joueurs les plus améliorés (par score brut)", no_history: "Pas encore assez de données historiques.", alliance_comp: "Composition de l'alliance", top_3_inf: "Top 3 des joueurs d'infanterie", top_3_cav: "Top 3 des joueurs de cavalerie", top_3_arc: "Top 3 des joueurs d'archer", last_5_entries: "5 dernières entrées", submitted_on: "soumis le", no_entries_yet: "Aucune entrée pour le moment.", features: "Fonctionnalités", changelog: "Journal des modifications", features_list: `<li>Classement pondéré "Score réel" (Létalité x1.2, Santé x1.1).</li><li>Suivi automatique de la croissance/décroissance des statistiques avec des indicateurs rouge/vert.</li><li>Historiques de joueur détaillés et extensibles avec fonction d'annulation.</li><li>Graphiques de comparaison d'un joueur par rapport à la moyenne de l'Alliance (double-clic sur la ligne).</li><li>Graphiques de comparaison multi-joueurs (jusqu'à 5 joueurs).</li><li>Identificateurs de spécialisation des troupes (Infanterie, Cavalerie, Archer, Équilibré).</li><li>Tableau de bord complet des analyses de l'Alliance.</li><li>Prise en charge de plusieurs langues avec sélection persistante.</li>`
+                main_title: "Comparaison des statistiques de l'alliance", db_connecting: "Connexion à la base de données...", db_connected: "✅ Connecté", instructions_title: "Instructions et informations", rule1: "Règle 1 : AUCUN BUFF actif.", rule2: "Règle 2 : Tester un ralliement sur un compte secondaire SANS troupes.", rule3: "Règle 3 : Utiliser 4 Chenkos avec la compétence 'Stand of Arms' niveau 5.", rule4: "Règle 4 : Mettre à jour au moins une fois par semaine.", rule5: "Formule du score réel : Létalité x1.2, Santé x1.1", entry_title: "Saisie manuelle des données", entry_tip: "Astuce : Utilisez 'Tab' ou 'Entrée' pour vous déplacer dans les champs.", player_name: "Nom du joueur", player_name_placeholder: "Entrez le nom du joueur", save_stats: "Enregistrer", cancel: "Annuler", infantry: "Infanterie", cavalry: "Cavalerie", archer: "Archer", chart_title: "Tableau de comparaison de l'alliance", analytics: "Analyses de l'alliance", compare_selected: "Comparer la sélection", th_player: "Joueur", th_inf_att: "Att Inf", th_inf_def: "Déf Inf", th_inf_let: "Lét Inf", th_inf_hp: "PV Inf", th_cav_att: "Att Cav", th_cav_def: "Déf Cav", th_cav_let: "Lét Cav", th_cav_hp: "PV Cav", th_arc_att: "Att Arc", th_arc_def: "Déf Arc", th_arc_let: "Lét Arc", th_arc_hp: "PV Arc", th_true_score: "Score réel", th_real_score: "Score brut", th_last_update: "Dernière MàJ", th_actions: "Actions", confirm: "Confirmer", history_graph_title: "Score brut au fil du temps", all_time: "Toujours", last_month: "Le mois dernier", last_3_months: "Les 3 derniers mois", last_6_months: "Les 6 derniers mois", last_year: "L'année dernière", update_stats: "Mettre à jour", confirm_deletion_title: "Confirmer la suppression", confirm_deletion_msg: "Ceci supprimera TOUTES les entrées pour {playerName}. Cette action est irréversible. Êtes-vous sûr ?", confirm_revert_title: "Confirmer l'annulation", confirm_revert_msg: "Ceci copiera les statistiques de cette entrée historique et l'enregistrera comme la nouvelle entrée la plus récente pour {playerName}. Cette action n'est pas destructive. Êtes-vous sûr ?", revert: "Annuler", history_for: "Historique des mises à jour pour {playerName}", real_score_label: "Score brut:", top_10_rally: "Top 10 des leaders de ralliement (par score réel)", most_improved: "Joueurs les plus améliorés (par score brut)", no_history: "Pas encore assez de données historiques.", alliance_comp: "Composition de l'alliance", top_3_inf: "Top 3 des joueurs d'infanterie", top_3_cav: "Top 3 des joueurs de cavalerie", top_3_arc: "Top 3 des joueurs d'archer", last_5_entries: "5 dernières entrées", submitted_on: "soumis le", no_entries_yet: "Aucune entrée pour le moment.", features: "Fonctionnalités", changelog: "Journal des modifications", features_list: `<li>Classement pondéré "Score réel" (Létalité x1.2, Santé x1.1).</li><li>Suivi automatique de la croissance/décroissance des statistiques avec des indicateurs rouge/vert.</li><li>Historiques de joueur détaillés et extensibles avec fonction d'annulation.</li><li>Graphiques de comparaison d'un joueur par rapport à la moyenne de l'Alliance (double-clic sur la ligne).</li><li>Graphiques de comparaison multi-joueurs (jusqu'à 5 joueurs).</li><li>Identificateurs de spécialisation des troupes (Infanterie, Cavalerie, Archer, Équilibré).</li><li>Tableau de bord complet des analyses de l'Alliance.</li><li>Prise en charge de plusieurs langues avec sélection persistente.</li>`
             },
             fa: {
                 main_title: "مقایسه آمار اتحاد", db_connecting: "در حال اتصال به پایگاه داده...", db_connected: "✅ متصل شد", instructions_title: "دستورالعمل و اطلاعات", rule1: "قانون ۱: هیچ BUFF فعالی نباشد.", rule2: "قانون ۲: یک حمله آزمایشی به یک حساب فرعی بدون نیرو انجام دهید.", rule3: "قانون ۳: از ۴ چنکو با مهارت سطح ۵ Stand of Arms استفاده کنید.", rule4: "قانون ۴: حداقل هفته‌ای یک‌بار به‌روزرسانی کنید.", rule5: "فرمول امتیاز واقعی: کشندگی x1.2، سلامتی x1.1", entry_title: "ورود دستی داده‌ها", entry_tip: "نکته: برای جابجایی بین ورودی‌ها از 'Tab' یا 'Enter' استفاده کنید.", player_name: "نام بازیکن", player_name_placeholder: "نام بازیکن را وارد کنید", save_stats: "ذخیره آمار", cancel: "لغو", infantry: "پیاده‌نظام", cavalry: "سواران", archer: "کمانداران", chart_title: "نمودار مقایسه اتحاد", analytics: "تحلیل اتحاد", compare_selected: "مقایسه انتخاب‌شده‌ها", th_player: "بازیکن", th_inf_att: "حمله پیاده", th_inf_def: "دفاع پیاده", th_inf_let: "کشندگی پیاده", th_inf_hp: "سلامتی پیاده", th_cav_att: "حمله سواران", th_cav_def: "دفاع سواران", th_cav_let: "کشندگی سواران", th_cav_hp: "سلامتی سواران", th_arc_att: "حمله کمانداران", th_arc_def: "دفاع کمانداران", th_arc_let: "کشندگی کمانداران", th_arc_hp: "سلامتی کمانداران", th_true_score: "امتیاز واقعی", th_real_score: "امتیاز خام", th_last_update: "آخرین به‌روزرسانی", th_actions: "اقدامات", confirm: "تایید", history_graph_title: "امتیاز خام در طول زمان", all_time: "همه زمان‌ها", last_month: "ماه گذشته", last_3_months: "۳ ماه گذشته", last_6_months: "۶ ماه گذشته", last_year: "سال گذشته", update_stats: "به‌روزرسانی آمار", confirm_deletion_title: "تایید حذف", confirm_deletion_msg: "این کار تمام ورودی‌های {playerName} را حذف می‌کند. این عمل قابل بازگشت نیست. آیا مطمئن هستید؟", confirm_revert_title: "تایید بازگردانی", confirm_revert_msg: "این کار آمار این ورودی تاریخی را کپی کرده و به عنوان جدیدترین ورودی برای {playerName} ذخیره می‌کند. این عمل مخرب نیست. آیا مطمئن هستید؟", revert: "بازگردانی", history_for: "تاریخچه به‌روزرسانی برای {playerName}", real_score_label: "امتیاز خام:", top_10_rally: "۱۰ رهبر برتر حمله (بر اساس امتیاز واقعی)", most_improved: "بازیکنان با بیشترین پیشرفت (بر اساس امتیاز خام)", no_history: "هنوز داده‌های تاریخی کافی وجود ندارد.", alliance_comp: "ترکیب اتحاد", top_3_inf: "۳ بازیکن برتر پیاده‌نظام", top_3_cav: "۳ بازیکن برتر سواران", top_3_arc: "۳ بازیکن برتر کمانداران", last_5_entries: "۵ ورودی جدید اخیر", submitted_on: "ارسال شده در", no_entries_yet: "هنوز ورودی وجود ندارد.", features: "ویژگی‌ها", changelog: "گزارش تغییرات", features_list: `<li>رتبه‌بندی وزنی "امتیاز واقعی" (کشندگی x1.2، سلامتی x1.1).</li><li>ردیابی خودکار رشد/کاهش آمار با نشانگرهای قرمز/سبز.</li><li>گزارش‌های تاریخچه بازیکن با جزئیات و قابل گسترش با قابلیت بازگردانی.</li><li>نمودارهای مقایسه تک‌نفره در مقابل میانگین اتحاد (با دوبار کلیک روی ردیف).</li><li>نمودارهای مقایسه چندنفره (تا ۵ بازیکن).</li><li>شناسه‌های تخصص نیرو (پیاده‌نظام، سواران، کمانداران، متعادل).</li><li>داشبورد جامع تحلیل اتحاد.</li><li>پشتیبانی از چند زبان با انتخاب پایدار.</li>`
@@ -1032,4 +1037,5 @@
     </script>
 </body>
 </html>
+i should be able to click on the growth or decrease in red or green numbers to open the history log. remove the history button.
 
