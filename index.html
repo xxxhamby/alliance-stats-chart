@@ -59,6 +59,7 @@
             font-size: 0.7rem;
             margin-left: 4px;
             font-weight: bold;
+            cursor: pointer;
         }
 
         .history-entry {
@@ -67,6 +68,16 @@
         .history-entry:hover {
             background-color: #374151;
         }
+
+        .flag {
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.2s ease-in-out;
+        }
+        .flag:hover, .flag.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 
@@ -74,19 +85,42 @@
 
     <!-- Header -->
     <header class="text-center flex-shrink-0">
-        <h1 class="text-3xl md:text-4xl font-bold text-white">Alliance Stat Comparison</h1>
-        <p id="db-status" class="text-sm text-gray-400 mt-2">Connecting to database...</p>
+        <div class="flex justify-between items-start">
+            <div class="w-1/3 text-left">
+                 <button id="features-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn">
+                    <i class="fas fa-star mr-2 text-lg"></i><span data-translate-key="features">Features</span>
+                </button>
+            </div>
+            <div class="w-1/3">
+                <h1 class="text-3xl md:text-4xl font-bold text-white" data-translate-key="main_title">Alliance Stat Comparison</h1>
+                <p id="db-status" class="text-sm text-gray-400 mt-2" data-translate-key="db_connecting">Connecting to database...</p>
+            </div>
+            <div class="w-1/3 flex justify-end">
+                <div id="language-switcher" class="flex space-x-3">
+                    <img src="https://flagcdn.com/w40/us.png" class="flag h-6" title="English" data-lang="en">
+                    <img src="https://flagcdn.com/w40/es.png" class="flag h-6" title="Español" data-lang="es">
+                    <img src="https://flagcdn.com/w40/cn.png" class="flag h-6" title="中文" data-lang="zh">
+                    <img src="https://flagcdn.com/w40/ph.png" class="flag h-6" title="Filipino" data-lang="tl">
+                    <img src="https://flagcdn.com/w40/sa.png" class="flag h-6" title="العربية" data-lang="ar">
+                    <img src="https://flagcdn.com/w40/pt.png" class="flag h-6" title="Português" data-lang="pt">
+                    <img src="https://flagcdn.com/w40/tr.png" class="flag h-6" title="Türkçe" data-lang="tr">
+                    <img src="https://flagcdn.com/w40/kr.png" class="flag h-6" title="한국어" data-lang="ko">
+                    <img src="https://flagcdn.com/w40/fr.png" class="flag h-6" title="Français" data-lang="fr">
+                    <img src="https://flagcdn.com/w40/ir.png" class="flag h-6" title="فارسی" data-lang="fa">
+                </div>
+            </div>
+        </div>
     </header>
 
     <!-- Instructions -->
     <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
-        <h3 class="text-xl font-bold text-center text-yellow-400 mb-2">Instructions & Info</h3>
+        <h3 class="text-xl font-bold text-center text-yellow-400 mb-2" data-translate-key="instructions_title">Instructions & Info</h3>
         <ul class="text-lg font-bold text-gray-300 grid grid-cols-1 md:grid-cols-5 gap-x-4 text-center items-start">
-            <li><i class="fas fa-file-medical text-4xl text-red-500 mb-2"></i><br>Rule 1: NO BUFFS active.</li>
-            <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br>Rule 2: Test rally an alt with NO troops.</li>
-            <li><i class="fas fa-users text-4xl text-purple-500 mb-2"></i><br>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</li>
-            <li><i class="fas fa-calendar-check text-4xl text-green-500 mb-2"></i><br>Rule 4: Update at least once a week.</li>
-            <li class="hidden md:block"><i class="fas fa-calculator text-4xl text-yellow-500 mb-2"></i><br>True Score Formula: Lethality x1.2, Health x1.1</li>
+            <li><i class="fas fa-file-medical text-4xl text-red-500 mb-2"></i><br><span data-translate-key="rule1">Rule 1: NO BUFFS active.</span></li>
+            <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br><span data-translate-key="rule2">Rule 2: Test rally an alt with NO troops.</span></li>
+            <li><i class="fas fa-users text-4xl text-purple-500 mb-2"></i><br><span data-translate-key="rule3">Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</span></li>
+            <li><i class="fas fa-calendar-check text-4xl text-green-500 mb-2"></i><br><span data-translate-key="rule4">Rule 4: Update at least once a week.</span></li>
+            <li class="hidden md:block"><i class="fas fa-calculator text-4xl text-yellow-500 mb-2"></i><br><span data-translate-key="rule5">True Score Formula: Lethality x1.2, Health x1.1</span></li>
         </ul>
     </div>
 
@@ -94,20 +128,20 @@
     <div id="manual-entry" class="card p-4 rounded-lg shadow-lg flex-shrink-0">
         <form onsubmit="event.preventDefault(); handleSaveOrUpdate();">
             <div class="flex justify-between items-center mb-3">
-                 <h2 class="text-lg font-semibold text-white">Manual Data Entry</h2>
-                 <p class="text-xs text-gray-400 italic">Tip: Use 'Tab' or 'Enter' to move through inputs in order.</p>
+                 <h2 class="text-lg font-semibold text-white" data-translate-key="entry_title">Manual Data Entry</h2>
+                 <p class="text-xs text-gray-400 italic" data-translate-key="entry_tip">Tip: Use 'Tab' or 'Enter' to move through inputs in order.</p>
             </div>
             <div class="flex gap-4 items-end mb-3">
                 <div class="flex-grow">
-                    <label for="playerName" class="block text-sm font-medium text-gray-300 mb-1">Player Name</label>
-                    <input type="text" id="playerName" placeholder="Enter player name" required class="w-full rounded-md input-field">
+                    <label for="playerName" class="block text-sm font-medium text-gray-300 mb-1" data-translate-key="player_name">Player Name</label>
+                    <input type="text" id="playerName" data-translate-key="player_name_placeholder" placeholder="Enter player name" required class="w-full rounded-md input-field">
                 </div>
                 <div class="flex items-end space-x-2 flex-shrink-0">
                     <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md btn">
-                        <i class="fas fa-save mr-2 text-lg"></i>Save Stats
+                        <i class="fas fa-save mr-2 text-lg"></i><span data-translate-key="save_stats">Save Stats</span>
                     </button>
                     <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn hidden">
-                        <i class="fas fa-times mr-2 text-lg"></i>Cancel
+                        <i class="fas fa-times mr-2 text-lg"></i><span data-translate-key="cancel">Cancel</span>
                     </button>
                 </div>
             </div>
@@ -115,7 +149,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6">
                 <!-- Unit Inputs -->
                 <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i>Infantry (%)</h3>
+                    <h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i><span data-translate-key="infantry">Infantry</span> (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
                         <input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Infantry Attack">
                         <input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Infantry Defense">
@@ -124,7 +158,7 @@
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i>Cavalry (%)</h3>
+                    <h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i><span data-translate-key="cavalry">Cavalry</span> (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
                         <input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Cavalry Attack">
                         <input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Cavalry Defense">
@@ -133,7 +167,7 @@
                     </div>
                 </div>
                 <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i>Archer (%)</h3>
+                    <h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i><span data-translate-key="archer">Archer</span> (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
                         <input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Archer Attack">
                         <input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Archer Defense">
@@ -148,13 +182,13 @@
     <!-- Chart -->
     <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
         <div class="flex justify-between items-center mb-3 flex-shrink-0">
-            <h2 class="text-xl font-semibold text-white">Alliance Comparison Chart</h2>
+            <h2 class="text-xl font-semibold text-white" data-translate-key="chart_title">Alliance Comparison Chart</h2>
             <div class="flex space-x-2">
                 <button id="analytics-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md btn">
-                    <i class="fas fa-trophy mr-2 text-lg"></i>Alliance Analytics
+                    <i class="fas fa-trophy mr-2 text-lg"></i><span data-translate-key="analytics">Alliance Analytics</span>
                 </button>
                 <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled>
-                    <i class="fas fa-chart-bar mr-2 text-lg"></i>Compare Selected (0)
+                    <i class="fas fa-chart-bar mr-2 text-lg"></i><span data-translate-key="compare_selected">Compare Selected</span> (<span id="compare-count">0</span>)
                 </button>
             </div>
         </div>
@@ -164,23 +198,23 @@
                     <tr>
                         <th class="w-12 text-center" title="Compare Players"><i class="fas fa-search text-2xl"></i></th>
                         <th class="w-12 text-center" onclick="sortStats('rank')">#</th>
-                        <th onclick="sortStats('playerName')">Player</th>
-                        <th class="bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th>
-                        <th class="bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th>
-                        <th class="bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th>
-                        <th class="bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
-                        <th class="bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th>
-                        <th class="bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th>
-                        <th class="bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th>
-                        <th class="bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
-                        <th class="bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th>
-                        <th class="bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th>
-                        <th class="bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th>
-                        <th class="bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
-                        <th onclick="sortStats('trueScore')">True Score ▼</th>
-                        <th onclick="sortStats('realScore')">Real Score</th>
-                        <th onclick="sortStats('date')">Last Update</th>
-                        <th>Actions</th>
+                        <th onclick="sortStats('playerName')" data-translate-key="th_player">Player</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infAttack')" data-translate-key="th_inf_att">Inf Att</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infDefense')" data-translate-key="th_inf_def">Inf Def</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infLethality')" data-translate-key="th_inf_let">Inf Let</th>
+                        <th class="bg-blue-900/50" onclick="sortStats('infHp')" data-translate-key="th_inf_hp">Inf HP</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavAttack')" data-translate-key="th_cav_att">Cav Att</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavDefense')" data-translate-key="th_cav_def">Cav Def</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavLethality')" data-translate-key="th_cav_let">Cav Let</th>
+                        <th class="bg-green-900/50" onclick="sortStats('cavHp')" data-translate-key="th_cav_hp">Cav HP</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcAttack')" data-translate-key="th_arc_att">Arc Att</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcDefense')" data-translate-key="th_arc_def">Arc Def</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcLethality')" data-translate-key="th_arc_let">Arc Let</th>
+                        <th class="bg-red-900/50" onclick="sortStats('arcHp')" data-translate-key="th_arc_hp">Arc HP</th>
+                        <th onclick="sortStats('trueScore')" data-translate-key="th_true_score">True Score ▼</th>
+                        <th onclick="sortStats('realScore')" data-translate-key="th_real_score">Real Score</th>
+                        <th onclick="sortStats('date')" data-translate-key="th_last_update">Last Update</th>
+                        <th data-translate-key="th_actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="stats-table-body">
@@ -189,8 +223,79 @@
             </table>
         </div>
     </div>
+    
+    <footer class="text-center text-xs text-gray-500">
+        <button id="changelog-btn" class="hover:text-gray-400" data-translate-key="changelog">Change Log</button>
+    </footer>
 
     <!-- Modals (Confirmation modal is now last to ensure it's on top) -->
+    <div id="features-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white" data-translate-key="features">Features</h3>
+                <button id="features-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <ul class="list-disc list-inside space-y-2 text-gray-300" data-translate-key="features_list">
+                <li>Weighted "True Score" ranking (Lethality x1.2, Health x1.1).</li>
+                <li>Automatic stat growth/decline tracking with red/green indicators.</li>
+                <li>Detailed, expandable player history logs with revert functionality.</li>
+                <li>Single-player vs. Alliance Average comparison charts (double-click row).</li>
+                <li>Multi-player comparison charts (up to 5 players).</li>
+                <li>Troop Specialization identifiers (Infantry, Cavalry, Archer, Balanced).</li>
+                <li>Comprehensive Alliance Analytics dashboard.</li>
+                <li>Multi-language support with persistent selection.</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
+        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white" data-translate-key="changelog">Change Log</h3>
+                <button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="overflow-y-auto space-y-4 text-gray-300">
+                <div>
+                    <h4 class="font-bold text-yellow-400">Version 2.0 (Current)</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        <li>Added Features list and Change Log.</li>
+                        <li>Added visual flag banner for language selection.</li>
+                        <li>Added Korean, French, and Persian translations.</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-yellow-400">Version 1.9</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        <li>Fixed mobile scrolling issue.</li>
+                    </ul>
+                </div>
+                 <div>
+                    <h4 class="font-bold text-yellow-400">Version 1.8</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        <li>Added "Last 5 Entries" to Alliance Analytics.</li>
+                        <li>Added Translation support (English, Spanish).</li>
+                        <li>Fixed bug where stat growth numbers did not open history log.</li>
+                    </ul>
+                </div>
+                 <div>
+                    <h4 class="font-bold text-yellow-400">Version 1.7</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        <li>Added "Revert" function to player history log.</li>
+                        <li>Cleaned up UI (shorter title, better instructions).</li>
+                    </ul>
+                </div>
+                 <div>
+                    <h4 class="font-bold text-yellow-400">Version 1.6</h4>
+                    <ul class="list-disc list-inside text-sm mt-1">
+                        <li>Added multi-select comparison chart.</li>
+                        <li>Added double-click shortcut for single player comparison.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
         <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4">
             <div class="flex justify-between items-center mb-4">
@@ -202,13 +307,13 @@
             </div>
             <div class="mt-6 pt-4 border-t border-gray-700 flex-shrink-0">
                 <div class="flex justify-between items-center mb-2">
-                    <h4 class="text-md font-semibold">Real Score Over Time</h4>
+                    <h4 class="text-md font-semibold" data-translate-key="history_graph_title">Real Score Over Time</h4>
                     <select id="history-time-filter" class="input-field rounded-md text-sm">
-                        <option value="all">All Time</option>
-                        <option value="1m">Last Month</option>
-                        <option value="3m">Last 3 Months</option>
-                        <option value="6m">Last 6 Months</option>
-                        <option value="1y">Last Year</option>
+                        <option value="all" data-translate-key="all_time">All Time</option>
+                        <option value="1m" data-translate-key="last_month">Last Month</option>
+                        <option value="3m" data-translate-key="last_3_months">Last 3 Months</option>
+                        <option value="6m" data-translate-key="last_6_months">Last 6 Months</option>
+                        <option value="1y" data-translate-key="last_year">Last Year</option>
                     </select>
                 </div>
                 <div class="relative h-64">
@@ -233,7 +338,7 @@
     <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50">
         <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">Alliance Analytics</h3>
+                <h3 class="text-lg font-bold text-white" data-translate-key="analytics">Alliance Analytics</h3>
                 <button id="analytics-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div id="analytics-modal-body" class="overflow-y-auto space-y-6">
@@ -247,8 +352,8 @@
             <h3 id="modal-title" class="text-lg font-bold text-white mb-4">Confirm Action</h3>
             <p id="modal-message" class="text-gray-300 mb-6">Are you sure?</p>
             <div class="flex justify-end space-x-4">
-                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-md text-white font-semibold btn">Cancel</button>
-                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white font-semibold btn">Confirm</button>
+                <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-md text-white font-semibold btn" data-translate-key="cancel">Cancel</button>
+                <button id="modal-confirm-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-md text-white font-semibold btn" data-translate-key="confirm">Confirm</button>
             </div>
         </div>
     </div>
@@ -268,6 +373,72 @@
             appId: "1:866174182881:web:aef54fc8da562d8b_541ea0"
         };
         
+        // --- TRANSLATION ---
+        const translations = {
+            en: {
+                main_title: "Alliance Stat Comparison", db_connecting: "Connecting to database...", db_connected: "✅ Connected", instructions_title: "Instructions & Info", rule1: "Rule 1: NO BUFFS active.", rule2: "Rule 2: Test rally an alt with NO troops.", rule3: "Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.", rule4: "Rule 4: Update at least once a week.", rule5: "True Score Formula: Lethality x1.2, Health x1.1", entry_title: "Manual Data Entry", entry_tip: "Tip: Use 'Tab' or 'Enter' to move through inputs in order.", player_name: "Player Name", player_name_placeholder: "Enter player name", save_stats: "Save Stats", cancel: "Cancel", infantry: "Infantry", cavalry: "Cavalry", archer: "Archer", chart_title: "Alliance Comparison Chart", analytics: "Alliance Analytics", compare_selected: "Compare Selected", th_player: "Player", th_inf_att: "Inf Att", th_inf_def: "Inf Def", th_inf_let: "Inf Let", th_inf_hp: "Inf HP", th_cav_att: "Cav Att", th_cav_def: "Cav Def", th_cav_let: "Cav Let", th_cav_hp: "Cav HP", th_arc_att: "Arc Att", th_arc_def: "Arc Def", th_arc_let: "Arc Let", th_arc_hp: "Arc HP", th_true_score: "True Score", th_real_score: "Real Score", th_last_update: "Last Update", th_actions: "Actions", confirm: "Confirm", history_graph_title: "Real Score Over Time", all_time: "All Time", last_month: "Last Month", last_3_months: "Last 3 Months", last_6_months: "Last 6 Months", last_year: "Last Year", update_stats: "Update Stats", confirm_deletion_title: "Confirm Deletion", confirm_deletion_msg: "This will delete ALL entries for {playerName}. This action cannot be undone. Are you sure?", confirm_revert_title: "Confirm Revert", confirm_revert_msg: "This will copy the stats from this historical entry and save it as the new latest entry for {playerName}. This is non-destructive. Are you sure?", revert: "Revert", history_for: "Update History for {playerName}", real_score_label: "Real Score:", top_10_rally: "Top 10 Rally Leaders (by True Score)", most_improved: "Most Improved Players (by Real Score)", no_history: "Not enough historical data yet.", alliance_comp: "Alliance Composition", top_3_inf: "Top 3 Infantry Players", top_3_cav: "Top 3 Cavalry Players", top_3_arc: "Top 3 Archer Players", last_5_entries: "Last 5 New Entries", submitted_on: "submitted on", no_entries_yet: "No entries yet.", features: "Features", changelog: "Change Log", features_list: `<li>Weighted "True Score" ranking (Lethality x1.2, Health x1.1).</li><li>Automatic stat growth/decline tracking with red/green indicators.</li><li>Detailed, expandable player history logs with revert functionality.</li><li>Single-player vs. Alliance Average comparison charts (double-click row).</li><li>Multi-player comparison charts (up to 5 players).</li><li>Troop Specialization identifiers (Infantry, Cavalry, Archer, Balanced).</li><li>Comprehensive Alliance Analytics dashboard.</li><li>Multi-language support with persistent selection.</li>`
+            },
+            es: {
+                main_title: "Comparación de Estadísticas de Alianza", db_connecting: "Conectando a la base de datos...", db_connected: "✅ Conectado", instructions_title: "Instrucciones e Información", rule1: "Regla 1: SIN BUFFS activos.", rule2: "Regla 2: Atacar una cuenta alternativa SIN tropas.", rule3: "Regla 3: Usar 4 Chenkos con Habilidad de armas nivel 5.", rule4: "Regla 4: Actualizar al menos una vez por semana.", rule5: "Fórmula de Puntuación Verdadera: Letalidad x1.2, Salud x1.1", entry_title: "Entrada Manual de Datos", entry_tip: "Consejo: Usa 'Tab' o 'Enter' para moverte por las entradas.", player_name: "Nombre del Jugador", player_name_placeholder: "Introduce el nombre del jugador", save_stats: "Guardar Estadísticas", cancel: "Cancelar", infantry: "Infantería", cavalry: "Caballería", archer: "Arquero", chart_title: "Tabla de Comparación de Alianza", analytics: "Análisis de Alianza", compare_selected: "Comparar Seleccionados", th_player: "Jugador", th_inf_att: "Ata Inf", th_inf_def: "Def Inf", th_inf_let: "Let Inf", th_inf_hp: "Sal Inf", th_cav_att: "Ata Cab", th_cav_def: "Def Cab", th_cav_let: "Let Cab", th_cav_hp: "Sal Cab", th_arc_att: "Ata Arq", th_arc_def: "Def Arq", th_arc_let: "Let Arq", th_arc_hp: "Sal Arq", th_true_score: "Puntuación Verdadera", th_real_score: "Puntuación Real", th_last_update: "Última Actualización", th_actions: "Acciones", confirm: "Confirmar", history_graph_title: "Puntuación Real a lo Largo del Tiempo", all_time: "Todo el Tiempo", last_month: "Último Mes", last_3_months: "Últimos 3 Meses", last_6_months: "Últimos 6 Meses", last_year: "Último Año", update_stats: "Actualizar Estadísticas", confirm_deletion_title: "Confirmar Eliminación", confirm_deletion_msg: "Esto eliminará TODAS las entradas para {playerName}. Esta acción no se puede deshacer. ¿Estás seguro?", confirm_revert_title: "Confirmar Reversión", confirm_revert_msg: "Esto copiará las estadísticas de esta entrada histórica y la guardará como la nueva entrada más reciente para {playerName}. Esto no es destructivo. ¿Estás seguro?", revert: "Revertir", history_for: "Historial de Actualizaciones de {playerName}", real_score_label: "Puntuación Real:", top_10_rally: "Top 10 Líderes de Rally (por Puntuación Verdadera)", most_improved: "Jugadores con Mayor Progreso (por Puntuación Real)", no_history: "Aún no hay suficientes datos históricos.", alliance_comp: "Composición de la Alianza", top_3_inf: "Top 3 Jugadores de Infantería", top_3_cav: "Top 3 Jugadores de Caballería", top_3_arc: "Top 3 Jugadores de Arquero", last_5_entries: "Últimas 5 Entradas Nuevas", submitted_on: "enviado el", no_entries_yet: "Aún no hay entradas.", features: "Características", changelog: "Registro de Cambios", features_list: `<li>Clasificación ponderada de "Puntuación Verdadera" (Letalidad x1.2, Salud x1.1).</li><li>Seguimiento automático del crecimiento/descenso de estadísticas con indicadores rojos/verdes.</li><li>Registros de historial de jugador detallados y expandibles con función de reversión.</li><li>Gráficos de comparación de un solo jugador contra el promedio de la Alianza (doble clic en la fila).</li><li>Gráficos de comparación de múltiples jugadores (hasta 5 jugadores).</li><li>Identificadores de especialización de tropas (Infantería, Caballería, Arquero, Equilibrado).</li><li>Panel de análisis completo de la Alianza.</li><li>Soporte multilingüe con selección persistente.</li>`
+            },
+            zh: {
+                main_title: "联盟统计比较", db_connecting: "正在连接数据库...", db_connected: "✅ 已连接", instructions_title: "说明与信息", rule1: "规则1：无增益状态", rule2: "规则2：攻击无部队小号", rule3: "规则3：使用4个5级技能的陈科", rule4: "规则4：每周至少更新一次", rule5: "真实评分公式：杀伤力x1.2，生命值x1.1", entry_title: "手动数据输入", entry_tip: "提示：使用'Tab'或'Enter'键按顺序移动", player_name: "玩家名称", player_name_placeholder: "输入玩家名称", save_stats: "保存统计", cancel: "取消", infantry: "步兵", cavalry: "骑兵", archer: "弓兵", chart_title: "联盟比较图表", analytics: "联盟分析", compare_selected: "比较已选", th_player: "玩家", th_inf_att: "步兵攻击", th_inf_def: "步兵防御", th_inf_let: "步兵杀伤", th_inf_hp: "步兵生命", th_cav_att: "骑兵攻击", th_cav_def: "骑兵防御", th_cav_let: "骑兵杀伤", th_cav_hp: "骑兵生命", th_arc_att: "弓兵攻击", th_arc_def: "弓兵防御", th_arc_let: "弓兵杀伤", th_arc_hp: "弓兵生命", th_true_score: "真实评分", th_real_score: "原始评分", th_last_update: "最后更新", th_actions: "操作", confirm: "确认", history_graph_title: "原始评分历史", all_time: "所有时间", last_month: "上个月", last_3_months: "过去3个月", last_6_months: "过去6个月", last_year: "去年", update_stats: "更新统计", confirm_deletion_title: "确认删除", confirm_deletion_msg: "这将删除{playerName}的所有条目。此操作无法撤销。确定吗？", confirm_revert_title: "确认恢复", confirm_revert_msg: "这将复制此历史条目的统计数据并将其保存为{playerName}的最新条目。此操作是无损的。确定吗？", revert: "恢复", history_for: "{playerName}的更新历史", real_score_label: "原始评分:", top_10_rally: "集结队长前10名（按真实评分）", most_improved: "进步最快玩家（按原始评分）", no_history: "尚无足够历史数据", alliance_comp: "联盟构成", top_3_inf: "步兵玩家前3名", top_3_cav: "骑兵玩家前3名", top_3_arc: "弓兵玩家前3名", last_5_entries: "最近5条新条目", submitted_on: "提交于", no_entries_yet: "暂无条目", features: "功能", changelog: "更新日志", features_list: `<li>加权“真实评分”排名（杀伤力 x1.2, 生命值 x1.1）。</li><li>自动统计增长/下降跟踪，带有红色/绿色指示器。</li><li>详细、可展开的玩家历史记录，具有恢复功能。</li><li>单人与联盟平均水平的比较图表（双击行）。</li><li>多人比较图表（最多5名玩家）。</li><li>部队专精标识（步兵、骑兵、弓兵、平衡）。</li><li>全面的联盟分析仪表板。</li><li>具有持久选择的多语言支持。</li>`
+            },
+            tl: {
+                main_title: "Paghahambing ng Istatistika ng Alyansa", db_connecting: "Kumokonekta sa database...", db_connected: "✅ Nakakonekta", instructions_title: "Mga Panuto at Impormasyon", rule1: "Rule 1: WALANG BUFFS.", rule2: "Rule 2: Subukang mag-rally sa alt account na WALANG tropa.", rule3: "Rule 3: Gumamit ng 4 na Chenkos na may lvl 5 Stand of Arms.", rule4: "Rule 4: Mag-update kahit isang beses sa isang linggo.", rule5: "Formula ng Tunay na Iskor: Lethality x1.2, Health x1.1", entry_title: "Manu-manong Pagpasok ng Datos", entry_tip: "Tip: Gamitin ang 'Tab' o 'Enter' para lumipat sa mga input.", player_name: "Pangalan ng Manlalaro", player_name_placeholder: "Ilagay ang pangalan ng manlalaro", save_stats: "I-save ang Stats", cancel: "Kanselahin", infantry: "Infantry", cavalry: "Cavalry", archer: "Archer", chart_title: "Tsart ng Paghahambing ng Alyansa", analytics: "Analytics ng Alyansa", compare_selected: "Ikumpara ang mga Pinili", th_player: "Manlalaro", th_inf_att: "Atake Inf", th_inf_def: "Depensa Inf", th_inf_let: "Let Inf", th_inf_hp: "HP Inf", th_cav_att: "Atake Cav", th_cav_def: "Depensa Cav", th_cav_let: "Let Cav", th_cav_hp: "HP Cav", th_arc_att: "Atake Arc", th_arc_def: "Depensa Arc", th_arc_let: "Let Arc", th_arc_hp: "HP Arc", th_true_score: "Tunay na Iskor", th_real_score: "Real na Iskor", th_last_update: "Huling Update", th_actions: "Mga Aksyon", confirm: "Kumpirmahin", history_graph_title: "Real na Iskor sa Paglipas ng Panahon", all_time: "Lahat ng Oras", last_month: "Huling Buwan", last_3_months: "Huling 3 Buwan", last_6_months: "Huling 6 na Buwan", last_year: "Huling Taon", update_stats: "I-update ang Stats", confirm_deletion_title: "Kumpirmahin ang Pagbura", confirm_deletion_msg: "Buburahin nito ang LAHAT ng entry para kay {playerName}. Hindi na ito maibabalik. Sigurado ka ba?", confirm_revert_title: "Kumpirmahin ang Pagbabalik", confirm_revert_msg: "Kokopyahin nito ang stats mula sa historical entry na ito at ise-save bilang pinakabagong entry para kay {playerName}. Ito ay non-destructive. Sigurado ka ba?", revert: "Ibalik", history_for: "Update History para kay {playerName}", real_score_label: "Real na Iskor:", top_10_rally: "Top 10 Rally Leaders (base sa Tunay na Iskor)", most_improved: "Mga Manlalarong may Pinakamalaking Pag-unlad (base sa Real na Iskor)", no_history: "Wala pang sapat na historical data.", alliance_comp: "Komposisyon ng Alyansa", top_3_inf: "Top 3 Manlalaro ng Infantry", top_3_cav: "Top 3 Manlalaro ng Cavalry", top_3_arc: "Top 3 Manlalaro ng Archer", last_5_entries: "Huling 5 Bagong Entry", submitted_on: "isinumite noong", no_entries_yet: "Wala pang mga entry.", features: "Mga Tampok", changelog: "Talaan ng Pagbabago", features_list: `<li>Pemberat na "Tunay na Iskor" na pagraranggo (Lethality x1.2, Health x1.1).</li><li>Awtomatikong pagsubaybay sa paglaki/pagbaba ng stat na may mga pula/berdeng indicator.</li><li>Detalyado, napapalawak na mga log ng kasaysayan ng manlalaro na may pag-andar na ibalik.</li><li>Mga tsart ng paghahambing ng solong manlalaro laban sa average ng Alliance (i-double click ang hilera).</li><li>Mga tsart ng paghahambing ng maraming manlalaro (hanggang sa 5 manlalaro).</li><li>Mga pagkakakilanlan ng espesyalista sa tropa (Infantry, Cavalry, Archer, Balanse).</li><li>Komprehensibong dashboard ng Alliance Analytics.</li><li>Suporta sa maraming wika na may patuloy na pagpili.</li>`
+            },
+            ar: {
+                main_title: "مقارنة إحصائيات التحالف", db_connecting: "جارٍ الاتصال بقاعدة البيانات...", db_connected: "✅ متصل", instructions_title: "تعليمات ومعلومات", rule1: "القاعدة 1: لا توجد تعزيزات نشطة.", rule2: "القاعدة 2: اختبار هجوم على حساب بديل بدون قوات.", rule3: "القاعدة 3: استخدم 4 أبطال تشينكو بمهارة مستوى 5.", rule4: "القاعدة 4: التحديث مرة واحدة في الأسبوع على الأقل.", rule5: "صيغة النتيجة الحقيقية: الفتك × 1.2 ، الصحة × 1.1", entry_title: "إدخال البيانات يدويًا", entry_tip: "نصيحة: استخدم 'Tab' أو 'Enter' للتنقل بين المدخلات بالترتيب.", player_name: "اسم اللاعب", player_name_placeholder: "أدخل اسم اللاعب", save_stats: "حفظ الإحصائيات", cancel: "إلغاء", infantry: "المشاة", cavalry: "الفرسان", archer: "الرماة", chart_title: "مخطط مقارنة التحالف", analytics: "تحليلات التحالف", compare_selected: "مقارنة المحدد", th_player: "اللاعب", th_inf_att: "هجوم المشاة", th_inf_def: "دفاع المشاة", th_inf_let: "فتك المشاة", th_inf_hp: "صحة المشاة", th_cav_att: "هجوم الفرسان", th_cav_def: "دفاع الفرسان", th_cav_let: "فتك الفرسان", th_cav_hp: "صحة الفرسان", th_arc_att: "هجوم الرماة", th_arc_def: "دفاع الرماة", th_arc_let: "فتك الرماة", th_arc_hp: "صحة الرماة", th_true_score: "النتيجة الحقيقية", th_real_score: "النتيجة الأولية", th_last_update: "آخر تحديث", th_actions: "الإجراءات", confirm: "تأكيد", history_graph_title: "النتيجة الأولية عبر الزمن", all_time: "كل الأوقات", last_month: "الشهر الماضي", last_3_months: "آخر 3 أشهر", last_6_months: "آخر 6 أشهر", last_year: "العام الماضي", update_stats: "تحديث الإحصائيات", confirm_deletion_title: "تأكيد الحذف", confirm_deletion_msg: "سيؤدي هذا إلى حذف جميع الإدخالات الخاصة بـ {playerName}. لا يمكن التراجع عن هذا الإجراء. هل أنت متأكد؟", confirm_revert_title: "تأكيد الاستعادة", confirm_revert_msg: "سيؤدي هذا إلى نسخ الإحصائيات من هذا الإدخال التاريخي وحفظها كأحدث إدخال لـ {playerName}. هذا الإجراء غير مدمر. هل أنت متأكد؟", revert: "استعادة", history_for: "سجل التحديث لـ {playerName}", real_score_label: "النتيجة الأولية:", top_10_rally: "أفضل 10 قادة حشد (حسب النتيجة الحقيقية)", most_improved: "اللاعبون الأكثر تحسنًا (حسب النتيجة الأولية)", no_history: "لا توجد بيانات تاريخية كافية حتى الآن.", alliance_comp: "تكوين التحالف", top_3_inf: "أفضل 3 لاعبي مشاة", top_3_cav: "أفضل 3 لاعبي فرسان", top_3_arc: "أفضل 3 لاعبي رماة", last_5_entries: "آخر 5 إدخالات جديدة", submitted_on: "أرسلت في", no_entries_yet: "لا توجد إدخالات حتى الآن.", features: "الميزات", changelog: "سجل التغييرات", features_list: `<li>تصنيف "النتيجة الحقيقية" المرجح (الفتك × 1.2 ، الصحة × 1.1).</li><li>تتبع تلقائي لنمو / انخفاض الإحصائيات بمؤشرات حمراء / خضراء.</li><li>سجلات تاريخ اللاعب مفصلة وقابلة للتوسيع مع وظيفة التراجع.</li><li>مخططات مقارنة لاعب واحد مقابل متوسط التحالف (انقر نقرًا مزدوجًا على الصف).</li><li>مخططات مقارنة متعددة اللاعبين (حتى 5 لاعبين).</li><li>معرفات تخصص القوات (المشاة ، الفرسان ، الرماة ، متوازن).</li><li>لوحة تحكم تحليلات التحالف الشاملة.</li><li>دعم متعدد اللغات مع اختيار ثابت.</li>`
+            },
+            pt: {
+                main_title: "Comparação de Estatísticas da Aliança", db_connecting: "Conectando ao banco de dados...", db_connected: "✅ Conectado", instructions_title: "Instruções e Informações", rule1: "Regra 1: SEM BUFFS ativos.", rule2: "Regra 2: Testar um ataque a uma conta alternativa SEM tropas.", rule3: "Regra 3: Usar 4 Chenkos com habilidade Stand of Arms nível 5.", rule4: "Regra 4: Atualizar pelo menos uma vez por semana.", rule5: "Fórmula da Pontuação Real: Letalidade x1.2, Vida x1.1", entry_title: "Entrada Manual de Dados", entry_tip: "Dica: Use 'Tab' ou 'Enter' para navegar pelas entradas em ordem.", player_name: "Nome do Jogador", player_name_placeholder: "Digite o nome do jogador", save_stats: "Salvar Estatísticas", cancel: "Cancelar", infantry: "Infantaria", cavalry: "Cavalaria", archer: "Arqueiro", chart_title: "Gráfico de Comparação da Aliança", analytics: "Análises da Aliança", compare_selected: "Comparar Selecionados", th_player: "Jogador", th_inf_att: "Ata Inf", th_inf_def: "Def Inf", th_inf_let: "Let Inf", th_inf_hp: "Vida Inf", th_cav_att: "Ata Cav", th_cav_def: "Def Cav", th_cav_let: "Let Cav", th_cav_hp: "Vida Cav", th_arc_att: "Ata Arq", th_arc_def: "Def Arq", th_arc_let: "Let Arq", th_arc_hp: "Vida Arq", th_true_score: "Pontuação Real", th_real_score: "Pontuação Bruta", th_last_update: "Última Atualização", th_actions: "Ações", confirm: "Confirmar", history_graph_title: "Pontuação Bruta ao Longo do Tempo", all_time: "Todo o Período", last_month: "Último Mês", last_3_months: "Últimos 3 Meses", last_6_months: "Últimos 6 Meses", last_year: "Último Ano", update_stats: "Atualizar Estatísticas", confirm_deletion_title: "Confirmar Exclusão", confirm_deletion_msg: "Isso excluirá TODAS as entradas de {playerName}. Esta ação não pode ser desfeita. Tem certeza?", confirm_revert_title: "Confirmar Reversão", confirm_revert_msg: "Isso copiará as estatísticas desta entrada histórica e a salvará como a nova entrada mais recente para {playerName}. Esta ação não é destrutiva. Tem certeza?", revert: "Reverter", history_for: "Histórico de Atualizações de {playerName}", real_score_label: "Pontuação Bruta:", top_10_rally: "Top 10 Líderes de Ataque (por Pontuação Real)", most_improved: "Jogadores que Mais Melhoraram (por Pontuação Bruta)", no_history: "Ainda não há dados históricos suficientes.", alliance_comp: "Composição da Aliança", top_3_inf: "Top 3 Jogadores de Infantaria", top_3_cav: "Top 3 Jogadores de Cavalaria", top_3_arc: "Top 3 Jogadores de Arqueiro", last_5_entries: "Últimas 5 Novas Entradas", submitted_on: "enviado em", no_entries_yet: "Nenhuma entrada ainda.", features: "Recursos", changelog: "Registro de Alterações", features_list: `<li>Ranking ponderado "True Score" (Letalidade x1.2, Vida x1.1).</li><li>Acompanhamento automático de crescimento/declínio de estatísticas com indicadores vermelho/verde.</li><li>Logs de histórico de jogador detalhados e expansíveis com funcionalidade de reversão.</li><li>Gráficos de comparação de um jogador vs. média da Aliança (clique duplo na linha).</li><li>Gráficos de comparação de vários jogadores (até 5 jogadores).</li><li>Identificadores de especialização de tropa (Infantaria, Cavalaria, Arqueiro, Equilibrado).</li><li>Painel de análise abrangente da Aliança.</li><li>Suporte a vários idiomas com seleção persistente.</li>`
+            },
+            tr: {
+                main_title: "İttifak İstatistik Karşılaştırması", db_connecting: "Veritabanına bağlanılıyor...", db_connected: "✅ Bağlandı", instructions_title: "Talimatlar ve Bilgiler", rule1: "Kural 1: AKTİF BUFF YOK.", rule2: "Kural 2: ASKERİ OLMAYAN bir yan hesaba deneme saldırısı yapın.", rule3: "Kural 3: Seviye 5 Stand of Arms becerisine sahip 4 Chenko kullanın.", rule4: "Kural 4: Haftada en az bir kez güncelleyin.", rule5: "Gerçek Puan Formülü: Ölümcüllük x1.2, Can x1.1", entry_title: "Manuel Veri Girişi", entry_tip: "İpucu: Girdiler arasında sırayla ilerlemek için 'Tab' veya 'Enter' kullanın.", player_name: "Oyuncu Adı", player_name_placeholder: "Oyuncu adını girin", save_stats: "İstatistikleri Kaydet", cancel: "İptal", infantry: "Piyade", cavalry: "Süvari", archer: "Okçu", chart_title: "İttifak Karşılaştırma Tablosu", analytics: "İttifak Analizi", compare_selected: "Seçilenleri Karşılaştır", th_player: "Oyuncu", th_inf_att: "Piyade Sal", th_inf_def: "Piyade Sav", th_inf_let: "Piyade Ölüm", th_inf_hp: "Piyade Can", th_cav_att: "Süvari Sal", th_cav_def: "Süvari Sav", th_cav_let: "Süvari Ölüm", th_cav_hp: "Süvari Can", th_arc_att: "Okçu Sal", th_arc_def: "Okçu Sav", th_arc_let: "Okçu Ölüm", th_arc_hp: "Okçu Can", th_true_score: "Gerçek Puan", th_real_score: "Ham Puan", th_last_update: "Son Güncelleme", th_actions: "Eylemler", confirm: "Onayla", history_graph_title: "Zaman İçinde Ham Puan", all_time: "Tüm Zamanlar", last_month: "Geçen Ay", last_3_months: "Son 3 Ay", last_6_months: "Son 6 Ay", last_year: "Geçen Yıl", update_stats: "İstatistikleri Güncelle", confirm_deletion_title: "Silmeyi Onayla", confirm_deletion_msg: "{playerName} için TÜM girişler silinecek. Bu işlem geri alınamaz. Emin misiniz?", confirm_revert_title: "Geri Almayı Onayla", confirm_revert_msg: "Bu, bu geçmiş girdisindeki istatistikleri kopyalayacak ve {playerName} için en yeni girdi olarak kaydedecektir. Bu işlem yıkıcı değildir. Emin misiniz?", revert: "Geri Al", history_for: "{playerName} için Güncelleme Geçmişi", real_score_label: "Ham Puan:", top_10_rally: "En İyi 10 Saldırı Lideri (Gerçek Puana göre)", most_improved: "En Çok Gelişen Oyuncular (Ham Puana göre)", no_history: "Henüz yeterli geçmiş veri yok.", alliance_comp: "İttifak Kompozisyonu", top_3_inf: "En İyi 3 Piyade Oyuncusu", top_3_cav: "En İyi 3 Süvari Oyuncusu", top_3_arc: "En İyi 3 Okçu Oyuncusu", last_5_entries: "Son 5 Yeni Girdi", submitted_on: "gönderilme tarihi", no_entries_yet: "Henüz giriş yok.", features: "Özellikler", changelog: "Değişiklik Günlüğü", features_list: `<li>Ağırlıklı "Gerçek Puan" sıralaması (Ölümcüllük x1.2, Can x1.1).</li><li>Kırmızı/yeşil göstergelerle otomatik istatistik artış/azalış takibi.</li><li>Geri alma işlevine sahip ayrıntılı, genişletilebilir oyuncu geçmişi günlükleri.</li><li>Tek oyunculu vs. İttifak Ortalaması karşılaştırma grafikleri (satıra çift tıklayın).</li><li>Çok oyunculu karşılaştırma grafikleri (5 oyuncuya kadar).</li><li>Birlik Uzmanlığı tanımlayıcıları (Piyade, Süvari, Okçu, Dengeli).</li><li>Kapsamlı İttifak Analizi panosu.</li><li>Kalıcı seçimli çoklu dil desteği.</li>`
+            },
+            ko: {
+                main_title: "동맹 통계 비교", db_connecting: "데이터베이스에 연결 중...", db_connected: "✅ 연결됨", instructions_title: "지침 및 정보", rule1: "규칙 1: 버프 없음", rule2: "규칙 2: 병력 없는 부계정으로 집결 테스트", rule3: "규칙 3: 5레벨 스킬을 가진 첸코 4명 사용", rule4: "규칙 4: 최소 주 1회 업데이트", rule5: "진정한 점수 공식: 치명타 x1.2, 체력 x1.1", entry_title: "수동 데이터 입력", entry_tip: "팁: 'Tab' 또는 'Enter'를 사용하여 순서대로 이동", player_name: "플레이어 이름", player_name_placeholder: "플레이어 이름 입력", save_stats: "통계 저장", cancel: "취소", infantry: "보병", cavalry: "기병", archer: "궁수", chart_title: "동맹 비교 차트", analytics: "동맹 분석", compare_selected: "선택 항목 비교", th_player: "플레이어", th_inf_att: "보병 공격", th_inf_def: "보병 방어", th_inf_let: "보병 치명", th_inf_hp: "보병 체력", th_cav_att: "기병 공격", th_cav_def: "기병 방어", th_cav_let: "기병 치명", th_cav_hp: "기병 체력", th_arc_att: "궁수 공격", th_arc_def: "궁수 방어", th_arc_let: "궁수 치명", th_arc_hp: "궁수 체력", th_true_score: "진정한 점수", th_real_score: "실제 점수", th_last_update: "마지막 업데이트", th_actions: "작업", confirm: "확인", history_graph_title: "시간에 따른 실제 점수", all_time: "모든 시간", last_month: "지난 달", last_3_months: "지난 3개월", last_6_months: "지난 6개월", last_year: "작년", update_stats: "통계 업데이트", confirm_deletion_title: "삭제 확인", confirm_deletion_msg: "{playerName}의 모든 항목을 삭제합니다. 이 작업은 되돌릴 수 없습니다. 확실합니까?", confirm_revert_title: "복원 확인", confirm_revert_msg: "이 기록 항목의 통계를 복사하여 {playerName}의 최신 항목으로 저장합니다. 이 작업은 파괴적이지 않습니다. 확실합니까?", revert: "복원", history_for: "{playerName}의 업데이트 기록", real_score_label: "실제 점수:", top_10_rally: "상위 10 집결 지휘관 (진정한 점수 기준)", most_improved: "가장 많이 발전한 플레이어 (실제 점수 기준)", no_history: "아직 충분한 기록 데이터가 없습니다.", alliance_comp: "동맹 구성", top_3_inf: "상위 3 보병 플레이어", top_3_cav: "상위 3 기병 플레이어", top_3_arc: "상위 3 궁수 플레이어", last_5_entries: "최근 5개 새 항목", submitted_on: "제출 날짜", no_entries_yet: "아직 항목 없음", features: "기능", changelog: "변경 로그", features_list: `<li>가중치 적용된 "진정한 점수" 순위 (치명타 x1.2, 체력 x1.1).</li><li>빨강/초록 표시기로 자동 통계 증감 추적.</li><li>복원 기능이 있는 상세하고 확장 가능한 플레이어 기록 로그.</li><li>단일 플레이어 대 동맹 평균 비교 차트 (행 더블 클릭).</li><li>다중 플레이어 비교 차트 (최대 5명).</li><li>부대 전문화 식별자 (보병, 기병, 궁수, 균형).</li><li>포괄적인 동맹 분석 대시보드.</li><li>지속적인 선택이 가능한 다국어 지원.</li>`
+            },
+            fr: {
+                main_title: "Comparaison des statistiques de l'alliance", db_connecting: "Connexion à la base de données...", db_connected: "✅ Connecté", instructions_title: "Instructions et informations", rule1: "Règle 1 : AUCUN BUFF actif.", rule2: "Règle 2 : Tester un ralliement sur un compte secondaire SANS troupes.", rule3: "Règle 3 : Utiliser 4 Chenkos avec la compétence 'Stand of Arms' niveau 5.", rule4: "Règle 4 : Mettre à jour au moins une fois par semaine.", rule5: "Formule du score réel : Létalité x1.2, Santé x1.1", entry_title: "Saisie manuelle des données", entry_tip: "Astuce : Utilisez 'Tab' ou 'Entrée' pour vous déplacer dans les champs.", player_name: "Nom du joueur", player_name_placeholder: "Entrez le nom du joueur", save_stats: "Enregistrer", cancel: "Annuler", infantry: "Infanterie", cavalry: "Cavalerie", archer: "Archer", chart_title: "Tableau de comparaison de l'alliance", analytics: "Analyses de l'alliance", compare_selected: "Comparer la sélection", th_player: "Joueur", th_inf_att: "Att Inf", th_inf_def: "Déf Inf", th_inf_let: "Lét Inf", th_inf_hp: "PV Inf", th_cav_att: "Att Cav", th_cav_def: "Déf Cav", th_cav_let: "Lét Cav", th_cav_hp: "PV Cav", th_arc_att: "Att Arc", th_arc_def: "Déf Arc", th_arc_let: "Lét Arc", th_arc_hp: "PV Arc", th_true_score: "Score réel", th_real_score: "Score brut", th_last_update: "Dernière MàJ", th_actions: "Actions", confirm: "Confirmer", history_graph_title: "Score brut au fil du temps", all_time: "Toujours", last_month: "Le mois dernier", last_3_months: "Les 3 derniers mois", last_6_months: "Les 6 derniers mois", last_year: "L'année dernière", update_stats: "Mettre à jour", confirm_deletion_title: "Confirmer la suppression", confirm_deletion_msg: "Ceci supprimera TOUTES les entrées pour {playerName}. Cette action est irréversible. Êtes-vous sûr ?", confirm_revert_title: "Confirmer l'annulation", confirm_revert_msg: "Ceci copiera les statistiques de cette entrée historique et l'enregistrera comme la nouvelle entrée la plus récente pour {playerName}. Cette action n'est pas destructive. Êtes-vous sûr ?", revert: "Annuler", history_for: "Historique des mises à jour pour {playerName}", real_score_label: "Score brut:", top_10_rally: "Top 10 des leaders de ralliement (par score réel)", most_improved: "Joueurs les plus améliorés (par score brut)", no_history: "Pas encore assez de données historiques.", alliance_comp: "Composition de l'alliance", top_3_inf: "Top 3 des joueurs d'infanterie", top_3_cav: "Top 3 des joueurs de cavalerie", top_3_arc: "Top 3 des joueurs d'archer", last_5_entries: "5 dernières entrées", submitted_on: "soumis le", no_entries_yet: "Aucune entrée pour le moment.", features: "Fonctionnalités", changelog: "Journal des modifications", features_list: `<li>Classement pondéré "Score réel" (Létalité x1.2, Santé x1.1).</li><li>Suivi automatique de la croissance/décroissance des statistiques avec des indicateurs rouge/vert.</li><li>Historiques de joueur détaillés et extensibles avec fonction d'annulation.</li><li>Graphiques de comparaison d'un joueur par rapport à la moyenne de l'Alliance (double-clic sur la ligne).</li><li>Graphiques de comparaison multi-joueurs (jusqu'à 5 joueurs).</li><li>Identificateurs de spécialisation des troupes (Infanterie, Cavalerie, Archer, Équilibré).</li><li>Tableau de bord complet des analyses de l'Alliance.</li><li>Prise en charge de plusieurs langues avec sélection persistante.</li>`
+            },
+            fa: {
+                main_title: "مقایسه آمار اتحاد", db_connecting: "در حال اتصال به پایگاه داده...", db_connected: "✅ متصل شد", instructions_title: "دستورالعمل و اطلاعات", rule1: "قانون ۱: هیچ BUFF فعالی نباشد.", rule2: "قانون ۲: یک حمله آزمایشی به یک حساب فرعی بدون نیرو انجام دهید.", rule3: "قانون ۳: از ۴ چنکو با مهارت سطح ۵ Stand of Arms استفاده کنید.", rule4: "قانون ۴: حداقل هفته‌ای یک‌بار به‌روزرسانی کنید.", rule5: "فرمول امتیاز واقعی: کشندگی x1.2، سلامتی x1.1", entry_title: "ورود دستی داده‌ها", entry_tip: "نکته: برای جابجایی بین ورودی‌ها از 'Tab' یا 'Enter' استفاده کنید.", player_name: "نام بازیکن", player_name_placeholder: "نام بازیکن را وارد کنید", save_stats: "ذخیره آمار", cancel: "لغو", infantry: "پیاده‌نظام", cavalry: "سواران", archer: "کمانداران", chart_title: "نمودار مقایسه اتحاد", analytics: "تحلیل اتحاد", compare_selected: "مقایسه انتخاب‌شده‌ها", th_player: "بازیکن", th_inf_att: "حمله پیاده", th_inf_def: "دفاع پیاده", th_inf_let: "کشندگی پیاده", th_inf_hp: "سلامتی پیاده", th_cav_att: "حمله سواران", th_cav_def: "دفاع سواران", th_cav_let: "کشندگی سواران", th_cav_hp: "سلامتی سواران", th_arc_att: "حمله کمانداران", th_arc_def: "دفاع کمانداران", th_arc_let: "کشندگی کمانداران", th_arc_hp: "سلامتی کمانداران", th_true_score: "امتیاز واقعی", th_real_score: "امتیاز خام", th_last_update: "آخرین به‌روزرسانی", th_actions: "اقدامات", confirm: "تایید", history_graph_title: "امتیاز خام در طول زمان", all_time: "همه زمان‌ها", last_month: "ماه گذشته", last_3_months: "۳ ماه گذشته", last_6_months: "۶ ماه گذشته", last_year: "سال گذشته", update_stats: "به‌روزرسانی آمار", confirm_deletion_title: "تایید حذف", confirm_deletion_msg: "این کار تمام ورودی‌های {playerName} را حذف می‌کند. این عمل قابل بازگشت نیست. آیا مطمئن هستید؟", confirm_revert_title: "تایید بازگردانی", confirm_revert_msg: "این کار آمار این ورودی تاریخی را کپی کرده و به عنوان جدیدترین ورودی برای {playerName} ذخیره می‌کند. این عمل مخرب نیست. آیا مطمئن هستید؟", revert: "بازگردانی", history_for: "تاریخچه به‌روزرسانی برای {playerName}", real_score_label: "امتیاز خام:", top_10_rally: "۱۰ رهبر برتر حمله (بر اساس امتیاز واقعی)", most_improved: "بازیکنان با بیشترین پیشرفت (بر اساس امتیاز خام)", no_history: "هنوز داده‌های تاریخی کافی وجود ندارد.", alliance_comp: "ترکیب اتحاد", top_3_inf: "۳ بازیکن برتر پیاده‌نظام", top_3_cav: "۳ بازیکن برتر سواران", top_3_arc: "۳ بازیکن برتر کمانداران", last_5_entries: "۵ ورودی جدید اخیر", submitted_on: "ارسال شده در", no_entries_yet: "هنوز ورودی وجود ندارد.", features: "ویژگی‌ها", changelog: "گزارش تغییرات", features_list: `<li>رتبه‌بندی وزنی "امتیاز واقعی" (کشندگی x1.2، سلامتی x1.1).</li><li>ردیابی خودکار رشد/کاهش آمار با نشانگرهای قرمز/سبز.</li><li>گزارش‌های تاریخچه بازیکن با جزئیات و قابل گسترش با قابلیت بازگردانی.</li><li>نمودارهای مقایسه تک‌نفره در مقابل میانگین اتحاد (با دوبار کلیک روی ردیف).</li><li>نمودارهای مقایسه چندنفره (تا ۵ بازیکن).</li><li>شناسه‌های تخصص نیرو (پیاده‌نظام، سواران، کمانداران، متعادل).</li><li>داشبورد جامع تحلیل اتحاد.</li><li>پشتیبانی از چند زبان با انتخاب پایدار.</li>`
+            }
+        };
+        
+        let currentLanguage = 'en';
+
+        const getTranslation = (key) => {
+            return translations[currentLanguage][key] || translations.en[key] || key;
+        };
+
+        const translateUI = () => {
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.getAttribute('data-translate-key');
+                if (el.tagName === 'INPUT' && el.placeholder) {
+                     el.placeholder = getTranslation(key);
+                } else if (el.tagName === 'UL' && key === 'features_list') {
+                    el.innerHTML = getTranslation(key);
+                }
+                else {
+                    el.innerHTML = getTranslation(key);
+                }
+            });
+             // Re-render table to apply translations to dynamic parts if any
+            if(latestStats.length > 0) renderTable();
+        };
+
+        window.setLanguage = (lang) => {
+            currentLanguage = lang;
+            localStorage.setItem('allianceStatsLanguage', lang);
+            document.documentElement.lang = lang;
+            document.querySelectorAll('#language-switcher .flag').forEach(f => f.classList.remove('active'));
+            document.querySelector(`#language-switcher .flag[data-lang="${lang}"]`).classList.add('active');
+            translateUI();
+        };
+        
+        // --- GLOBAL VARIABLES & STATE ---
         let db, auth, userId = null, appId = null;
         let allStats = [];
         let latestStats = [];
@@ -283,6 +454,7 @@
         const submitBtn = document.getElementById('submit-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const compareBtn = document.getElementById('compare-selected-btn');
+        const compareCount = document.getElementById('compare-count');
         
         const modal = document.getElementById('custom-modal');
         const modalConfirmBtn = document.getElementById('modal-confirm-btn');
@@ -304,7 +476,13 @@
         const analyticsModalCloseBtn = document.getElementById('analytics-modal-close-btn');
         const analyticsBtn = document.getElementById('analytics-btn');
 
+        const featuresModal = document.getElementById('features-modal');
+        const changelogModal = document.getElementById('changelog-modal');
+
         const initFirebase = async () => {
+            const savedLang = localStorage.getItem('allianceStatsLanguage') || 'en';
+            setLanguage(savedLang);
+
             appId = USER_FIREBASE_CONFIG.projectId;
             if (!getApps().length) initializeApp(USER_FIREBASE_CONFIG);
             db = getFirestore();
@@ -313,7 +491,7 @@
             onAuthStateChanged(auth, user => {
                 if (user) {
                     userId = user.uid;
-                    dbStatus.textContent = `✅ Connected`;
+                    dbStatus.innerHTML = getTranslation('db_connected');
                     dbStatus.className = 'text-sm text-green-400 mt-2';
                     setupRealtimeListener();
                 } else {
@@ -404,8 +582,9 @@
                     let deltaHtml = '';
                     if (previousStat) {
                         const delta = (stat[key] - previousStat[key]).toFixed(1);
-                        if (delta > 0) deltaHtml = `<span class="stat-delta text-green-400">(+${delta})</span>`;
-                        else if (delta < 0) deltaHtml = `<span class="stat-delta text-red-400">(${delta})</span>`;
+                        if (delta != 0) {
+                           deltaHtml = `<span class="stat-delta ${delta > 0 ? 'text-green-400' : 'text-red-400'}" onclick="event.stopPropagation(); showHistory('${stat.playerName}')">(${delta > 0 ? '+' : ''}${delta})</span>`;
+                        }
                     }
                     return `<td>${stat[key]}% ${deltaHtml}</td>`;
                 }).join('');
@@ -428,7 +607,6 @@
                         <td class="font-bold text-gray-300">${stat.realScore.toLocaleString()}</td>
                         <td class="text-xs text-gray-400">${formattedDate}</td>
                         <td>
-                             <button onclick="showHistory('${stat.playerName}')" class="text-indigo-400 hover:text-indigo-300 mr-2 text-xl"><i class="fas fa-history"></i></button>
                              <button onclick="enterEditMode('${stat.id}')" class="text-blue-400 hover:text-blue-300 mr-2 text-xl"><i class="fas fa-pencil-alt"></i></button>
                              <button onclick="deleteStat('${stat.id}', '${stat.playerName}')" class="text-red-400 hover:text-red-300 text-xl"><i class="fas fa-trash-alt"></i></button>
                         </td>
@@ -464,8 +642,12 @@
             return Math.round(total);
         };
         
-        const showModal = (title, message) => {
-            modalTitle.textContent = title;
+        const showModal = (titleKey, messageKey, replacements = {}) => {
+            let message = getTranslation(messageKey);
+            for(const key in replacements) {
+                message = message.replace(`{${key}}`, replacements[key]);
+            }
+            modalTitle.textContent = getTranslation(titleKey);
             modalMessage.textContent = message;
             modal.classList.remove('hidden');
             return new Promise(resolve => {
@@ -496,7 +678,7 @@
             ['infAttack', 'infDefense', 'infLethality', 'infHp', 'cavAttack', 'cavDefense', 'cavLethality', 'cavHp', 'arcAttack', 'arcDefense', 'arcLethality', 'arcHp'].forEach(id => {
                 document.getElementById(id).value = statToEdit[id];
             });
-            submitBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Update Stats';
+            submitBtn.querySelector('span').textContent = getTranslation('update_stats');
             cancelEditBtn.classList.remove('hidden');
             window.scrollTo(0, 0);
         };
@@ -504,14 +686,14 @@
         window.resetForm = () => {
             document.querySelector('form').reset();
             currentEditId = null;
-            submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Stats';
+            submitBtn.querySelector('span').textContent = getTranslation('save_stats');
             cancelEditBtn.classList.add('hidden');
         };
         window.cancelEdit = resetForm;
 
 
         window.deleteStat = async (docId, playerName) => {
-            const confirmed = await showModal('Confirm Deletion', `This will delete ALL entries for ${playerName}. This action cannot be undone. Are you sure?`);
+            const confirmed = await showModal('confirm_deletion_title', 'confirm_deletion_msg', {playerName});
             if (confirmed) {
                 const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase());
                 for(const stat of playerHistory) {
@@ -543,7 +725,7 @@
                 data: {
                     labels: filteredHistory.map(s => s.date.toLocaleDateString()),
                     datasets: [{
-                        label: 'Real Score',
+                        label: getTranslation('th_real_score'),
                         data: filteredHistory.map(s => s.realScore),
                         borderColor: '#facc15', // yellow-400
                         backgroundColor: 'rgba(250, 204, 21, 0.2)',
@@ -565,7 +747,7 @@
 
         window.showHistory = (playerName) => {
             const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()).sort((a,b) => b.date - a.date);
-            historyModalTitle.textContent = `Update History for ${playerName}`;
+            historyModalTitle.textContent = getTranslation('history_for').replace('{playerName}', playerName);
             historyModalBody.innerHTML = '';
             
             playerHistory.forEach((stat, index) => {
@@ -585,15 +767,16 @@
                         <div>
                             <span class="font-semibold">${formattedDate}</span>
                             <div>
-                                <span class="text-gray-400">Real Score:</span>
+                                <span class="text-gray-400">${getTranslation('real_score_label')}</span>
                                 <span class="font-bold text-white">${stat.realScore.toLocaleString()}</span>
                                 ${growthHtml}
                             </div>
                         </div>
-                        <button class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn" onclick="revertToStat('${stat.id}', '${stat.playerName}')"><i class="fas fa-undo text-lg"></i> Revert</button>
+                        <button class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn"><i class="fas fa-undo text-lg"></i> ${getTranslation('revert')}</button>
                     </div>
                     <div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden cursor-pointer"></div>
                 `;
+                entryDiv.querySelector('button').onclick = () => revertToStat(stat.id, stat.playerName);
                 
                 const mainInfo = entryDiv.querySelector('.flex');
                 mainInfo.onclick = (e) => {
@@ -621,7 +804,7 @@
         historyModalCloseBtn.onclick = () => historyModal.classList.add('hidden');
 
         window.revertToStat = async (docId, playerName) => {
-            const confirmed = await showModal('Confirm Revert', `This will copy the stats from this historical entry and save it as the new latest entry for ${playerName}. This is non-destructive. Are you sure?`);
+            const confirmed = await showModal('confirm_revert_title', 'confirm_revert_msg', {playerName});
             if (confirmed) {
                 const statToRevert = allStats.find(s => s.id === docId);
                 if (!statToRevert) {
@@ -707,7 +890,7 @@
 
             // Section 1: Top Lists
             const rallyLeaders = [...latestStats].sort((a,b) => b.trueScore - a.trueScore).slice(0, 10);
-            let rallyHtml = '<div><h4 class="text-lg font-semibold text-yellow-400 mb-2">Top 10 Rally Leaders (by True Score)</h4><ol class="list-decimal list-inside space-y-1">';
+            let rallyHtml = `<div><h4 class="text-lg font-semibold text-yellow-400 mb-2">${getTranslation('top_10_rally')}</h4><ol class="list-decimal list-inside space-y-1">`;
             rallyLeaders.forEach(p => rallyHtml += `<li>${p.playerName} - ${p.trueScore.toLocaleString()}</li>`);
             rallyHtml += '</ol></div>';
 
@@ -725,9 +908,9 @@
                 }
             }
             const mostImproved = improvements.sort((a,b) => b.improvement - a.improvement).slice(0, 3);
-            let improvedHtml = '<div><h4 class="text-lg font-semibold text-green-400 mb-2">Most Improved Players (by Real Score)</h4><ol class="list-decimal list-inside space-y-1">';
+            let improvedHtml = `<div><h4 class="text-lg font-semibold text-green-400 mb-2">${getTranslation('most_improved')}</h4><ol class="list-decimal list-inside space-y-1">`;
              if (mostImproved.length > 0) mostImproved.forEach(p => improvedHtml += `<li>${p.name} <span class="text-green-400 font-bold">(+${p.improvement.toLocaleString()})</span></li>`);
-            else improvedHtml += '<li class="italic text-gray-400">Not enough historical data yet.</li>';
+            else improvedHtml += `<li class="italic text-gray-400">${getTranslation('no_history')}</li>`;
             improvedHtml += '</ol></div>';
             
             const topListsContainer = document.createElement('div');
@@ -746,17 +929,20 @@
             breakdownContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-6 items-center';
             
             const chartContainer = document.createElement('div');
-            chartContainer.innerHTML = '<h4 class="text-lg font-semibold text-indigo-400 mb-2">Alliance Composition</h4><div class="relative h-64"><canvas id="analytics-chart-canvas"></canvas></div>';
+            chartContainer.innerHTML = `<h4 class="text-lg font-semibold text-indigo-400 mb-2">${getTranslation('alliance_comp')}</h4><div class="relative h-64"><canvas id="analytics-chart-canvas"></canvas></div>`;
             breakdownContainer.appendChild(chartContainer);
 
             // Top players by troop type
             const topByTroopContainer = document.createElement('div');
-            const troopTypes = ['inf', 'cav', 'arc'];
+            const troopTypes = [
+                {key: 'inf', name: getTranslation('top_3_inf')}, 
+                {key: 'cav', name: getTranslation('top_3_cav')}, 
+                {key: 'arc', name: getTranslation('top_3_arc')}
+            ];
             let topByTroopHtml = '';
             troopTypes.forEach(type => {
-                const topPlayers = [...latestStats].sort((a,b) => (b[`${type}Attack`] + b[`${type}Defense`] + b[`${type}Lethality`] + b[`${type}Hp`]) - (a[`${type}Attack`] + a[`${type}Defense`] + a[`${type}Lethality`] + a[`${type}Hp`])).slice(0,3);
-                let title = type === 'inf' ? 'Infantry' : type === 'cav' ? 'Cavalry' : 'Archer';
-                topByTroopHtml += `<div class="mb-4"><h5 class="text-md font-semibold text-gray-300 mb-1">Top 3 ${title} Players</h5><ol class="list-decimal list-inside text-sm">`;
+                const topPlayers = [...latestStats].sort((a,b) => (b[`${type.key}Attack`] + b[`${type.key}Defense`] + b[`${type.key}Lethality`] + b[`${type.key}Hp`]) - (a[`${type.key}Attack`] + a[`${type.key}Defense`] + a[`${type.key}Lethality`] + a[`${type.key}Hp`])).slice(0,3);
+                topByTroopHtml += `<div class="mb-4"><h5 class="text-md font-semibold text-gray-300 mb-1">${type.name}</h5><ol class="list-decimal list-inside text-sm">`;
                 topPlayers.forEach(p => topByTroopHtml += `<li>${p.playerName}</li>`);
                 topByTroopHtml += `</ol></div>`;
             });
@@ -768,14 +954,14 @@
             // NEW SECTION: Recent 5 Entries
             const recentEntriesContainer = document.createElement('div');
             const recentEntries = [...allStats].sort((a,b) => b.date - a.date).slice(0, 5);
-            let recentHtml = '<div><h4 class="text-lg font-semibold text-cyan-400 mb-2">Last 5 New Entries</h4><ul class="space-y-1 text-sm list-disc list-inside">';
+            let recentHtml = `<div><h4 class="text-lg font-semibold text-cyan-400 mb-2">${getTranslation('last_5_entries')}</h4><ul class="space-y-1 text-sm list-disc list-inside">`;
             if (recentEntries.length > 0) {
                 recentEntries.forEach(p => {
                     const formattedDate = p.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-                    recentHtml += `<li><span class="font-semibold text-white">${p.playerName}</span> submitted on <span class="text-gray-400">${formattedDate}</span></li>`;
+                    recentHtml += `<li><span class="font-semibold text-white">${p.playerName}</span> ${getTranslation('submitted_on')} <span class="text-gray-400">${formattedDate}</span></li>`;
                 });
             } else {
-                recentHtml += '<li class="italic text-gray-400">No entries yet.</li>';
+                recentHtml += `<li class="italic text-gray-400">${getTranslation('no_entries_yet')}</li>`;
             }
             recentHtml += '</ul></div>';
             recentEntriesContainer.innerHTML = recentHtml;
@@ -789,7 +975,7 @@
             analyticsChart = new Chart(ctx, {
                 type: 'pie',
                 data: {
-                    labels: ['Infantry', 'Cavalry', 'Archer', 'Balanced'],
+                    labels: [getTranslation('infantry'), getTranslation('cavalry'), getTranslation('archer'), 'Balanced'],
                     datasets: [{
                         data: [specCounts.infantry, specCounts.cavalry, specCounts.archer, specCounts.balanced],
                         backgroundColor: ['#60a5fa', '#4ade80', '#f87171', '#9ca3af'],
@@ -817,7 +1003,7 @@
                 selectedForComparison = selectedForComparison.filter(p => p !== playerName);
             }
             
-            compareBtn.textContent = `Compare Selected (${selectedForComparison.length})`;
+            compareCount.textContent = selectedForComparison.length;
             compareBtn.disabled = selectedForComparison.length === 0;
             
             renderTable();
@@ -832,10 +1018,18 @@
             }
             sortAndRender();
         };
+        
+        document.querySelectorAll('#language-switcher .flag').forEach(flag => {
+            flag.onclick = () => setLanguage(flag.dataset.lang);
+        });
+        document.getElementById('features-btn').onclick = () => featuresModal.classList.remove('hidden');
+        document.getElementById('features-modal-close-btn').onclick = () => featuresModal.classList.add('hidden');
+        document.getElementById('changelog-btn').onclick = () => changelogModal.classList.remove('hidden');
+        document.getElementById('changelog-modal-close-btn').onclick = () => changelogModal.classList.add('hidden');
+
 
         document.addEventListener('DOMContentLoaded', initFirebase);
     </script>
 </body>
 </html>
-"`
 
