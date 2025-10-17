@@ -308,8 +308,9 @@
                     isAnonymous = user.isAnonymous;
                     dbStatus.innerHTML = `✅ Connected`;
                     dbStatus.className = 'text-sm text-green-400';
-                    setupRealtimeListener();
                     
+                    setupRealtimeListener();
+
                     if (isAnonymous) {
                         getEl('login-buttons').style.display = 'flex';
                         getEl('user-info').style.display = 'none';
@@ -340,6 +341,7 @@
                 processAndRender();
             });
         };
+
         const processAndRender = () => {
             const playerGroups = {};
             allStats.forEach(stat => {
@@ -401,7 +403,7 @@
         const sortAndRender = () => {
              latestStats.sort((a, b) => {
                 const valA = a[currentSort.column], valB = b[currentSort.column];
-                const comparison = (typeof valA === 'string') ? valA.localeCompare(valB) : valA - b.rank;
+                const comparison = (typeof valA === 'string') ? valA.localeCompare(valB) : valA - valB;
                 return currentSort.direction === 'asc' ? comparison : -comparison;
             });
             renderTable();
