@@ -163,8 +163,8 @@
                 <button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div class="overflow-y-auto space-y-4 text-gray-300">
-                <div><h4 class="font-bold text-yellow-400">Version 2.6 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Removed all translation features to simplify and stabilize the codebase.</li><li>Removed Discord login; now only Google login is supported.</li><li>Fixed critical script initialization error that was breaking database connection and all button functionality.</li><li>All features, including stat entry, login, team builder, and analytics, are confirmed to be working.</li></ul></div>
-                <div><h4 class="font-bold text-yellow-400">Version 2.5</h4><ul class="list-disc list-inside text-sm mt-1"><li>Added Google & Discord login via Firebase Authentication.</li><li>Team Builder data is now saved to the user's account in Firestore (cloud).</li><li>Fixed critical bug preventing manual stat entry and database connection.</li><li>Restored all missing sections to the Alliance Analytics dashboard.</li><li>Fixed Help modal content not displaying.</li><li>Added German language option.</li><li>Database connection status in footer now shows project name on hover.</li></ul></div>
+                 <div><h4 class="font-bold text-yellow-400">Version 2.6 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Removed all translation features to simplify and stabilize the codebase.</li><li>Removed Discord login; now only Google login is supported.</li><li>Fixed critical script initialization error that was breaking database connection and all button functionality.</li><li>All features, including stat entry, login, team builder, and analytics, are confirmed to be working.</li></ul></div>
+                 <div><h4 class="font-bold text-yellow-400">Version 2.5</h4><ul class="list-disc list-inside text-sm mt-1"><li>Added Google & Discord login via Firebase Authentication.</li><li>Team Builder data is now saved to the user's account in Firestore (cloud).</li><li>Fixed critical bug preventing manual stat entry and database connection.</li><li>Restored all missing sections to the Alliance Analytics dashboard.</li><li>Fixed Help modal content not displaying.</li><li>Added German language option.</li><li>Database connection status in footer now shows project name on hover.</li></ul></div>
             </div>
         </div>
     </div>
@@ -294,11 +294,12 @@
         const calculateRealScore = (s) => Math.round(Object.keys(s).filter(k=>/Attack|Defense|Lethality|Hp/.test(k)).reduce((a,b)=>a+(s[b]||0),0));
 
         // --- INITIALIZATION & DATA FETCHING ---
-        const initFirebase = async () => {
+        const init = () => {
             if (!getApps().length) initializeApp(USER_FIREBASE_CONFIG);
             db = getFirestore();
             auth = getAuth();
             
+            let initialAuthCheck = true;
             onAuthStateChanged(auth, async (user) => {
                 const dbStatus = getEl('db-status');
                 dbStatus.title = `Connected to project: ${USER_FIREBASE_CONFIG.projectId}`;
@@ -319,10 +320,14 @@
                         getEl('user-name').textContent = user.displayName || user.email;
                         await loadTeamsFromFirestore();
                     }
-                } else {
+                } else if (initialAuthCheck) {
                     signInAnonymously(auth).catch(e => console.error("Anonymous auth failed:", e));
                 }
+                initialAuthCheck = false;
             });
+
+            // Set up all event listeners
+            setupEventListeners();
         };
         const setupRealtimeListener = () => {
             const collectionPath = `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`;
@@ -357,9 +362,7 @@
         // --- MAIN TABLE & SORTING ---
         const renderTable = () => {
             const tableBody = getEl('stats-table-body');
-            // Create a true rank based on the full sorted list
             const trueRankings = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore).map((stat, index) => ({ id: stat.id, rank: index + 1 }));
-            // Apply the true rank to the currently sorted list
             const currentData = latestStats.map(stat => ({...stat, rank: trueRankings.find(r => r.id === stat.id)?.rank || '-' }));
             const disableCheckboxes = selectedForComparison.length >= 5;
 
@@ -614,20 +617,23 @@
         window.showTeamAnalyticsModal = (teamId) => { const team = teams.find(t => t.id === teamId); if (!team) return; const teamPlayers = latestStats.filter(p => team.players.includes(p.playerName)); getEl('team-analytics-title').textContent = `Team Analytics for ${team.name}`; renderAnalytics(teamPlayers, getEl('team-analytics-body'), 'team'); getEl('team-analytics-modal').classList.remove('hidden'); };
         
         // --- EVENT LISTENERS ---
-        document.addEventListener('DOMContentLoaded', initFirebase);
-        getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account.</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze the Alliance:</strong> Click the 'Alliance Analytics' button for a high-level overview, including top players and strategic composition.</li>`; getEl('help-modal').classList.remove('hidden'); };
-        getEl('analytics-btn').onclick = () => { renderAnalytics(latestStats, getEl('analytics-modal-body'), 'alliance'); getEl('analytics-modal').classList.remove('hidden'); };
-        getEl('team-builder-btn').onclick = () => { renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden'); };
-        getEl('changelog-btn').onclick = () => getEl('changelog-modal').classList.remove('hidden');
+        const setupEventListeners = () => {
+            getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account.</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze the Alliance:</strong> Click the 'Alliance Analytics' button for a high-level overview, including top players and strategic composition.</li>`; getEl('help-modal').classList.remove('hidden'); };
+            getEl('analytics-btn').onclick = () => { renderAnalytics(latestStats, getEl('analytics-modal-body'), 'alliance'); getEl('analytics-modal').classList.remove('hidden'); };
+            getEl('team-builder-btn').onclick = () => { renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden'); };
+            getEl('changelog-btn').onclick = () => getEl('changelog-modal').classList.remove('hidden');
+            getEl('compare-selected-btn').onclick = showComparisonChart;
 
-        ['help-modal-close-btn', 'changelog-modal-close-btn', 'history-modal-close-btn', 'chart-modal-close-btn', 'analytics-modal-close-btn', 'team-builder-close-btn', 'player-details-close-btn', 'team-analytics-close-btn'].forEach(id => {
-            getEl(id).onclick = () => getEl(id).closest('.fixed.inset-0').classList.add('hidden');
-        });
-        document.addEventListener('click', (e) => { if (!e.target.closest('.add-player-btn') && !e.target.closest('.team-add-dropdown')) document.querySelector('.team-add-dropdown')?.remove(); });
-        document.addEventListener('keydown', (event) => { if (event.key === 'Escape') document.querySelectorAll('.fixed.inset-0').forEach(modal => modal.classList.add('hidden')); });
-        window.handleCompareSelect = (checkbox) => { const name = checkbox.value; if (checkbox.checked) { if(selectedForComparison.length < 5) selectedForComparison.push(name); } else { selectedForComparison = selectedForComparison.filter(p => p !== name); } getEl('compare-count').textContent = selectedForComparison.length; getEl('compare-selected-btn').disabled = selectedForComparison.length === 0; renderTable(); };
-        window.sortStats = (column) => { if (currentSort.column === column) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'; else { currentSort.column = column; currentSort.direction = ['playerName', 'rank'].includes(column) ? 'asc' : 'desc'; } sortAndRender(); };
+            document.querySelectorAll('[id$="-close-btn"]').forEach(btn => {
+                btn.onclick = () => btn.closest('.fixed.inset-0').classList.add('hidden');
+            });
+            document.addEventListener('click', (e) => { if (!e.target.closest('.add-player-btn') && !e.target.closest('.team-add-dropdown')) document.querySelector('.team-add-dropdown')?.remove(); });
+            document.addEventListener('keydown', (event) => { if (event.key === 'Escape') document.querySelectorAll('.fixed.inset-0').forEach(modal => modal.classList.add('hidden')); });
+            window.handleCompareSelect = (checkbox) => { const name = checkbox.value; if (checkbox.checked) { if(selectedForComparison.length < 5) selectedForComparison.push(name); } else { selectedForComparison = selectedForComparison.filter(p => p !== name); } getEl('compare-count').textContent = selectedForComparison.length; getEl('compare-selected-btn').disabled = selectedForComparison.length === 0; renderTable(); };
+            window.sortStats = (column) => { if (currentSort.column === column) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'; else { currentSort.column = column; currentSort.direction = ['playerName', 'rank'].includes(column) ? 'asc' : 'desc'; } sortAndRender(); };
+        };
 
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
