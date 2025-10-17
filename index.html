@@ -163,8 +163,8 @@
                 <button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div class="overflow-y-auto space-y-4 text-gray-300">
-                 <div><h4 class="font-bold text-yellow-400">Version 2.6 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Removed all translation features to simplify and stabilize the codebase.</li><li>Removed Discord login; now only Google login is supported.</li><li>Fixed critical script initialization error that was breaking database connection and all button functionality.</li><li>All features, including stat entry, login, team builder, and analytics, are confirmed to be working.</li></ul></div>
-                 <div><h4 class="font-bold text-yellow-400">Version 2.5</h4><ul class="list-disc list-inside text-sm mt-1"><li>Added Google & Discord login via Firebase Authentication.</li><li>Team Builder data is now saved to the user's account in Firestore (cloud).</li><li>Fixed critical bug preventing manual stat entry and database connection.</li><li>Restored all missing sections to the Alliance Analytics dashboard.</li><li>Fixed Help modal content not displaying.</li><li>Added German language option.</li><li>Database connection status in footer now shows project name on hover.</li></ul></div>
+                <div><h4 class="font-bold text-yellow-400">Version 2.6 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Removed all translation features to simplify and stabilize the codebase.</li><li>Removed Discord login; now only Google login is supported.</li><li>Fixed critical script initialization error that was breaking database connection and all button functionality.</li><li>All features, including stat entry, login, team builder, and analytics, are confirmed to be working.</li></ul></div>
+                <div><h4 class="font-bold text-yellow-400">Version 2.5</h4><ul class="list-disc list-inside text-sm mt-1"><li>Added Google & Discord login via Firebase Authentication.</li><li>Team Builder data is now saved to the user's account in Firestore (cloud).</li><li>Fixed critical bug preventing manual stat entry and database connection.</li><li>Restored all missing sections to the Alliance Analytics dashboard.</li><li>Fixed Help modal content not displaying.</li><li>Added German language option.</li><li>Database connection status in footer now shows project name on hover.</li></ul></div>
             </div>
         </div>
     </div>
@@ -299,7 +299,6 @@
             db = getFirestore();
             auth = getAuth();
             
-            let initialAuthCheck = true;
             onAuthStateChanged(auth, async (user) => {
                 const dbStatus = getEl('db-status');
                 dbStatus.title = `Connected to project: ${USER_FIREBASE_CONFIG.projectId}`;
@@ -320,15 +319,16 @@
                         getEl('user-name').textContent = user.displayName || user.email;
                         await loadTeamsFromFirestore();
                     }
-                } else if (initialAuthCheck) {
+                } else {
+                    // This handles logout, where user becomes null.
+                    // We will sign in anonymously to keep the app functional.
                     signInAnonymously(auth).catch(e => console.error("Anonymous auth failed:", e));
                 }
-                initialAuthCheck = false;
             });
 
-            // Set up all event listeners
             setupEventListeners();
         };
+
         const setupRealtimeListener = () => {
             const collectionPath = `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`;
             onSnapshot(collection(db, collectionPath), querySnapshot => {
