@@ -73,33 +73,23 @@
                     </button>
                 </div>
             </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6">
                 <div class="space-y-2">
                     <h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i><span>Infantry</span> (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
-                        <input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Infantry Attack">
-                        <input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Infantry Defense">
-                        <input type="number" step="0.01" id="infLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Infantry Lethality">
-                        <input type="number" step="0.01" id="infHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Infantry Health">
+                        <input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Infantry Attack"><input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Infantry Defense"><input type="number" step="0.01" id="infLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Infantry Lethality"><input type="number" step="0.01" id="infHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Infantry Health">
                     </div>
                 </div>
                 <div class="space-y-2">
                     <h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i><span>Cavalry</span> (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
-                        <input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Cavalry Attack">
-                        <input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Cavalry Defense">
-                        <input type="number" step="0.01" id="cavLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Cavalry Lethality">
-                        <input type="number" step="0.01" id="cavHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Cavalry Health">
+                        <input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Cavalry Attack"><input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Cavalry Defense"><input type="number" step="0.01" id="cavLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Cavalry Lethality"><input type="number" step="0.01" id="cavHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Cavalry Health">
                     </div>
                 </div>
                 <div class="space-y-2">
                     <h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i><span>Archer</span> (%)</h3>
                     <div class="grid grid-cols-4 gap-2">
-                        <input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Archer Attack">
-                        <input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Archer Defense">
-                        <input type="number" step="0.01" id="arcLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Archer Lethality">
-                        <input type="number" step="0.01" id="arcHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Archer Health">
+                        <input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full rounded-md input-field text-center" title="Archer Attack"><input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full rounded-md input-field text-center" title="Archer Defense"><input type="number" step="0.01" id="arcLethality" placeholder="Let" required class="w-full rounded-md input-field text-center" title="Archer Lethality"><input type="number" step="0.01" id="arcHp" placeholder="HP" required class="w-full rounded-md input-field text-center" title="Archer Health">
                     </div>
                 </div>
             </div>
@@ -367,8 +357,10 @@
         // --- MAIN TABLE & SORTING ---
         const renderTable = () => {
             const tableBody = getEl('stats-table-body');
-            const rankedStats = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore).map((stat, index) => ({ ...stat, rank: index + 1 }));
-            const currentData = latestStats.map(stat => ({...stat, rank: rankedStats.find(r => r.id === stat.id)?.rank || '-' }));
+            // Create a true rank based on the full sorted list
+            const trueRankings = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore).map((stat, index) => ({ id: stat.id, rank: index + 1 }));
+            // Apply the true rank to the currently sorted list
+            const currentData = latestStats.map(stat => ({...stat, rank: trueRankings.find(r => r.id === stat.id)?.rank || '-' }));
             const disableCheckboxes = selectedForComparison.length >= 5;
 
             tableBody.innerHTML = currentData.map(stat => {
@@ -486,7 +478,7 @@
             const sortedTroops = Object.entries(troopScores).sort((a, b) => b[1] - a[1]);
             const [highestType, highestScore] = sortedTroops[0];
             const [, secondHighestScore] = sortedTroops[1];
-            if (!secondHighestScore || highestScore < secondHighestScore * 1.10) return { key: 'balanced' };
+            if (!secondHighestScore || highestScore < secondHighestScore * 1.10) return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' };
             switch(highestType) {
                 case 'inf': return { key: 'infantry', icon: 'fa-shield-alt', color: 'text-blue-400', title: 'Infantry Specialist' };
                 case 'cav': return { key: 'cavalry', icon: 'fa-horse', color: 'text-green-400', title: 'Cavalry Specialist' };
@@ -626,10 +618,10 @@
         getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account.</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze the Alliance:</strong> Click the 'Alliance Analytics' button for a high-level overview, including top players and strategic composition.</li>`; getEl('help-modal').classList.remove('hidden'); };
         getEl('analytics-btn').onclick = () => { renderAnalytics(latestStats, getEl('analytics-modal-body'), 'alliance'); getEl('analytics-modal').classList.remove('hidden'); };
         getEl('team-builder-btn').onclick = () => { renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden'); };
-        ['help-modal-close-btn', 'changelog-btn', 'changelog-modal-close-btn', 'history-modal-close-btn', 'chart-modal-close-btn', 'analytics-modal-close-btn', 'team-builder-close-btn', 'player-details-close-btn', 'team-analytics-close-btn'].forEach(id => {
-            const btn = getEl(id);
-            const modalId = id.includes('changelog') ? 'changelog-modal' : id.replace(/-btn|-close/g, '') + '-modal';
-            btn.onclick = () => getEl(modalId).classList.toggle('hidden');
+        getEl('changelog-btn').onclick = () => getEl('changelog-modal').classList.remove('hidden');
+
+        ['help-modal-close-btn', 'changelog-modal-close-btn', 'history-modal-close-btn', 'chart-modal-close-btn', 'analytics-modal-close-btn', 'team-builder-close-btn', 'player-details-close-btn', 'team-analytics-close-btn'].forEach(id => {
+            getEl(id).onclick = () => getEl(id).closest('.fixed.inset-0').classList.add('hidden');
         });
         document.addEventListener('click', (e) => { if (!e.target.closest('.add-player-btn') && !e.target.closest('.team-add-dropdown')) document.querySelector('.team-add-dropdown')?.remove(); });
         document.addEventListener('keydown', (event) => { if (event.key === 'Escape') document.querySelectorAll('.fixed.inset-0').forEach(modal => modal.classList.add('hidden')); });
