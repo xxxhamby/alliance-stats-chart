@@ -163,7 +163,8 @@
                 <button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div class="overflow-y-auto space-y-4 text-gray-300">
-                <div><h4 class="font-bold text-yellow-400">Version 2.6 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Removed all translation features to simplify and stabilize the codebase.</li><li>Removed Discord login; now only Google login is supported.</li><li>Fixed critical script initialization error that was breaking database connection and all button functionality.</li><li>All features, including stat entry, login, team builder, and analytics, are confirmed to be working.</li></ul></div>
+                <div><h4 class="font-bold text-yellow-400">Version 2.7 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Fixed Google login popup closing prematurely.</li><li>Fixed close ('X') button on Help modal and other modals.</li><li>Corrected table sorting logic for numeric columns like True Score.</li><li>Verified all features are functional, including database connection and stat entry.</li></ul></div>
+                <div><h4 class="font-bold text-yellow-400">Version 2.6</h4><ul class="list-disc list-inside text-sm mt-1"><li>Removed all translation features to simplify and stabilize the codebase.</li><li>Removed Discord login; now only Google login is supported.</li><li>Fixed critical script initialization error that was breaking database connection and all button functionality.</li><li>All features, including stat entry, login, team builder, and analytics, are confirmed to be working.</li></ul></div>
                 <div><h4 class="font-bold text-yellow-400">Version 2.5</h4><ul class="list-disc list-inside text-sm mt-1"><li>Added Google & Discord login via Firebase Authentication.</li><li>Team Builder data is now saved to the user's account in Firestore (cloud).</li><li>Fixed critical bug preventing manual stat entry and database connection.</li><li>Restored all missing sections to the Alliance Analytics dashboard.</li><li>Fixed Help modal content not displaying.</li><li>Added German language option.</li><li>Database connection status in footer now shows project name on hover.</li></ul></div>
             </div>
         </div>
@@ -360,7 +361,7 @@
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => {
                 console.error("Google Sign In Error:", error);
-                if (error.code !== 'auth/popup-closed-by-user') {
+                if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
                     showModal("Login Error", "Could not sign in with Google. Please try again.");
                 }
             });
@@ -403,7 +404,8 @@
         const sortAndRender = () => {
              latestStats.sort((a, b) => {
                 const valA = a[currentSort.column], valB = b[currentSort.column];
-                const comparison = (typeof valA === 'string') ? valA.localeCompare(valB) : valA - valB;
+                // Check if values are numbers before subtracting
+                const comparison = (typeof valA === 'number' && typeof valB === 'number') ? valA - valB : String(valA).localeCompare(String(valB));
                 return currentSort.direction === 'asc' ? comparison : -comparison;
             });
             renderTable();
