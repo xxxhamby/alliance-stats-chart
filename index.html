@@ -483,6 +483,59 @@
             }
         };
 
+        // --- NEW: EXPORT TO CSV ---
+        const sanitizeCSV = (str) => {
+            let result = String(str);
+            result = result.replace(/"/g, '""'); // Escape double quotes
+            return `"${result}"`; // Enclose in double quotes
+        };
+
+        const exportToCSV = () => {
+            if (latestStats.length === 0) {
+                alert("No data to export!");
+                return;
+            }
+
+            const headers = [
+                'Rank', 'Player', 'Inf Att', 'Inf Def', 'Inf Let', 'Inf HP',
+                'Cav Att', 'Cav Def', 'Cav Let', 'Cav HP',
+                'Arc Att', 'Arc Def', 'Arc Let', 'Arc HP',
+                'True Score', 'Real Score', 'Last Update'
+            ];
+
+            let csvContent = headers.join(",") + "\n";
+
+            const trueRankings = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore)
+                                        .map((stat, index) => ({ id: stat.id, rank: index + 1 }));
+
+            const rows = latestStats.map(stat => {
+                const rank = trueRankings.find(r => r.id === stat.id)?.rank || '-';
+                const formattedDate = stat.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+                
+                const row = [
+                    rank,
+                    sanitizeCSV(stat.playerName), // Sanitize player name
+                    stat.infAttack, stat.infDefense, stat.infLethality, stat.infHp,
+                    stat.cavAttack, stat.cavDefense, stat.cavLethality, stat.cavHp,
+                    stat.arcAttack, stat.arcDefense, stat.arcLethality, stat.arcHp,
+                    stat.trueScore,
+                    stat.realScore,
+                    sanitizeCSV(formattedDate) // Sanitize date
+                ];
+                return row.join(",");
+            });
+
+            csvContent += rows.join("\n");
+
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "alliance_stats.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
         // --- ANALYTICS & CHARTS ---
         const getSpecialization = (stat) => {
             const troopScores = {
@@ -635,6 +688,7 @@
             getEl('team-builder-btn').onclick = () => { renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden'); };
             getEl('changelog-btn').onclick = () => getEl('changelog-modal').classList.remove('hidden');
             getEl('compare-selected-btn').onclick = showComparisonChart;
+            getEl('export-btn').onclick = exportToCSV; // Add listener for new button
 
             document.querySelectorAll('[id$="-close-btn"]').forEach(btn => {
                 btn.onclick = () => btn.closest('.fixed.inset-0').classList.add('hidden');
