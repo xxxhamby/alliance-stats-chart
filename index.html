@@ -277,7 +277,8 @@
             }
         };
 
-        const verifyAccessCode = async () => {
+        // DEFINE FUNCTIONS GLOBALLY FIRST
+        window.verifyAccessCode = async () => {
             const codeInput = getEl('access-code-input').value.trim();
             if (!codeInput) return;
 
@@ -370,7 +371,7 @@
         };
 
         // --- AUTHENTICATION ---
-        const signInWithGoogle = () => {
+        window.signInWithGoogle = () => {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => {
                 console.error("Google Sign In Error:", error);
@@ -379,7 +380,7 @@
                 }
             });
         };
-        const logout = () => signOut(auth);
+        window.logout = () => signOut(auth);
         
         // --- SELECTOR LOGIC & MANUAL ADDITIONS ---
          const loadManualNamesFromFirestore = async () => {
@@ -501,7 +502,7 @@
                 getEl('modal-cancel-btn').onclick = () => { getEl('custom-modal').classList.add('hidden'); resolve(false); };
             });
         };
-        const handleSaveOrUpdate = async () => {
+        window.handleSaveOrUpdate = async () => {
             const statData = {
                 playerName: getEl('playerName').value.trim().toLowerCase(),
                 kingdom: getEl('kingdomName').value.trim().toLowerCase(), 
@@ -510,7 +511,7 @@
                 cavAttack: parseFloat(getEl('cavAttack').value) || 0, cavDefense: parseFloat(getEl('cavDefense').value) || 0, cavLethality: parseFloat(getEl('cavLethality').value) || 0, cavHp: parseFloat(getEl('cavHp').value) || 0,
                 arcAttack: parseFloat(getEl('arcAttack').value) || 0, arcDefense: parseFloat(getEl('arcDefense').value) || 0, arcLethality: parseFloat(getEl('arcLethality').value) || 0, arcHp: parseFloat(getEl('arcHp').value) || 0,
             };
-            if (!statData.playerName || !statData.kingdom || !statData.alliance) { showModal('Input Error', 'Player Name, Kingdom Name, and Alliance Name are required.'); return; }
+            if (!statData.playerName) return;
             try {
                 const collectionPath = `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`;
                 let action = "added";
@@ -527,7 +528,7 @@
                 showModal('Error', `Failed to save data: ${error.message}`);
             }
         };
-        const enterEditMode = (docId) => {
+        window.enterEditMode = (docId) => {
             const statToEdit = allStats.find(s => s.id === docId); if (!statToEdit) return;
             currentEditId = docId;
             getEl('playerName').value = statToEdit.playerName;
@@ -538,17 +539,32 @@
             getEl('cancel-edit-btn').classList.remove('hidden');
             window.scrollTo(0, 0);
         };
-        const resetForm = () => {
+        window.resetForm = () => {
             document.querySelector('form').reset();
             currentEditId = null;
             getEl('submit-btn').querySelector('span').textContent = 'Save Stats';
             getEl('cancel-edit-btn').classList.add('hidden');
         };
-        const cancelEdit = resetForm;
+        window.cancelEdit = window.resetForm;
 
         // --- DATA ACTIONS ---
-        const deleteStat = async (docId, playerName) => { if (await showModal('Confirm Deletion', `This will delete ALL entries for ${playerName}. This action cannot be undone. Are you sure?`)) { const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()); for(const stat of playerHistory) { try { await deleteDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, stat.id)); } catch (error) { console.error(`Failed to delete doc ${stat.id}`, error); } } teams.forEach(team => { team.players = team.players.filter(p => p !== playerName.toLowerCase()); }); updateTeams(); renderTeamBuilder(); } };
-        const revertToStat = async (docId, playerName) => { if (await showModal('Confirm Revert', `This will copy the stats from this historical entry and save it as the new latest entry for ${playerName}. This is non-destructive. Are you sure?`)) { const statToRevert = allStats.find(s => s.id === docId); if (!statToRevert) { showModal('Error', 'Could not find the historical data to revert.'); return; } const { id, date, trueScore, realScore, rank, ...newStatData } = statToRevert; try { await addDoc(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), { ...newStatData, date: serverTimestamp() }); getEl('history-modal').classList.add('hidden'); } catch (error) { showModal('Error', `Failed to revert stats: ${error.message}`); } } };
+        window.deleteStat = async (docId, playerName) => {
+            if (await showModal('Confirm Deletion', `This will delete ALL entries for ${playerName}. This action cannot be undone. Are you sure?`)) {
+                const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase());
+                for(const stat of playerHistory) {
+                    try { await deleteDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, stat.id)); }
+                    catch (error) { console.error(`Failed to delete doc ${stat.id}`, error); }
+                }
+            }
+        };
+        window.revertToStat = async (docId, playerName) => {
+            if (await showModal('Confirm Revert', `This will copy the stats from this historical entry and save it as the new latest entry for ${playerName}. This is non-destructive. Are you sure?`)) {
+                const statToRevert = allStats.find(s => s.id === docId); if (!statToRevert) { showModal('Error', 'Could not find the historical data to revert.'); return; }
+                const { id, date, trueScore, realScore, ...newStatData } = statToRevert;
+                try { await addDoc(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), { ...newStatData, date: serverTimestamp() }); getEl('history-modal').classList.add('hidden'); }
+                catch (error) { showModal('Error', `Failed to revert stats: ${error.message}`); }
+            }
+        };
         const exportToCSV = () => {
             if (latestStats.length === 0) { alert("No data to export!"); return; }
             const sanitizeCSV = (str) => `"${String(str).replace(/"/g, '""')}"`;
@@ -621,7 +637,7 @@
                 const topUnitPlayers = [...players].sort((a,b) => (b[`${type}Attack`] + b[`${type}Defense`] + b[`${type}Lethality`] + b[`${type}Hp`]) - (a[`${type}Attack`] + a[`${type}Defense`] + a[`${type}Lethality`] + a[`${type}Hp`])).slice(0,5);
                 const titleText = `Top 5 ${type.charAt(0).toUpperCase() + type.slice(1)} Players`;
                 let troopHtml = `<div class="mb-4"><h5 class="text-md font-semibold text-gray-300 mb-1">${titleText}</h5>`;
-                if (topUnitPlayers.length > 0) { troopHtml += `<ol class="list-decimal list-inside text-sm">`; topUnitPlayers.forEach(p => troopHtml += `<li>${p.playerName} ${title !== 'alliance' ? `(${p.alliance})` : ''}</li>`); troopHtml += `</ol>`; } else { troopHtml += `<p class="italic text-gray-400 text-sm">No entries yet.</p>`; } 
+                if (topUnitPlayers.length > 0) { troopHtml += `<ol class="list-decimal list-inside text-sm">`; topUnitPlayers.forEach(p => troopHtml += `<li>${p.playerName}</li>`); troopHtml += `</ol>`; } else { troopHtml += `<p class="italic text-gray-400 text-sm">No entries yet.</p>`; } 
                 topByTroopContainer.innerHTML += troopHtml + `</div>`;
             });
             col2.appendChild(topByTroopContainer);
@@ -707,8 +723,8 @@
         
         // --- EVENT LISTENERS ---
         const setupEventListeners = () => {
-            getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account.</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze Data:</strong> Click the 'Analytics' button to see a high-level overview for the currently selected scope (Global, Kingdom, or Alliance).</li>`; getEl('help-modal').classList.remove('hidden'); };
-            getEl('analytics-btn').onclick = () => { renderAnalytics(latestStats, getEl('analytics-modal-body'), 'alliance'); getEl('analytics-modal').classList.remove('hidden'); };
+            getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Kingdom/Alliance Filtering:</strong> Use the dropdowns above the table to view stats globally, for a specific kingdom, or for a specific alliance. Add new K/A names using the '+' buttons.</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account.</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze Data:</strong> Click the 'Analytics' button to see a high-level overview for the currently selected scope (Global, Kingdom, or Alliance).</li>`; getEl('help-modal').classList.remove('hidden'); };
+            getEl('analytics-btn').onclick = () => { renderAnalytics(latestStats, getEl('analytics-modal-body'), selectedAlliance !== 'all' ? 'alliance' : (selectedKingdom !== 'all' ? 'kingdom' : 'global')); getEl('analytics-modal').classList.remove('hidden'); }; 
             getEl('team-builder-btn').onclick = () => { renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden'); };
             getEl('changelog-btn').onclick = () => getEl('changelog-modal').classList.remove('hidden');
             getEl('compare-selected-btn').onclick = showComparisonChart;
