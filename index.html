@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -39,7 +38,7 @@
             <button onclick="signInWithGoogle()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-bold py-3 px-4 rounded-md btn flex items-center justify-center transition-all">
                 <i class="fab fa-google mr-3 text-xl"></i> <span>Sign in with Google</span>
             </button>
-            <p id="login-status-msg" class="mt-4 text-sm text-gray-500">Ready to connect.</p>
+            <p id="login-status-msg" class="mt-4 text-sm text-gray-500">Connecting...</p>
         </div>
     </div>
 
@@ -270,11 +269,7 @@
                 }
             } catch (error) {
                 console.error("Verification failed:", error);
-                if (error.code === 'permission-denied') {
-                    alert("Access Denied: Please ensure the new Database Rules have been applied in the Firebase Console.");
-                } else {
-                    alert("Error verifying user. Check console.");
-                }
+                alert("Error verifying user. Check console.");
             }
         };
 
@@ -716,7 +711,7 @@
         window.createNewTeam = () => { teams.push({ id: Date.now(), name: `Team ${teams.length + 1}`, players: [] }); updateTeams(); renderTeamBuilder(); };
         window.addPlayerToTeam = (playerName, teamId) => { const team = teams.find(t => t.id === teamId); if(team && !team.players.includes(playerName)) { team.players.push(playerName); updateTeams(); renderTeamBuilder(); } };
         window.removePlayerFromTeam = (playerName, teamId) => { const team = teams.find(t => t.id === teamId); if(team) { team.players = team.players.filter(p => p !== playerName); updateTeams(); renderTeamBuilder(); } };
-        window.renameTeam = (teamId, newName) => { const team = teams.find(t => t.id === teamId); if (team) { team.name = newName.trim() || `Team ${teamId}`; updateTeams(); } };
+        window.renameTeam = (teamId, newName) => { const team = teams.find(t => t.id === teamId); if (team) { team.name = newName; updateTeams(); } };
         window.deleteTeam = async (teamId) => { if (await showModal('Confirm Deletion', 'Are you sure you want to delete this team? This cannot be undone.')) { teams = teams.filter(t => t.id !== teamId); updateTeams(); renderTeamBuilder(); } };
         window.showPlayerDetails = (playerName) => { const player = latestStats.find(p => p.playerName === playerName); if (!player) return; getEl('player-details-title').textContent = `Stats for ${player.playerName}`; getEl('player-details-body').innerHTML = `<div class="grid grid-cols-4 gap-x-4 gap-y-1 text-sm"><span class="font-semibold text-gray-400 col-span-2">True Score:</span> <span class="text-yellow-400 font-bold col-span-2">${player.trueScore.toLocaleString()}</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-blue-400">Inf Att:</span> <span>${player.infAttack}%</span> <span class="font-semibold text-blue-400">Inf Def:</span> <span>${player.infDefense}%</span><span class="font-semibold text-blue-400">Inf Let:</span> <span>${player.infLethality}%</span> <span class="font-semibold text-blue-400">Inf HP:</span> <span>${player.infHp}%</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-green-400">Cav Att:</span> <span>${player.cavAttack}%</span> <span class="font-semibold text-green-400">Cav Def:</span> <span>${player.cavDefense}%</span><span class="font-semibold text-green-400">Cav Let:</span> <span>${player.cavLethality}%</span> <span class="font-semibold text-green-400">Cav HP:</span> <span>${player.cavHp}%</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-red-400">Arc Att:</span> <span>${player.arcAttack}%</span> <span class="font-semibold text-red-400">Arc Def:</span> <span>${player.arcDefense}%</span><span class="font-semibold text-red-400">Arc Let:</span> <span>${player.arcLethality}%</span> <span class="font-semibold text-red-400">Arc HP:</span> <span>${player.arcHp}%</span></div>`; getEl('player-details-modal').classList.remove('hidden'); };
         window.showTeamAnalyticsModal = (teamId) => { const team = teams.find(t => t.id === teamId); if (!team) return; const teamPlayers = latestStats.filter(p => team.players.includes(p.playerName)); getEl('team-analytics-title').textContent = `Team Analytics for ${team.name}`; renderAnalytics(teamPlayers, getEl('team-analytics-body'), 'team'); getEl('team-analytics-modal').classList.remove('hidden'); };
@@ -742,28 +737,6 @@
             window.handleCompareSelect = (checkbox) => { const name = checkbox.value; if (checkbox.checked) { if(selectedForComparison.length < 5) selectedForComparison.push(name); } else { selectedForComparison = selectedForComparison.filter(p => p !== name); } getEl('compare-count').textContent = selectedForComparison.length; getEl('compare-selected-btn').disabled = selectedForComparison.length === 0; };
             window.sortStats = (column) => { if (currentSort.column === column) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'; else { currentSort.column = column; currentSort.direction = ['playerName', 'rank', 'alliance'].includes(column) ? 'asc' : 'desc'; } sortAndRender(); };
         };
-
-        // --- Assign functions to window scope for inline event handlers ---
-        window.signInWithGoogle = signInWithGoogle;
-        window.logout = logout;
-        window.handleSaveOrUpdate = handleSaveOrUpdate;
-        window.cancelEdit = cancelEdit;
-        window.sortStats = sortStats;
-        window.handleCompareSelect = handleCompareSelect;
-        window.showHistory = showHistory;
-        window.toggleHistoryDetails = toggleHistoryDetails;
-        window.enterEditMode = enterEditMode;
-        window.deleteStat = deleteStat;
-        window.revertToStat = revertToStat;
-        window.showSinglePlayerChart = showSinglePlayerChart;
-        window.createNewTeam = createNewTeam;
-        window.addPlayerToTeam = addPlayerToTeam;
-        window.removePlayerFromTeam = removePlayerFromTeam;
-        window.renameTeam = renameTeam;
-        window.deleteTeam = deleteTeam;
-        window.showPlayerDetails = showPlayerDetails;
-        window.showTeamAnalyticsModal = showTeamAnalyticsModal;
-        window.verifyAccessCode = verifyAccessCode;
 
         // --- RUN INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', init);
