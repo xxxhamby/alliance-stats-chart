@@ -16,11 +16,8 @@
         .table-row { cursor: pointer; }
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
         .btn:disabled { cursor: not-allowed; opacity: 0.5; }
-        
-        /* Updated Input & Select Styles */
-        .input-field { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 8px 12px; border-radius: 0.375rem; width: 100%; }
-        
-        /* Fixed Dropdown Styling */
+        .input-field, select { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 8px; border-radius: 0.375rem; width: 100%; }
+        /* Dropdown Fix */
         select.input-field {
             appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -28,13 +25,9 @@
             background-repeat: no-repeat;
             background-size: 1.5em 1.5em;
             padding-right: 2.5rem;
-            height: 42px; /* Fixed height to prevent deformation */
-            line-height: 1.5;
         }
-
         .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; cursor: pointer; }
-        .add-btn { background-color: #374151; border: 1px solid #4b5563; color: #9ca3af; padding: 4px 8px; margin-left: 4px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-        .add-btn:hover { background-color: #4b5563; color: #fff; }
+        .add-btn { background-color: #374151; border: 1px solid #4b5563; color: #9ca3af; padding: 4px 8px; margin-left: 4px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; }
         
         /* View States */
         .view-section { display: none; } 
@@ -51,7 +44,7 @@
             <button onclick="window.signInWithGoogle()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-bold py-3 px-4 rounded-md btn flex items-center justify-center transition-all">
                 <i class="fab fa-google mr-3 text-xl"></i> <span>Sign in with Google</span>
             </button>
-            <p id="login-status-msg" class="mt-4 text-sm text-gray-500">Ready to connect.</p>
+            <p id="login-status-msg" class="mt-4 text-sm text-gray-500">Ready.</p>
         </div>
     </div>
 
@@ -100,11 +93,10 @@
                     <button id="help-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold p-3 rounded-md btn"><i class="fas fa-question-circle text-xl"></i></button>
                     <button id="admin-btn" onclick="window.openAdminPanel()" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded-md btn"><i class="fas fa-cogs text-xl"></i></button>
                 </div>
-                
                 <div class="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
                     <div class="text-right leading-tight">
-                        <div id="user-display-name" class="text-sm font-bold text-white">Guest</div>
-                        <div id="user-display-role" class="text-xs text-blue-400 font-mono">Connecting...</div>
+                        <div id="user-display-name" class="text-sm font-bold text-white">Loading...</div>
+                        <div id="user-display-role" class="text-xs text-blue-400 font-mono">...</div>
                     </div>
                     <button onclick="window.logout()" class="text-gray-400 hover:text-red-400"><i class="fas fa-sign-out-alt text-xl"></i></button>
                 </div>
@@ -135,20 +127,8 @@
         <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
             <div class="flex justify-between items-center mb-3 flex-shrink-0">
                 <div class="flex items-center space-x-4">
-                    <div class="flex items-end">
-                        <div class="w-48">
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Kingdom</label>
-                            <select id="kingdom-select" class="input-field"></select>
-                        </div>
-                        <button id="add-kingdom-btn" class="add-btn" title="Add New Kingdom"><i class="fas fa-plus"></i></button>
-                    </div>
-                    <div class="flex items-end">
-                        <div class="w-48">
-                            <label class="block text-sm font-medium text-gray-300 mb-1">Alliance</label>
-                            <select id="alliance-select" class="input-field"></select>
-                        </div>
-                        <button id="add-alliance-btn" class="add-btn" title="Add New Alliance"><i class="fas fa-plus"></i></button>
-                    </div>
+                    <div class="flex items-end"><div><label class="block text-sm font-medium text-gray-300 mb-1">Kingdom</label><select id="kingdom-select" class="input-field w-48"></select></div><button id="add-kingdom-btn" class="add-btn" title="Add New"><i class="fas fa-plus"></i></button></div>
+                    <div class="flex items-end"><div><label class="block text-sm font-medium text-gray-300 mb-1">Alliance</label><select id="alliance-select" class="input-field w-48"></select></div><button id="add-alliance-btn" class="add-btn" title="Add New"><i class="fas fa-plus"></i></button></div>
                 </div>
                 <div class="flex space-x-2">
                      <button onclick="window.renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden');" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-users-cog mr-2 text-lg"></i>Team Builder</button>
@@ -183,19 +163,9 @@
         </footer>
     </div>
 
-    <div id="admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
-        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 h-5/6 flex flex-col">
-            <div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Leadership Console</h2><button onclick="getEl('admin-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button></div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div class="card p-4"><h3 class="font-bold text-lg mb-2">Join Code</h3><div class="flex space-x-2"><input type="text" id="admin-join-code" class="input-field text-center font-mono font-bold text-xl" readonly><button onclick="window.rotateJoinCode()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 rounded btn">Rotate</button></div></div>
-                <div class="card p-4"><h3 class="font-bold text-lg mb-2 text-red-500">Lockdown</h3><button id="panic-btn" onclick="window.toggleLockdown()" class="w-full bg-gray-700 hover:bg-red-600 text-white font-bold py-2 rounded transition-colors">OFF</button></div>
-            </div>
-            <div class="flex-grow overflow-hidden flex flex-col"><h3 class="font-bold text-lg mb-2">Pending Requests <span id="pending-count" class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span></h3><div class="overflow-y-auto flex-grow border border-gray-700 rounded"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-400"><tr><th class="p-2">Name</th><th class="p-2">Details</th><th class="p-2">Actions</th></tr></thead><tbody id="pending-list-body"></tbody></table></div></div>
-        </div>
-    </div>
-
+    <div id="admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 h-5/6 flex flex-col"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Leadership Console</h2><button onclick="getEl('admin-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"><div class="card p-4"><h3 class="font-bold text-lg mb-2">Join Code</h3><div class="flex space-x-2"><input type="text" id="admin-join-code" class="input-field text-center font-mono font-bold text-xl" readonly><button onclick="window.rotateJoinCode()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 rounded btn">Rotate</button></div></div><div class="card p-4"><h3 class="font-bold text-lg mb-2 text-red-500">Lockdown</h3><button id="panic-btn" onclick="window.toggleLockdown()" class="w-full bg-gray-700 hover:bg-red-600 text-white font-bold py-2 rounded transition-colors">OFF</button></div></div><div class="flex-grow overflow-hidden flex flex-col"><h3 class="font-bold text-lg mb-2">Pending Requests <span id="pending-count" class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span></h3><div class="overflow-y-auto flex-grow border border-gray-700 rounded"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-400"><tr><th class="p-2">Name</th><th class="p-2">Details</th><th class="p-2">Actions</th></tr></thead><tbody id="pending-list-body"></tbody></table></div></div></div></div>
     <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Help</h3><button onclick="getEl('help-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
-    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="getEl('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 5.3 (Final Polish)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Fixed:</strong> Undefined variable crashes in `startApp`.</li><li><strong>Fixed:</strong> Dropdown layout issues (misshapen inputs).</li><li><strong>Restored:</strong> Global filtering for Kingdoms and Alliances.</li><li><strong>Safety:</strong> Added default values for empty database states.</li></ul></div></div></div></div>
+    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="getEl('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">v5.4 Fixed</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Fixed:</strong> JavaScript crash due to renamed HTML IDs.</li><li><strong>UI:</strong> Fixed misshapen dropdowns.</li><li><strong>Data:</strong> Added default values for empty database fields to prevent errors.</li></ul></div></div></div></div>
     <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">History</h3><button onclick="getEl('history-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="history-modal-body" class="overflow-y-auto flex-grow"></div><div class="mt-4"><canvas id="history-chart-canvas"></canvas></div></div></div>
     <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stats</h3><button onclick="getEl('chart-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
     <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Analytics</h3><button onclick="getEl('analytics-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
@@ -231,11 +201,18 @@
 
         // --- 3. UTILITIES & FUNCTIONS (HOISTED) ---
         function getEl(id) { return document.getElementById(id); }
+        
+        // ** FIXED: Updated IDs to match HTML **
         function showView(id) { 
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view')); 
+            const views = ['view-login', 'view-verify', 'view-register', 'view-pending', 'view-dashboard'];
+            views.forEach(vid => {
+                const el = getEl(vid);
+                if (el) el.style.display = 'none';
+            });
             const target = getEl(id);
-            if(target) target.classList.add('active-view'); 
+            if (target) target.style.display = 'flex'; // Use flex to maintain layout
         }
+        
         function showToast(msg) { const t = getEl('toast'); t.innerText = msg; t.classList.remove('translate-x-full'); setTimeout(() => t.classList.add('translate-x-full'), 3000); }
         function calculateTrueScore(s) { return Math.round(((s.infAttack+s.cavAttack+s.arcAttack)*1)+((s.infDefense+s.cavDefense+s.arcDefense)*1)+((s.infLethality+s.cavLethality+s.arcLethality)*1.2)+((s.infHp+s.cavHp+s.arcHp)*1.1)); }
 
@@ -273,7 +250,7 @@
                 const snap = await getDoc(metaRef);
                 if (!snap.exists()) {
                     await setDoc(metaRef, { accessCode: code });
-                    await setDoc(doc(db, 'users', userId), { isApproved: true, email: currentUser.email, role: 'admin', displayName: 'Admin' }); // Temp admin profile
+                    await setDoc(doc(db, 'users', userId), { isApproved: true, email: currentUser.email, role: 'admin', displayName: 'Admin' }); 
                     alert("Code Created! You are Admin.");
                     window.location.reload();
                 } else {
@@ -292,7 +269,7 @@
                 kingdom: userProfile.kingdom, alliance: userProfile.alliance, date: serverTimestamp(),
                 infAttack: v('infAttack'), infDefense: v('infDefense'), infLethality: v('infLethality'), infHp: v('infHp'),
                 cavAttack: v('cavAttack'), cavDefense: v('cavDef'), cavLethality: v('cavLethality'), cavHp: v('cavHp'),
-                arcAttack: v('arcAttack'), arcDefense: v('arcDef'), arcLethality: v('arcLethality'), arcHp: v('arcHp')
+                arcAttack: v('arcAttack'), arcDefense: v('arcDefense'), arcLethality: v('arcLethality'), arcHp: v('arcHp')
             };
             try {
                 await setDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, userProfile.playerID), statDoc);
@@ -307,40 +284,8 @@
         };
 
         // --- DASHBOARD LOGIC ---
-        // MANUAL ADD FUNCTION
-        window.addManually = (type) => { 
-            const name = prompt(`Enter the name for the new ${type}:`); 
-            if (name && name.trim()) { 
-                const cleanedName = name.trim().toLowerCase(); 
-                if (type === 'kingdom') { if (!manuallyAddedKingdoms.includes(cleanedName)) manuallyAddedKingdoms.push(cleanedName); }
-                else { if (!manuallyAddedAlliances.includes(cleanedName)) manuallyAddedAlliances.push(cleanedName); }
-                saveManualNameToFirestore(type, cleanedName);
-            } 
-        };
-
-        // FETCH MANUAL NAMES
-        async function loadManualNamesFromFirestore() {
-            try {
-                const docRef = doc(db, 'metadata', 'lists');
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) { 
-                    const data = docSnap.data(); 
-                    manuallyAddedKingdoms = data.kingdomNames || []; 
-                    manuallyAddedAlliances = data.allianceNames || []; 
-                }
-            } catch (error) { console.error("Error loading manual names:", error); }
-        }
-
-        // SAVE MANUAL NAMES
-        async function saveManualNameToFirestore(type, name) {
-            const docRef = doc(db, 'metadata', 'lists');
-            const fieldToUpdate = type === 'kingdom' ? 'kingdomNames' : 'allianceNames';
-            try { await setDoc(docRef, { [fieldToUpdate]: arrayUnion(name) }, { merge: true }); populateDropdowns(); } 
-            catch (error) { console.error(`Error adding name:`, error); }
-        }
-
         function populateDropdowns() {
-            // Merge DB data + Manual Data
+            // Safety: Filter out null/undefined values
             const ks = [...new Set([...allStats.map(s => s.kingdom), ...manuallyAddedKingdoms])].sort().filter(Boolean);
             const as = [...new Set([...allStats.map(s => s.alliance), ...manuallyAddedAlliances])].sort().filter(Boolean);
             
@@ -357,11 +302,13 @@
         function applyFilters() {
             filteredStats = allStats.filter(s => (selectedKingdom === 'all' || s.kingdom === selectedKingdom) && (selectedAlliance === 'all' || s.alliance === selectedAlliance));
             latestStats = Object.values(filteredStats.reduce((acc, s) => { (acc[s.playerName] = acc[s.playerName] || []).push(s); return acc; }, {})).map(g => g.sort((a,b)=>b.date-a.date)[0]);
-            window.sortStats(currentSort.column); // Trigger render
+            window.sortStats(currentSort.column); 
         }
 
         function renderTable() {
             const tbody = getEl('stats-table-body');
+            tbody.innerHTML = ''; // Clear first to prevent duplication
+            
             // Check Lockdown if member
             if(allianceData && allianceData.isLocked && userProfile.role === 'member' && selectedAlliance === userProfile.alliance) {
                 tbody.innerHTML = '<tr><td colspan="9" class="text-center p-8 text-red-500 font-bold">ALLIANCE LOCKDOWN ACTIVE</td></tr>'; return;
@@ -417,65 +364,75 @@
              const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "alliance_stats.csv"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
         window.showAnalytics = () => { getEl('analytics-modal').classList.remove('hidden'); }; 
-        window.renderTeamBuilder = () => { /* ... Team Builder Logic ... */ }; 
+        
+        // Manual Add Function
+        window.addManually = (type) => { 
+            const name = prompt(`Enter the name for the new ${type}:`); 
+            if (name && name.trim()) { 
+                const cleanedName = name.trim().toLowerCase(); 
+                if (type === 'kingdom') { if (!manuallyAddedKingdoms.includes(cleanedName)) manuallyAddedKingdoms.push(cleanedName); }
+                else { if (!manuallyAddedAlliances.includes(cleanedName)) manuallyAddedAlliances.push(cleanedName); }
+                saveManualNameToFirestore(type, cleanedName);
+            } 
+        };
+
+        // --- MANUAL DATA SYNC ---
+        async function loadManualNamesFromFirestore() {
+            try {
+                const docRef = doc(db, 'metadata', 'lists');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) { 
+                    const data = docSnap.data(); 
+                    manuallyAddedKingdoms = data.kingdomNames || []; 
+                    manuallyAddedAlliances = data.allianceNames || []; 
+                }
+            } catch (error) { console.error("Error loading manual names:", error); }
+        }
+
+        async function saveManualNameToFirestore(type, name) {
+            const docRef = doc(db, 'metadata', 'lists');
+            const fieldToUpdate = type === 'kingdom' ? 'kingdomNames' : 'allianceNames';
+            try { await setDoc(docRef, { [fieldToUpdate]: arrayUnion(name) }, { merge: true }); populateDropdowns(); } 
+            catch (error) { console.error(`Error adding name:`, error); }
+        }
+
+        window.renderTeamBuilder = () => { /* ... (Logic kept simple for brevity, same as previous) ... */ }; 
 
         // --- INIT ---
         const startApp = async (user) => {
-            getEl('login-gate').style.display = 'none';
-            getEl('verification-gate').style.display = 'none';
-            getEl('main-app').style.display = 'flex';
+            showView('view-dashboard');
+            
+            // Safety: Handle potential missing profile data fields gracefully
+            const dName = userProfile?.displayName || user.email;
+            const dRole = userProfile?.role ? userProfile.role.toUpperCase() : "MEMBER";
+            const dKing = userProfile?.kingdom || "?";
+            const dAlli = userProfile?.alliance || "?";
+
+            getEl('user-display-name').innerText = dName;
+            getEl('user-display-role').innerText = `${dRole} | ${dKing}-${dAlli}`;
+            
+            // Pre-fill manual entry
+            getEl('playerName').value = dName;
+            getEl('kingdomName').value = dKing;
+            getEl('allianceName').value = dAlli;
+            
+            if(userProfile?.role !== 'member') getEl('admin-btn').classList.remove('hidden');
+
             getEl('db-status').innerHTML = "✅ Connected"; getEl('db-status').className = "text-green-400";
             
-            // Check Profile
-            const userSnap = await getDoc(doc(db, 'users', user.uid));
+            // Load Manual Lists FIRST
+            await loadManualNamesFromFirestore();
+
+            // Load Data
+            onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), (snap) => {
+                allStats = snap.docs.map(d => ({id: d.id, ...d.data(), date: d.data().date?.toDate(), trueScore: calculateTrueScore(d.data())}));
+                populateDropdowns();
+                applyFilters(); // Initial render
+            });
             
-            if (user.email === OWNER_EMAIL && !userSnap.exists()) {
-                // Auto-create Owner
-                await setDoc(doc(db, 'users', user.uid), { displayName: "Owner", role: 'owner', isApproved: true, kingdom:'0', alliance:'ADM', playerID:'owner' });
-                window.location.reload(); return;
-            }
-
-            if (!userSnap.exists()) {
-                showView('view-register'); 
-            } else {
-                userProfile = userSnap.data();
-                if (!userProfile.isApproved) {
-                    showView('view-pending');
-                    getEl('pending-alliance-name').innerText = userProfile.alliance;
-                } else {
-                    showView('view-dashboard');
-                    
-                    // SAFETY CHECK: Ensure properties exist before accessing
-                    const displayName = userProfile.displayName || "Unknown";
-                    const role = userProfile.role ? userProfile.role.toUpperCase() : "MEMBER";
-                    const kingdom = userProfile.kingdom || "0";
-                    const alliance = userProfile.alliance || "None";
-
-                    getEl('user-display-name').innerText = displayName;
-                    getEl('user-display-role').innerText = `${role} | ${kingdom}-${alliance}`;
-                    
-                    // Pre-fill manual entry
-                    getEl('playerName').value = displayName;
-                    getEl('kingdomName').value = kingdom;
-                    getEl('allianceName').value = alliance;
-                    
-                    if(userProfile.role !== 'member') getEl('admin-btn').classList.remove('hidden');
-
-                    // Load Data
-                    // Fetch Manual Names FIRST
-                    await loadManualNamesFromFirestore();
-
-                    onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), (snap) => {
-                        allStats = snap.docs.map(d => ({id: d.id, ...d.data(), date: d.data().date?.toDate(), trueScore: calculateTrueScore(d.data())}));
-                        populateDropdowns();
-                        applyFilters(); // Initial render
-                    });
-                    
-                    // Listen to Alliance Data if applicable
-                    if (userProfile.alliance !== 'ADM') {
-                        onSnapshot(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), (snap) => allianceData = snap.data());
-                    }
-                }
+            // Listen to Alliance Data if applicable
+            if (userProfile && userProfile.alliance !== 'ADM') {
+                onSnapshot(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), (snap) => allianceData = snap.data());
             }
         };
 
@@ -499,11 +456,30 @@
         async function checkVerification(user) {
              const meta = await getDoc(doc(db, 'metadata', 'security'));
              if(!meta.exists()) {
-                 getEl('login-gate').style.display = 'none';
-                 getEl('verification-gate').style.display = 'flex';
+                 showView('view-verify');
                  getEl('verify-instruction').innerText = "Create Master Access Code:";
              } else {
-                 startApp(user);
+                 const userRef = doc(db, 'users', user.uid);
+                 const userSnap = await getDoc(userRef);
+
+                 // Check for SUPER ADMIN override
+                 if (!userSnap.exists() && user.email === OWNER_EMAIL) {
+                      await setDoc(userRef, { email: user.email, displayName: "Owner", role: 'owner', isApproved: true, kingdom:'0', alliance:'ADM', playerID:'owner' });
+                      window.location.reload();
+                      return;
+                 }
+
+                 if(userSnap.exists()) {
+                     userProfile = userSnap.data();
+                     if(userProfile.isApproved) {
+                         startApp(user); 
+                     } else {
+                         showView('view-pending');
+                         getEl('pending-alliance-name').innerText = userProfile.alliance;
+                     }
+                 } else {
+                     showView('view-verify');
+                 }
              }
         }
     </script>
