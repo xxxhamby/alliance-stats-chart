@@ -22,13 +22,13 @@
         
         /* View States - Controls visibility */
         .view-section { display: none; } 
-        .view-section.active { display: flex; flex-direction: column; }
+        /* The active class will be added by JS to show the correct screen */
     </style>
 </head>
 
 <body class="flex flex-col min-h-screen p-4 md:p-6 space-y-4">
 
-    <div id="view-login" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4 active">
+    <div id="view-login" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4" style="display: flex;">
         <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full text-center">
             <h1 class="text-3xl font-extrabold text-white mb-2"><i class="fas fa-shield-alt text-blue-500"></i> Alliance CMD</h1>
             <p class="text-gray-400 mb-8">Secure Access Required.</p>
@@ -36,6 +36,16 @@
                 <i class="fab fa-google mr-3 text-xl"></i> <span>Sign in with Google</span>
             </button>
             <p id="login-status-msg" class="mt-4 text-sm text-gray-500">Ready to connect.</p>
+        </div>
+    </div>
+
+    <div id="view-verify" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
+            <h1 class="text-2xl font-bold text-white mb-4"><i class="fas fa-lock text-yellow-500 mr-2"></i> Access Code Required</h1>
+            <p id="verify-instruction" class="text-gray-300 mb-4">Please enter the Alliance Access Code.</p>
+            <input type="password" id="access-code-input" placeholder="Enter Code" class="w-full rounded-md input-field text-center text-lg mb-4">
+            <button onclick="window.verifyAccessCode()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn mb-4">Verify & Enter</button>
+            <button onclick="window.logout()" class="text-sm text-red-400 hover:underline">Logout</button>
         </div>
     </div>
 
@@ -66,7 +76,7 @@
         </div>
     </div>
 
-    <div id="view-dashboard" class="view-section space-y-4 w-full">
+    <div id="view-dashboard" class="view-section flex-col space-y-4 w-full">
         
         <header class="text-center flex-shrink-0 space-y-3">
             <div class="flex justify-between items-center">
@@ -157,7 +167,7 @@
     </div>
 
     <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Help</h3><button onclick="getEl('help-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
-    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="getEl('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">v5.1 Hybrid</h4><ul class="list-disc list-inside"><li>Secure Login (Airlock) + Public Dashboard layout combined.</li><li>Fixed script errors (ReferenceError) by correcting ID mismatches.</li></ul></div></div></div></div>
+    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="getEl('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">v5.2 Hybrid Fixed</h4><ul class="list-disc list-inside"><li>Fixed JS crash caused by incorrect IDs (null 'style' error).</li><li>Restored Global Chart view (removed Kingdom column).</li><li>Standardized view management logic.</li></ul></div></div></div></div>
     <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">History</h3><button onclick="getEl('history-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="history-modal-body" class="overflow-y-auto flex-grow"></div><div class="mt-4"><canvas id="history-chart-canvas"></canvas></div></div></div>
     <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stats</h3><button onclick="getEl('chart-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
     <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Analytics</h3><button onclick="getEl('analytics-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
@@ -193,9 +203,13 @@
         // --- 3. UTILITIES & FUNCTIONS (HOISTED) ---
         function getEl(id) { return document.getElementById(id); }
         function showView(id) { 
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active')); // CSS class change
+            // FIX: Correctly check if elements exist before styling
+            ['view-login', 'view-verify', 'view-register', 'view-pending', 'view-dashboard'].forEach(vid => {
+                const el = getEl(vid);
+                if(el) el.style.display = 'none';
+            });
             const target = getEl(id);
-            if(target) target.classList.add('active'); 
+            if(target) target.style.display = id === 'view-dashboard' ? 'flex' : 'flex'; // Use flex for all containers
         }
         function showToast(msg) { const t = getEl('toast'); t.innerText = msg; t.classList.remove('translate-x-full'); setTimeout(() => t.classList.add('translate-x-full'), 3000); }
         function calculateTrueScore(s) { return Math.round(((s.infAttack+s.cavAttack+s.arcAttack)*1)+((s.infDefense+s.cavDefense+s.arcDefense)*1)+((s.infLethality+s.cavLethality+s.arcLethality)*1.2)+((s.infHp+s.cavHp+s.arcHp)*1.1)); }
@@ -224,6 +238,26 @@
                 }
                 showView('view-pending'); getEl('pending-alliance-name').innerText = alliance.toUpperCase();
             } catch(e) { console.error(e); alert("Error: " + e.message); }
+        };
+
+        window.verifyAccessCode = async function() {
+            const code = getEl('access-code-input').value.trim();
+            if(!code) return;
+            const metaRef = doc(db, 'metadata', 'security');
+            try {
+                const snap = await getDoc(metaRef);
+                if (!snap.exists()) {
+                    await setDoc(metaRef, { accessCode: code });
+                    await setDoc(doc(db, 'users', userId), { isApproved: true, email: currentUser.email, role: 'admin', displayName: 'Admin' }); // Temp admin profile
+                    alert("Code Created! You are Admin.");
+                    window.location.reload();
+                } else {
+                    if (snap.data().accessCode === code) {
+                        // User passed global gate, now check/create profile
+                        startApp(currentUser);
+                    } else alert("Incorrect Code");
+                }
+            } catch(e) { console.error(e); alert("Verification Error"); }
         };
 
         window.handleSaveOrUpdate = async function() {
@@ -320,51 +354,35 @@
 
         // --- INIT ---
         const startApp = async (user) => {
-            getEl('login-gate').style.display = 'none';
-            getEl('verification-gate').style.display = 'none';
-            getEl('main-app').style.display = 'flex';
-            getEl('db-status').innerHTML = "✅ Connected"; getEl('db-status').className = "text-green-400";
+            showView('view-dashboard'); // USE showView here
             
-            // Check Profile
-            const userSnap = await getDoc(doc(db, 'users', user.uid));
+            getEl('user-display-name').innerText = userProfile.displayName;
+            getEl('user-display-role').innerText = `${userProfile.role.toUpperCase()} | ${userProfile.kingdom}-${userProfile.alliance}`;
             
-            if (user.email === OWNER_EMAIL && !userSnap.exists()) {
-                // Auto-create Owner
-                await setDoc(doc(db, 'users', user.uid), { displayName: "Owner", role: 'owner', isApproved: true, kingdom:'0', alliance:'ADM', playerID:'owner' });
-                window.location.reload(); return;
-            }
+            // Pre-fill manual entry
+            getEl('playerName').value = userProfile.displayName;
+            getEl('kingdomName').value = userProfile.kingdom;
+            getEl('allianceName').value = userProfile.alliance;
+            
+            if(userProfile.role !== 'member') getEl('admin-btn').classList.remove('hidden');
 
-            if (!userSnap.exists()) {
-                showView('view-register'); 
-            } else {
-                userProfile = userSnap.data();
-                if (!userProfile.isApproved) {
-                    showView('view-pending');
-                    getEl('pending-alliance-name').innerText = userProfile.alliance;
-                } else {
-                    showView('view-dashboard');
-                    getEl('user-display-name').innerText = userProfile.displayName;
-                    getEl('user-display-role').innerText = `${userProfile.role.toUpperCase()} | ${userProfile.kingdom}-${userProfile.alliance}`;
-                    
-                    // Pre-fill manual entry
-                    getEl('playerName').value = userProfile.displayName;
-                    getEl('kingdomName').value = userProfile.kingdom;
-                    getEl('allianceName').value = userProfile.alliance;
-                    
-                    if(userProfile.role !== 'member') getEl('admin-btn').classList.remove('hidden');
-
-                    // Load Data
-                    onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), (snap) => {
-                        allStats = snap.docs.map(d => ({id: d.id, ...d.data(), date: d.data().date?.toDate(), trueScore: calculateTrueScore(d.data())}));
-                        populateDropdowns();
-                        applyFilters(); // Initial render
-                    });
-                    
-                    // Listen to Alliance Data if applicable
-                    if (userProfile.alliance !== 'ADM') {
-                        onSnapshot(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), (snap) => allianceData = snap.data());
+            // Load Data
+            onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), (snap) => {
+                allStats = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    if (userProfile.role === 'owner' || (data.kingdom === userProfile.kingdom && data.alliance === userProfile.alliance)) {
+                        allStats.push({ ...data, id: d.id, date: data.date?.toDate() });
                     }
-                }
+                });
+                // Initializing dropdowns
+                populateDropdowns();
+                applyFilters(); 
+            });
+            
+            // Listen to Alliance Data if applicable
+            if (userProfile.alliance !== 'ADM') {
+                onSnapshot(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), (snap) => allianceData = snap.data());
             }
         };
 
@@ -373,46 +391,14 @@
             db = getFirestore();
             auth = getAuth();
             showView('view-login');
+            
             onAuthStateChanged(auth, async (user) => {
-                if (user) { userId = user.uid; currentUser = user; }
-                else { showView('view-login'); }
-                
-                // If user is logged in, check flow
-                if (user) {
-                     // Check if global gate passed (simple way: check if profile exists OR owner)
-                     // BUT wait, we need the verify step first for EVERYONE on first load?
-                     // Let's implement the gate check
-                     const meta = await getDoc(doc(db, 'metadata', 'security'));
-                     // If no security doc, it's fresh setup
-                     if(!meta.exists()) {
-                         getEl('login-gate').style.display = 'none';
-                         getEl('verification-gate').style.display = 'flex';
-                         getEl('verify-instruction').innerText = "Create Master Access Code:";
-                         // Override verify button for setup
-                         window.verifyAccessCode = async () => {
-                             const c = getEl('access-code-input').value;
-                             await setDoc(doc(db, 'metadata', 'security'), { accessCode: c });
-                             alert("Security Set. Reloading..."); window.location.reload();
-                         };
-                     } else {
-                         // Security exists. Has user entered it? 
-                         // We track this by checking if they have a user profile (implies they passed gate + reg)
-                         const uSnap = await getDoc(doc(db, 'users', user.uid));
-                         if(uSnap.exists()) {
-                             startApp(user); // Already passed everything
-                         } else {
-                             // Needs to pass gate
-                             getEl('login-gate').style.display = 'none';
-                             getEl('verification-gate').style.display = 'flex';
-                             // Standard Verify
-                             window.verifyAccessCode = async () => {
-                                 const c = getEl('access-code-input').value;
-                                 if(c === meta.data().accessCode) {
-                                     startApp(user); // Pass gate, proceed to reg logic inside startApp
-                                 } else { alert("Wrong Code"); }
-                             };
-                         }
-                     }
+                if (user) { 
+                    userId = user.uid; 
+                    currentUser = user; 
+                    await checkVerification(user); 
+                } else { 
+                    showView('view-login'); 
                 }
             });
             
@@ -421,6 +407,39 @@
             getEl('help-btn').onclick = () => getEl('help-modal').classList.remove('hidden');
         });
         
+        async function checkVerification(user) {
+             const meta = await getDoc(doc(db, 'metadata', 'security'));
+             if(!meta.exists()) {
+                 // First time setup
+                 showView('view-verify');
+                 getEl('verify-instruction').innerText = "Create Master Access Code:";
+             } else {
+                 // Check if user has a profile
+                 const userRef = doc(db, 'users', user.uid);
+                 const userSnap = await getDoc(userRef);
+
+                 // Check for SUPER ADMIN override here
+                 if (!userSnap.exists() && user.email === OWNER_EMAIL) {
+                      await setDoc(userRef, { email: user.email, displayName: "Owner", role: 'owner', isApproved: true, kingdom:'0', alliance:'ADM', playerID:'owner' });
+                      window.location.reload();
+                      return;
+                 }
+
+                 if(userSnap.exists()) {
+                     // Profile exists, load it
+                     userProfile = userSnap.data();
+                     if(userProfile.isApproved) {
+                         startApp(user); // GO TO DASHBOARD
+                     } else {
+                         showView('view-pending');
+                         getEl('pending-alliance-name').innerText = userProfile.alliance;
+                     }
+                 } else {
+                     // No profile, needs to verify code first
+                     showView('view-verify');
+                 }
+             }
+        }
     </script>
 </body>
 </html>
