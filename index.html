@@ -16,138 +16,165 @@
         .table-row { cursor: pointer; }
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
         .btn:disabled { cursor: not-allowed; opacity: 0.5; }
-        .input-field, select { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 6px 10px; border-radius: 0.375rem; /* rounded-md */ }
+        .input-field, select { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 6px 10px; border-radius: 0.375rem; }
         select { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
         .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; cursor: pointer; }
         .history-entry { transition: background-color: 0.2s; }
         .history-entry:hover { background-color: #374151; }
         .add-btn { background-color: #374151; border: 1px solid #4b5563; color: #9ca3af; padding: 0 6px; margin-left: 4px; border-radius: 50%; cursor: pointer; font-size: 0.75rem; line-height: 1rem; }
         .add-btn:hover { background-color: #4b5563; color: #e5e7eb; }
+        
+        /* View States */
+        #login-gate, #verification-gate, #main-app { display: none; }
     </style>
 </head>
 
 <body class="flex flex-col min-h-screen p-4 md:p-6 space-y-4">
 
-    <header class="text-center flex-shrink-0 space-y-3">
-        <div class="flex justify-between items-center">
-            <button id="help-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold p-3 rounded-md btn">
-                <i class="fas fa-question-circle text-xl"></i>
+    <div id="login-gate" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-900 p-4 text-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
+            <h1 class="text-3xl font-extrabold text-white mb-2">Alliance Stats</h1>
+            <p class="text-gray-400 mb-8">Private Database. Authorized Personnel Only.</p>
+            <button onclick="signInWithGoogle()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-bold py-3 px-4 rounded-md btn flex items-center justify-center transition-all">
+                <i class="fab fa-google mr-3 text-xl"></i> <span>Sign in with Google</span>
             </button>
-            <div id="auth-container" class="flex items-center space-x-2">
-                <div id="login-buttons">
-                    <button id="google-login-btn" onclick="signInWithGoogle()" class="text-white font-bold py-2 px-3 rounded-md btn bg-[#4285F4] hover:bg-[#357ae8] text-sm"><i class="fab fa-google mr-2"></i>Login</button>
-                </div>
-                <div id="user-info" class="hidden items-center space-x-3">
-                    <span id="user-name" class="text-sm font-semibold"></span>
-                    <button onclick="logout()" class="text-white font-bold py-2 px-3 rounded-md btn bg-red-600 hover:bg-red-700 text-sm">Logout</button>
-                </div>
-            </div>
+            <p id="login-status-msg" class="mt-4 text-sm text-gray-500">Connecting...</p>
         </div>
-        <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Alliance Stat Comparison</h1>
-    </header>
-
-    <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
-        <h3 class="text-xl font-bold text-center text-yellow-400 mb-2">Instructions & Info</h3>
-        <ul class="text-lg font-bold text-gray-300 grid grid-cols-1 md:grid-cols-4 gap-x-4 text-center items-start">
-            <li><i class="fas fa-file-medical text-4xl text-red-500 mb-2"></i><br><span>Rule 1: NO BUFFS active.</span></li>
-            <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br><span>Rule 2: Test rally an alt with NO troops.</span></li>
-            <li><i class="fas fa-users text-4xl text-purple-500 mb-2"></i><br><span>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</span></li>
-            <li><i class="fas fa-calendar-check text-4xl text-green-500 mb-2"></i><br><span>Rule 4: Update at least once a week.</span></li>
-        </ul>
     </div>
 
-    <div id="manual-entry" class="card p-4 rounded-lg shadow-lg flex-shrink-0">
-        <form onsubmit="event.preventDefault(); handleSaveOrUpdate();">
-            <div class="flex justify-between items-center mb-3">
-                  <h2 class="text-lg font-semibold text-white">Manual Data Entry</h2>
-                  <p class="text-xs text-gray-400 italic">Tip: Use 'Tab' or 'Enter' to move through inputs in order.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-3">
-                <div class="md:col-span-1">
-                    <label for="playerName" class="block text-sm font-medium text-gray-300 mb-1">Player Name</label>
-                    <input type="text" id="playerName" placeholder="Enter player name" required class="w-full rounded-md input-field">
-                </div>
-                <div class="md:col-span-1">
-                    <label for="kingdomName" class="block text-sm font-medium text-gray-300 mb-1">Kingdom Name</label>
-                    <input type="text" id="kingdomName" placeholder="Enter kingdom name" required class="w-full rounded-md input-field">
-                </div>
-                 <div class="md:col-span-1">
-                    <label for="allianceName" class="block text-sm font-medium text-gray-300 mb-1">Alliance Name</label>
-                    <input type="text" id="allianceName" placeholder="Enter alliance name" required class="w-full rounded-md input-field">
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 mb-3">
-                <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i><span>Infantry</span> (%)</h3>
-                    <div class="grid grid-cols-4 gap-2"><input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full input-field text-center" title="Infantry Attack"><input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full input-field text-center" title="Infantry Defense"><input type="number" step="0.01" id="infLethality" placeholder="Let" required class="w-full input-field text-center" title="Infantry Lethality"><input type="number" step="0.01" id="infHp" placeholder="HP" required class="w-full input-field text-center" title="Infantry Health"></div>
-                </div>
-                <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i><span>Cavalry</span> (%)</h3>
-                    <div class="grid grid-cols-4 gap-2"><input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full input-field text-center" title="Cavalry Attack"><input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full input-field text-center" title="Cavalry Defense"><input type="number" step="0.01" id="cavLethality" placeholder="Let" required class="w-full input-field text-center" title="Cavalry Lethality"><input type="number" step="0.01" id="cavHp" placeholder="HP" required class="w-full input-field text-center" title="Cavalry Health"></div>
-                </div>
-                <div class="space-y-2">
-                    <h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i><span>Archer</span> (%)</h3>
-                    <div class="grid grid-cols-4 gap-2"><input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full input-field text-center" title="Archer Attack"><input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full input-field text-center" title="Archer Defense"><input type="number" step="0.01" id="arcLethality" placeholder="Let" required class="w-full input-field text-center" title="Archer Lethality"><input type="number" step="0.01" id="arcHp" placeholder="HP" required class="w-full input-field text-center" title="Archer Health"></div>
-                </div>
-            </div>
-             <div class="flex justify-end space-x-2">
-                <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-save mr-2 text-lg"></i><span>Save Stats</span></button>
-                <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn hidden"><i class="fas fa-times mr-2 text-lg"></i><span>Cancel</span></button>
-            </div>
-        </form>
+    <div id="verification-gate" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-900 p-4 text-center">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
+            <h1 class="text-2xl font-bold text-white mb-4"><i class="fas fa-user-lock text-yellow-500 mr-2"></i> Security Check</h1>
+            <p id="verify-instruction" class="text-gray-300 mb-4">Enter the Alliance Access Code to continue.</p>
+            
+            <input type="password" id="access-code-input" placeholder="Access Code" class="w-full rounded-md input-field text-center text-lg mb-4">
+            
+            <button onclick="verifyAccessCode()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn mb-4">
+                Unlock Access
+            </button>
+            <button onclick="logout()" class="text-sm text-red-400 hover:underline">Logout</button>
+        </div>
     </div>
 
-    <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
-        <div class="flex justify-between items-center mb-3 flex-shrink-0">
-            <div class="flex items-center space-x-4">
-                <div class="flex items-end">
-                    <div>
-                        <label for="kingdom-select" class="block text-sm font-medium text-gray-300 mb-1">Kingdom</label>
-                        <select id="kingdom-select" class="input-field w-48"></select>
+    <div id="main-app" class="flex flex-col space-y-4 w-full">
+        
+        <header class="text-center flex-shrink-0 space-y-3">
+            <div class="flex justify-between items-center">
+                <button id="help-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold p-3 rounded-md btn">
+                    <i class="fas fa-question-circle text-xl"></i>
+                </button>
+                <div id="auth-container" class="flex items-center space-x-2">
+                    <div id="user-info" class="flex items-center space-x-3">
+                        <span id="user-name" class="text-sm font-semibold text-green-400"></span>
+                        <button onclick="logout()" class="text-white font-bold py-2 px-3 rounded-md btn bg-red-600 hover:bg-red-700 text-sm">Logout</button>
                     </div>
-                    <button id="add-kingdom-btn" class="add-btn ml-1 mb-1" title="Add New Kingdom">+</button>
-                </div>
-                 <div class="flex items-end">
-                    <div>
-                        <label for="alliance-select" class="block text-sm font-medium text-gray-300 mb-1">Alliance</label>
-                        <select id="alliance-select" class="input-field w-48"></select>
-                    </div>
-                     <button id="add-alliance-btn" class="add-btn ml-1 mb-1" title="Add New Alliance">+</button>
                 </div>
             </div>
-            <div class="flex space-x-2">
-                 <button id="team-builder-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-users-cog mr-2 text-lg"></i><span>Team Builder</span></button>
-                <button id="analytics-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-trophy mr-2 text-lg"></i><span>Analytics</span></button>
-                <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled><i class="fas fa-chart-bar mr-2 text-lg"></i><span>Compare Selected</span> (<span id="compare-count">0</span>)</button>
-            </div>
-        </div>
-        <h2 id="table-title" class="text-xl font-semibold text-white mb-3 flex-shrink-0">Global Stats</h2>
-        <div class="overflow-y-auto flex-grow">
-            <table class="w-full text-left text-sm">
-                <thead class="table-header text-xs text-gray-300 uppercase">
-                    <tr>
-                        <th class="w-12 text-center" title="Compare Players"><i class="fas fa-search text-2xl"></i></th>
-                        <th class="w-12 text-center" onclick="sortStats('rank')">#</th>
-                        <th onclick="sortStats('playerName')">Player</th>
-                        <th onclick="sortStats('alliance')">Alliance</th>
-                        <th class="bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th><th class="bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th><th class="bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th><th class="bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
-                        <th class="bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th><th class="bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th><th class="bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th><th class="bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
-                        <th class="bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th><th class="bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th><th class="bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th><th class="bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
-                        <th onclick="sortStats('trueScore')">True Score ▼</th><th onclick="sortStats('realScore')">Real Score</th><th onclick="sortStats('date')">Last Update</th><th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="stats-table-body"></tbody>
-            </table>
-        </div>
-    </div>
-    
-    <footer class="flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
-        <p id="db-status" class="text-sm">Connecting to database...</p>
-        <button id="changelog-btn" class="hover:text-gray-400">Change Log</button>
-    </footer>
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Alliance Stat Comparison</h1>
+        </header>
 
-    <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">How to Use This Dashboard</h3><button id="help-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
-    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 2.8 (Current)</h4><ul class="list-disc list-inside text-sm mt-1"><li>Fixed Google login popup issue and help modal close button.</li><li>Added handling for old data lacking kingdom/alliance fields (defaults to "unknown").</li><li>Added "Unknown" filter options to dropdowns.</li><li>Added ability to manually add new Kingdom/Alliance names via '+' buttons (saved to Firestore).</li><li>Corrected script initialization flow to ensure database connection stability.</li></ul></div><div><h4 class="font-bold text-yellow-400">Version 2.7</h4><ul class="list-disc list-inside text-sm mt-1"><li>Added Kingdom and Alliance structure.</li><li>Data entry requires Kingdom and Alliance names.</li><li>Added Kingdom and Alliance dropdown selectors to filter the main table and analytics.</li><li>Added "All Kingdoms" (Global) and "All Alliances" view options.</li><li>Fixed Google login popup closing prematurely.</li><li>Fixed close ('X') button on Help modal and other modals.</li><li>Corrected table sorting logic for numeric columns like True Score.</li><li>Verified all features are functional, including database connection and stat entry.</li></ul></div></div></div></div>
+        <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
+            <h3 class="text-xl font-bold text-center text-yellow-400 mb-2">Instructions & Info</h3>
+            <ul class="text-lg font-bold text-gray-300 grid grid-cols-1 md:grid-cols-4 gap-x-4 text-center items-start">
+                <li><i class="fas fa-file-medical text-4xl text-red-500 mb-2"></i><br><span>Rule 1: NO BUFFS active.</span></li>
+                <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br><span>Rule 2: Test rally an alt with NO troops.</span></li>
+                <li><i class="fas fa-users text-4xl text-purple-500 mb-2"></i><br><span>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</span></li>
+                <li><i class="fas fa-calendar-check text-4xl text-green-500 mb-2"></i><br><span>Rule 4: Update at least once a week.</span></li>
+            </ul>
+        </div>
+
+        <div id="manual-entry" class="card p-4 rounded-lg shadow-lg flex-shrink-0">
+            <form onsubmit="event.preventDefault(); handleSaveOrUpdate();">
+                <div class="flex justify-between items-center mb-3">
+                      <h2 class="text-lg font-semibold text-white">Manual Data Entry</h2>
+                      <p class="text-xs text-gray-400 italic">Tip: Use 'Tab' or 'Enter' to move through inputs in order.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-3">
+                    <div class="md:col-span-1">
+                        <label for="playerName" class="block text-sm font-medium text-gray-300 mb-1">Player Name</label>
+                        <input type="text" id="playerName" placeholder="Enter player name" required class="w-full rounded-md input-field">
+                    </div>
+                    <div class="md:col-span-1">
+                        <label for="kingdomName" class="block text-sm font-medium text-gray-300 mb-1">Kingdom Name</label>
+                        <input type="text" id="kingdomName" placeholder="Enter kingdom name" required class="w-full rounded-md input-field">
+                    </div>
+                     <div class="md:col-span-1">
+                        <label for="allianceName" class="block text-sm font-medium text-gray-300 mb-1">Alliance Name</label>
+                        <input type="text" id="allianceName" placeholder="Enter alliance name" required class="w-full rounded-md input-field">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 mb-3">
+                    <div class="space-y-2">
+                        <h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i><span>Infantry</span> (%)</h3>
+                        <div class="grid grid-cols-4 gap-2"><input type="number" step="0.01" id="infAttack" placeholder="Att" required class="w-full input-field text-center" title="Infantry Attack"><input type="number" step="0.01" id="infDefense" placeholder="Def" required class="w-full input-field text-center" title="Infantry Defense"><input type="number" step="0.01" id="infLethality" placeholder="Let" required class="w-full input-field text-center" title="Infantry Lethality"><input type="number" step="0.01" id="infHp" placeholder="HP" required class="w-full input-field text-center" title="Infantry Health"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i><span>Cavalry</span> (%)</h3>
+                        <div class="grid grid-cols-4 gap-2"><input type="number" step="0.01" id="cavAttack" placeholder="Att" required class="w-full input-field text-center" title="Cavalry Attack"><input type="number" step="0.01" id="cavDefense" placeholder="Def" required class="w-full input-field text-center" title="Cavalry Defense"><input type="number" step="0.01" id="cavLethality" placeholder="Let" required class="w-full input-field text-center" title="Cavalry Lethality"><input type="number" step="0.01" id="cavHp" placeholder="HP" required class="w-full input-field text-center" title="Cavalry Health"></div>
+                    </div>
+                    <div class="space-y-2">
+                        <h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i><span>Archer</span> (%)</h3>
+                        <div class="grid grid-cols-4 gap-2"><input type="number" step="0.01" id="arcAttack" placeholder="Att" required class="w-full input-field text-center" title="Archer Attack"><input type="number" step="0.01" id="arcDefense" placeholder="Def" required class="w-full input-field text-center" title="Archer Defense"><input type="number" step="0.01" id="arcLethality" placeholder="Let" required class="w-full input-field text-center" title="Archer Lethality"><input type="number" step="0.01" id="arcHp" placeholder="HP" required class="w-full input-field text-center" title="Archer Health"></div>
+                    </div>
+                </div>
+                 <div class="flex justify-end space-x-2">
+                    <button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-save mr-2 text-lg"></i><span>Save Stats</span></button>
+                    <button type="button" id="cancel-edit-btn" onclick="cancelEdit()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn hidden"><i class="fas fa-times mr-2 text-lg"></i><span>Cancel</span></button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center mb-3 flex-shrink-0">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-end">
+                        <div>
+                            <label for="kingdom-select" class="block text-sm font-medium text-gray-300 mb-1">Kingdom</label>
+                            <select id="kingdom-select" class="input-field w-48"></select>
+                        </div>
+                        <button id="add-kingdom-btn" class="add-btn ml-1 mb-1" title="Add New Kingdom">+</button>
+                    </div>
+                     <div class="flex items-end">
+                        <div>
+                            <label for="alliance-select" class="block text-sm font-medium text-gray-300 mb-1">Alliance</label>
+                            <select id="alliance-select" class="input-field w-48"></select>
+                        </div>
+                         <button id="add-alliance-btn" class="add-btn ml-1 mb-1" title="Add New Alliance">+</button>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                     <button id="team-builder-btn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-users-cog mr-2 text-lg"></i><span>Team Builder</span></button>
+                    <button id="analytics-btn" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-trophy mr-2 text-lg"></i><span>Analytics</span></button>
+                    <button id="compare-selected-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn" disabled><i class="fas fa-chart-bar mr-2 text-lg"></i><span>Compare Selected</span> (<span id="compare-count">0</span>)</button>
+                    <button id="export-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-file-download mr-2 text-lg"></i><span>Export</span></button>
+                </div>
+            </div>
+            <h2 id="table-title" class="text-xl font-semibold text-white mb-3 flex-shrink-0">Global Stats</h2>
+            <div class="overflow-y-auto flex-grow">
+                <table class="w-full text-left text-sm">
+                    <thead class="table-header text-xs text-gray-300 uppercase">
+                        <tr>
+                            <th class="w-12 text-center" title="Compare Players"><i class="fas fa-search text-2xl"></i></th>
+                            <th class="w-12 text-center" onclick="sortStats('rank')">#</th>
+                            <th onclick="sortStats('playerName')">Player</th>
+                            <th onclick="sortStats('alliance')">Alliance</th>
+                            <th class="bg-blue-900/50" onclick="sortStats('infAttack')">Inf Att</th><th class="bg-blue-900/50" onclick="sortStats('infDefense')">Inf Def</th><th class="bg-blue-900/50" onclick="sortStats('infLethality')">Inf Let</th><th class="bg-blue-900/50" onclick="sortStats('infHp')">Inf HP</th>
+                            <th class="bg-green-900/50" onclick="sortStats('cavAttack')">Cav Att</th><th class="bg-green-900/50" onclick="sortStats('cavDefense')">Cav Def</th><th class="bg-green-900/50" onclick="sortStats('cavLethality')">Cav Let</th><th class="bg-green-900/50" onclick="sortStats('cavHp')">Cav HP</th>
+                            <th class="bg-red-900/50" onclick="sortStats('arcAttack')">Arc Att</th><th class="bg-red-900/50" onclick="sortStats('arcDefense')">Arc Def</th><th class="bg-red-900/50" onclick="sortStats('arcLethality')">Arc Let</th><th class="bg-red-900/50" onclick="sortStats('arcHp')">Arc HP</th>
+                            <th onclick="sortStats('trueScore')">True Score ▼</th><th onclick="sortStats('realScore')">Real Score</th><th onclick="sortStats('date')">Last Update</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <footer class="flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
+            <p id="db-status" class="text-sm">Connecting to database...</p>
+            <button id="changelog-btn" class="hover:text-gray-400">Change Log</button>
+        </footer>
+    </div> <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">How to Use This Dashboard</h3><button id="help-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
+    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button id="changelog-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 3.1 (Security Update)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Two-Step Security:</strong> Added an "Alliance Access Code" verification step after Google Login.</li><li><strong>Access Control:</strong> Only users who enter the correct code can view data.</li><li><strong>First-Time Setup:</strong> If no access code exists in the database, the first user to log in sets it.</li><li>All previous features (Kingdoms, Alliances, Team Builder) are fully functional.</li></ul></div></div></div></div>
     <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">Update History</h3><button id="history-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><div id="history-modal-body" class="overflow-y-auto space-y-2 flex-grow"></div><div class="mt-6 pt-4 border-t border-gray-700 flex-shrink-0"><div class="flex justify-between items-center mb-2"><h4 class="text-md font-semibold">Real Score Over Time</h4><select id="history-time-filter" class="input-field rounded-md text-sm"><option value="all">All Time</option><option value="1m">Last Month</option><option value="3m">Last 3 Months</option><option value="6m">Last 6 Months</option><option value="1y">Last Year</option></select></div><div class="relative h-64"><canvas id="history-chart-canvas"></canvas></div></div></div></div>
     <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stat Comparison</h3><button id="chart-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
     <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Alliance Analytics</h3><button id="analytics-modal-close-btn" class="text-gray-400 hover:text-white">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
@@ -159,20 +186,20 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, addDoc, setDoc, deleteDoc, getDoc, serverTimestamp, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const USER_FIREBASE_CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
             projectId: "alliance-stats-96973",
-            storageBucket: "alliance-stats-96973.firebasestorage.app", // Corrected bucket
+            storageBucket: "alliance-stats-96973.firebasestorage.app",
             messagingSenderId: "866174182881",
             appId: "1:866174182881:web:aef54fc8da562d8b_541ea0"
         };
         
         // --- GLOBAL STATE ---
-        let db, auth, userId = null, isAnonymous = true;
+        let db, auth, userId = null;
         let allStats = [], filteredStats = [], latestStats = [], selectedForComparison = []; 
         let currentSort = { column: 'trueScore', direction: 'desc' };
         let currentEditId = null;
@@ -182,7 +209,6 @@
         let selectedKingdom = 'all', selectedAlliance = 'all'; 
         let manuallyAddedKingdoms = [], manuallyAddedAlliances = []; 
         let statsListenerUnsubscribe = null; 
-        let authInitialized = false; 
 
         // --- UTILITY FUNCTIONS ---
         const getEl = (id) => document.getElementById(id);
@@ -190,90 +216,113 @@
         const calculateTrueScore = (s) => Math.round(((s.infAttack+s.cavAttack+s.arcAttack)*1.0)+((s.infDefense+s.cavDefense+s.arcDefense)*1.0)+((s.infLethality+s.cavLethality+s.arcLethality)*1.2)+((s.infHp+s.cavHp+s.arcHp)*1.1));
         const calculateRealScore = (s) => Math.round(Object.keys(s).filter(k=>/Attack|Defense|Lethality|Hp/.test(k)).reduce((a,b)=>a+(s[b]||0),0));
 
-        // --- INITIALIZATION & DATA FETCHING ---
+        // --- INITIALIZATION ---
         const init = async () => {
-            console.log("Initializing Firebase App...");
+            initializeApp(USER_FIREBASE_CONFIG);
+            db = getFirestore();
+            auth = getAuth();
+            
+            // Initial UI State: Show Login Gate only
+            getEl('main-app').style.display = 'none';
+            getEl('verification-gate').style.display = 'none';
+            getEl('login-gate').style.display = 'flex';
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    await checkVerification(user);
+                } else {
+                    // Logged Out
+                    getEl('main-app').style.display = 'none';
+                    getEl('verification-gate').style.display = 'none';
+                    getEl('login-gate').style.display = 'flex';
+                    getEl('login-status-msg').textContent = "Ready to sign in.";
+                    if (statsListenerUnsubscribe) statsListenerUnsubscribe();
+                    teams = []; 
+                }
+            });
+            setupEventListeners();
+        };
+
+        // --- SECURITY & VERIFICATION FLOW ---
+        const checkVerification = async (user) => {
+            getEl('login-status-msg').textContent = "Checking authorization...";
+            const userRef = doc(db, 'users', user.uid);
+            
             try {
-                initializeApp(USER_FIREBASE_CONFIG);
-                db = getFirestore();
-                auth = getAuth();
-                console.log("Firebase Initialized.");
-
-                console.log("Loading manual names...");
-                await loadManualNamesFromFirestore();
-                console.log("Manual names loaded.");
-
-                console.log("Setting up event listeners...");
-                setupEventListeners();
-                console.log("Event listeners set up.");
-
-                console.log("Setting up Auth State Listener...");
-                onAuthStateChanged(auth, async (user) => {
-                    console.log("Auth state changed. User:", user ? user.uid : 'null', "Is Anonymous:", user ? user.isAnonymous : 'N/A');
-                    const dbStatus = getEl('db-status');
-                    dbStatus.title = `Connected to project: ${USER_FIREBASE_CONFIG.projectId}`;
-                    authInitialized = true; // Mark auth as initialized
-
-                    if (user) {
-                        userId = user.uid;
-                        isAnonymous = user.isAnonymous;
-                        dbStatus.innerHTML = `✅ Connected`;
-                        dbStatus.className = 'text-sm text-green-400';
-                        
-                        if (!statsListenerUnsubscribe) { 
-                           console.log("User detected, attaching Firestore listener...");
-                           setupRealtimeListener(); 
-                        }
-
-                        if (isAnonymous) {
-                            console.log("User is anonymous.");
-                            getEl('login-buttons').style.display = 'flex';
-                            getEl('user-info').style.display = 'none';
-                            loadTeamsFromLocalStorage();
-                        } else {
-                            console.log("User is signed in:", user.displayName || user.email);
-                            getEl('login-buttons').style.display = 'none';
-                            getEl('user-info').style.display = 'flex';
-                            getEl('user-name').textContent = user.displayName || user.email;
-                            await loadTeamsFromFirestore();
-                        }
-                    } else {
-                         console.log("No user detected, signing in anonymously...");
-                         signInAnonymously(auth).catch(e => {
-                             console.error("Anonymous auth failed:", e);
-                             dbStatus.innerHTML = '❌ Auth Error';
-                             dbStatus.className = 'text-sm text-red-400';
-                         });
-                         // Reset state for anonymous user (after logout or initial load failure)
-                         userId = null;
-                         isAnonymous = true;
-                         teams = []; 
-                         getEl('login-buttons').style.display = 'flex';
-                         getEl('user-info').style.display = 'none';
-                         loadTeamsFromLocalStorage(); 
-                         renderTeamBuilder(); // Update UI
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists() && userSnap.data().isApproved) {
+                    // USER IS APPROVED -> LOAD APP
+                    startApp(user);
+                } else {
+                    // USER NOT APPROVED -> SHOW CODE ENTRY
+                    getEl('login-gate').style.display = 'none';
+                    getEl('verification-gate').style.display = 'flex';
+                    
+                    // Check if this is the FIRST user ever (Setup Mode)
+                    const metadataRef = doc(db, 'metadata', 'security');
+                    const metaSnap = await getDoc(metadataRef);
+                    if (!metaSnap.exists()) {
+                        getEl('verify-instruction').textContent = "You are the first user. Create the Alliance Access Code:";
+                        getEl('verify-instruction').classList.add('text-yellow-400');
                     }
-                });
+                }
             } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                const dbStatus = getEl('db-status');
-                dbStatus.innerHTML = '❌ Initialization Error';
-                dbStatus.className = 'text-sm text-red-400';
-                 dbStatus.title = `Error initializing Firebase: ${error.message}`;
+                console.error("Verification failed:", error);
+                alert("Error verifying user. Check console.");
             }
         };
 
-        const setupRealtimeListener = () => {
-            console.log("Attaching Firestore listener...");
-            const collectionPath = `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`;
-            if (statsListenerUnsubscribe) {
-                 console.warn("Detaching existing listener before attaching new one.");
-                 statsListenerUnsubscribe(); 
-                 statsListenerUnsubscribe = null; 
+        window.verifyAccessCode = async () => {
+            const codeInput = getEl('access-code-input').value.trim();
+            if (!codeInput) return;
+
+            const metadataRef = doc(db, 'metadata', 'security');
+            
+            try {
+                const metaSnap = await getDoc(metadataRef);
+                
+                if (!metaSnap.exists()) {
+                    // First time setup: Create the code
+                    await setDoc(metadataRef, { accessCode: codeInput });
+                    await setDoc(doc(db, 'users', userId), { isApproved: true, email: auth.currentUser.email, teams: [] });
+                    alert("Access Code Created! You are now the admin.");
+                    startApp(auth.currentUser);
+                } else {
+                    // Normal login: Check code
+                    if (metaSnap.data().accessCode === codeInput) {
+                        await setDoc(doc(db, 'users', userId), { isApproved: true, email: auth.currentUser.email, teams: [] }, { merge: true });
+                        startApp(auth.currentUser);
+                    } else {
+                        alert("Incorrect Access Code.");
+                        getEl('access-code-input').value = '';
+                    }
+                }
+            } catch (error) {
+                console.error("Error checking code:", error);
+                alert("Verification error.");
             }
+        };
+
+        const startApp = async (user) => {
+            getEl('verification-gate').style.display = 'none';
+            getEl('login-gate').style.display = 'none';
+            getEl('main-app').style.display = 'flex';
+            
+            getEl('user-name').textContent = user.displayName || user.email;
+            getEl('db-status').innerHTML = `✅ Connected`;
+            getEl('db-status').className = 'text-sm text-green-400';
+
+            await loadManualNamesFromFirestore();
+            await loadTeamsFromFirestore();
+            setupRealtimeListener();
+        };
+
+        const setupRealtimeListener = () => {
+            const collectionPath = `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`;
+            if (statsListenerUnsubscribe) statsListenerUnsubscribe();
 
             statsListenerUnsubscribe = onSnapshot(collection(db, collectionPath), querySnapshot => {
-                console.log("Received data snapshot from Firestore.");
                 allStats = querySnapshot.docs.map(doc => {
                     const data = doc.data();
                     const statEntry = { 
@@ -287,14 +336,10 @@
                     statEntry.realScore = calculateRealScore(statEntry);
                     return statEntry;
                 });
-                console.log(`Processed ${allStats.length} stats entries.`);
                 populateSelectors(); 
                 applyFiltersAndRender(); 
             }, error => {
                 console.error("Error fetching stats:", error);
-                getEl('db-status').innerHTML = '❌ Connection Error';
-                getEl('db-status').className = 'text-sm text-red-400';
-                getEl('db-status').title = `Error connecting to ${USER_FIREBASE_CONFIG.projectId}`;
             });
         };
 
@@ -321,35 +366,88 @@
         };
 
         // --- AUTHENTICATION ---
-        const signInWithGoogle = () => { // No longer window.
-             if (!authInitialized) { 
-                 showToast("Initializing login, please wait...");
-                 return; 
-            }
+        window.signInWithGoogle = () => {
             const provider = new GoogleAuthProvider();
             signInWithPopup(auth, provider).catch(error => {
                 console.error("Google Sign In Error:", error);
-                if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-                    showModal("Login Error", "Could not sign in with Google. Please try again.");
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    alert("Login Failed: " + error.message);
                 }
             });
         };
-        const logout = () => signOut(auth); // No longer window.
+        window.logout = () => signOut(auth);
         
-        // --- SELECTOR LOGIC & MANUAL ADDITIONS --- 
-        const loadManualNamesFromFirestore = async () => { try { const docRef = doc(db, 'metadata', 'lists'); const docSnap = await getDoc(docRef); if (docSnap.exists()) { const data = docSnap.data(); manuallyAddedKingdoms = data.kingdomNames || []; manuallyAddedAlliances = data.allianceNames || []; } else { console.log("Metadata doc not found, creating..."); await setDoc(docRef, { kingdomNames: [], allianceNames: [] }); manuallyAddedKingdoms = []; manuallyAddedAlliances = []; } } catch (error) { console.error("Error loading manual names:", error); manuallyAddedKingdoms = []; manuallyAddedAlliances = []; } };
-        const saveManualNameToFirestore = async (type, name) => { const docRef = doc(db, 'metadata', 'lists'); const fieldToUpdate = type === 'kingdom' ? 'kingdomNames' : 'allianceNames'; try { await setDoc(docRef, { [fieldToUpdate]: arrayUnion(name) }, { merge: true }); if (type === 'kingdom') { if (!manuallyAddedKingdoms.includes(name)) manuallyAddedKingdoms.push(name); } else { if (!manuallyAddedAlliances.includes(name)) manuallyAddedAlliances.push(name); } populateSelectors(); } catch (error) { console.error(`Error adding ${type} name:`, error); showToast(`Failed to save ${type} name.`); } };
-        const populateSelectors = () => { const dbKingdoms = [...new Set(allStats.map(s => s.kingdom))]; uniqueKingdoms = [...new Set(['unknown', ...dbKingdoms, ...manuallyAddedKingdoms])].sort(); const kingdomSelect = getEl('kingdom-select'); const currentKingdomValue = kingdomSelect.value; kingdomSelect.innerHTML = `<option value="all">All Kingdoms</option>`; uniqueKingdoms.forEach(k => { if (k) kingdomSelect.innerHTML += `<option value="${k}">${k}</option>`; }); kingdomSelect.value = uniqueKingdoms.includes(currentKingdomValue) ? currentKingdomValue : 'all'; selectedKingdom = kingdomSelect.value; populateAllianceSelector(); };
-        const populateAllianceSelector = () => { const allianceSelect = getEl('alliance-select'); const currentAllianceValue = allianceSelect.value; const statsInSelectedKingdom = (selectedKingdom === 'all') ? allStats : allStats.filter(s => s.kingdom === selectedKingdom); const dbAlliances = [...new Set(statsInSelectedKingdom.map(s => s.alliance))]; uniqueAlliances = [...new Set(['unknown', ...dbAlliances, ...manuallyAddedAlliances])].sort(); allianceSelect.innerHTML = `<option value="all">All Alliances</option>`; uniqueAlliances.forEach(a => { if (a) allianceSelect.innerHTML += `<option value="${a}">${a}</option>`; }); allianceSelect.value = uniqueAlliances.includes(currentAllianceValue) ? currentAllianceValue : 'all'; selectedAlliance = allianceSelect.value; };
+        // --- SELECTOR LOGIC & MANUAL ADDITIONS ---
+         const loadManualNamesFromFirestore = async () => {
+            try {
+                const docRef = doc(db, 'metadata', 'lists');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    manuallyAddedKingdoms = data.kingdomNames || [];
+                    manuallyAddedAlliances = data.allianceNames || [];
+                } else {
+                     try { await setDoc(docRef, { kingdomNames: [], allianceNames: [] }); } catch(e){ console.log("Read-only mode for lists"); }
+                    manuallyAddedKingdoms = [];
+                    manuallyAddedAlliances = [];
+                }
+            } catch (error) {
+                console.error("Error loading manual names:", error);
+                manuallyAddedKingdoms = []; manuallyAddedAlliances = [];
+            }
+        };
+
+        const saveManualNameToFirestore = async (type, name) => {
+             const docRef = doc(db, 'metadata', 'lists');
+             const fieldToUpdate = type === 'kingdom' ? 'kingdomNames' : 'allianceNames';
+             try {
+                 await setDoc(docRef, { [fieldToUpdate]: arrayUnion(name) }, { merge: true });
+                 if (type === 'kingdom') { if (!manuallyAddedKingdoms.includes(name)) manuallyAddedKingdoms.push(name); } 
+                 else { if (!manuallyAddedAlliances.includes(name)) manuallyAddedAlliances.push(name); }
+                 populateSelectors();
+             } catch (error) {
+                 console.error(`Error adding ${type} name:`, error);
+                 showToast(`Failed to save ${type} name. Permission denied?`);
+             }
+         };
+
+        const populateSelectors = () => {
+            const dbKingdoms = [...new Set(allStats.map(s => s.kingdom))];
+            uniqueKingdoms = [...new Set(['unknown', ...dbKingdoms, ...manuallyAddedKingdoms])].sort(); 
+            
+            const kingdomSelect = getEl('kingdom-select');
+            const currentKingdomValue = kingdomSelect.value; 
+            kingdomSelect.innerHTML = `<option value="all">All Kingdoms</option>`;
+            uniqueKingdoms.forEach(k => { if (k) kingdomSelect.innerHTML += `<option value="${k}">${k}</option>`; });
+            kingdomSelect.value = uniqueKingdoms.includes(currentKingdomValue) ? currentKingdomValue : 'all';
+            selectedKingdom = kingdomSelect.value; 
+
+            populateAllianceSelector(); 
+        };
+
+        const populateAllianceSelector = () => {
+            const allianceSelect = getEl('alliance-select');
+            const currentAllianceValue = allianceSelect.value; 
+            const statsInSelectedKingdom = (selectedKingdom === 'all') ? allStats : allStats.filter(s => s.kingdom === selectedKingdom);
+            const dbAlliances = [...new Set(statsInSelectedKingdom.map(s => s.alliance))];
+            uniqueAlliances = [...new Set(['unknown', ...dbAlliances, ...manuallyAddedAlliances])].sort();
+
+            allianceSelect.innerHTML = `<option value="all">All Alliances</option>`;
+            uniqueAlliances.forEach(a => { if (a) allianceSelect.innerHTML += `<option value="${a}">${a}</option>`; });
+            
+            allianceSelect.value = uniqueAlliances.includes(currentAllianceValue) ? currentAllianceValue : 'all';
+            selectedAlliance = allianceSelect.value; 
+        };
+
         const handleKingdomChange = (event) => { selectedKingdom = event.target.value; selectedAlliance = 'all'; populateAllianceSelector(); applyFiltersAndRender(); };
         const handleAllianceChange = (event) => { selectedAlliance = event.target.value; applyFiltersAndRender(); };
         const updateTableTitle = () => { let title = "Global Stats"; if (selectedKingdom !== 'all' && selectedAlliance === 'all') { title = `Kingdom: ${selectedKingdom}`; } else if (selectedKingdom !== 'all' && selectedAlliance !== 'all') { title = `Kingdom: ${selectedKingdom} - Alliance: ${selectedAlliance}`; } else if (selectedKingdom === 'all' && selectedAlliance !== 'all') { title = `Alliance: ${selectedAlliance} (All Kingdoms)`; } getEl('table-title').textContent = title; };
         const addManually = (type) => { const name = prompt(`Enter the name for the new ${type}:`); if (name && name.trim()) { const cleanedName = name.trim().toLowerCase(); const currentList = type === 'kingdom' ? uniqueKingdoms : uniqueAlliances; if (!currentList.includes(cleanedName)) { saveManualNameToFirestore(type, cleanedName); } else { showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} already exists.`); } } };
 
-        // --- MAIN TABLE & SORTING --- 
+        // --- MAIN TABLE ---
         const renderTable = () => {
             const tableBody = getEl('stats-table-body');
-            const rankedStats = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore).map((stat, index) => ({ ...stat, rank: index + 1 }));
+            const rankedStats = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore).map((stat, index) => ({ id: stat.id, rank: index + 1 }));
             const currentData = latestStats.map(stat => ({ ...stat, rank: rankedStats.find(r => r.id === stat.id)?.rank || '-' }));
             const disableCheckboxes = selectedForComparison.length >= 5;
 
@@ -389,7 +487,7 @@
             renderTable();
         };
         
-        // --- MODAL & FORM HANDLING --- 
+        // --- MODAL & FORM HANDLING ---
         const showModal = (title, message) => {
             getEl('modal-title').textContent = title;
             getEl('modal-message').textContent = message;
@@ -399,7 +497,7 @@
                 getEl('modal-cancel-btn').onclick = () => { getEl('custom-modal').classList.add('hidden'); resolve(false); };
             });
         };
-        const handleSaveOrUpdate = async () => {
+        window.handleSaveOrUpdate = async () => {
             const statData = {
                 playerName: getEl('playerName').value.trim().toLowerCase(),
                 kingdom: getEl('kingdomName').value.trim().toLowerCase(), 
@@ -408,10 +506,7 @@
                 cavAttack: parseFloat(getEl('cavAttack').value) || 0, cavDefense: parseFloat(getEl('cavDefense').value) || 0, cavLethality: parseFloat(getEl('cavLethality').value) || 0, cavHp: parseFloat(getEl('cavHp').value) || 0,
                 arcAttack: parseFloat(getEl('arcAttack').value) || 0, arcDefense: parseFloat(getEl('arcDefense').value) || 0, arcLethality: parseFloat(getEl('arcLethality').value) || 0, arcHp: parseFloat(getEl('arcHp').value) || 0,
             };
-            if (!statData.playerName || !statData.kingdom || !statData.alliance) {
-                showModal('Input Error', 'Player Name, Kingdom Name, and Alliance Name are required.');
-                return;
-            }
+            if (!statData.playerName || !statData.kingdom || !statData.alliance) { showModal('Input Error', 'Player Name, Kingdom Name, and Alliance Name are required.'); return; }
             try {
                 const collectionPath = `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`;
                 let action = "added";
@@ -428,7 +523,7 @@
                 showModal('Error', `Failed to save data: ${error.message}`);
             }
         };
-        const enterEditMode = (docId) => {
+        window.enterEditMode = (docId) => {
             const statToEdit = allStats.find(s => s.id === docId); if (!statToEdit) return;
             currentEditId = docId;
             getEl('playerName').value = statToEdit.playerName;
@@ -439,64 +534,113 @@
             getEl('cancel-edit-btn').classList.remove('hidden');
             window.scrollTo(0, 0);
         };
-        const resetForm = () => {
+        window.resetForm = () => {
             document.querySelector('form').reset();
             currentEditId = null;
             getEl('submit-btn').querySelector('span').textContent = 'Save Stats';
             getEl('cancel-edit-btn').classList.add('hidden');
         };
-        window.cancelEdit = resetForm;
+        window.cancelEdit = window.resetForm;
 
-        // --- DATA ACTIONS (DELETE, REVERT) --- 
-        const deleteStat = async (docId, playerName) => { if (await showModal('Confirm Deletion', `This will delete ALL entries for ${playerName}. This action cannot be undone. Are you sure?`)) { const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()); for(const stat of playerHistory) { try { await deleteDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, stat.id)); } catch (error) { console.error(`Failed to delete doc ${stat.id}`, error); } } teams.forEach(team => { team.players = team.players.filter(p => p !== playerName.toLowerCase()); }); updateTeams(); renderTeamBuilder(); } };
-        const revertToStat = async (docId, playerName) => { if (await showModal('Confirm Revert', `This will copy the stats from this historical entry and save it as the new latest entry for ${playerName}. This is non-destructive. Are you sure?`)) { const statToRevert = allStats.find(s => s.id === docId); if (!statToRevert) { showModal('Error', 'Could not find the historical data to revert.'); return; } const { id, date, trueScore, realScore, rank, ...newStatData } = statToRevert; try { await addDoc(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), { ...newStatData, date: serverTimestamp() }); getEl('history-modal').classList.add('hidden'); } catch (error) { showModal('Error', `Failed to revert stats: ${error.message}`); } } };
+        // --- DATA ACTIONS ---
+        window.deleteStat = async (docId, playerName) => {
+            if (await showModal('Confirm Deletion', `This will delete ALL entries for ${playerName}. This action cannot be undone. Are you sure?`)) {
+                const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase());
+                for(const stat of playerHistory) {
+                    try { await deleteDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, stat.id)); }
+                    catch (error) { console.error(`Failed to delete doc ${stat.id}`, error); }
+                }
+            }
+        };
+        window.revertToStat = async (docId, playerName) => {
+            if (await showModal('Confirm Revert', `This will copy the stats from this historical entry and save it as the new latest entry for ${playerName}. This is non-destructive. Are you sure?`)) {
+                const statToRevert = allStats.find(s => s.id === docId); if (!statToRevert) { showModal('Error', 'Could not find the historical data to revert.'); return; }
+                const { id, date, trueScore, realScore, ...newStatData } = statToRevert;
+                try { await addDoc(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), { ...newStatData, date: serverTimestamp() }); getEl('history-modal').classList.add('hidden'); }
+                catch (error) { showModal('Error', `Failed to revert stats: ${error.message}`); }
+            }
+        };
+        const exportToCSV = () => {
+            if (latestStats.length === 0) { alert("No data to export!"); return; }
+            const sanitizeCSV = (str) => `"${String(str).replace(/"/g, '""')}"`;
+            const headers = ['Rank', 'Player', 'Alliance', 'Inf Att', 'Inf Def', 'Inf Let', 'Inf HP', 'Cav Att', 'Cav Def', 'Cav Let', 'Cav HP', 'Arc Att', 'Arc Def', 'Arc Let', 'Arc HP', 'True Score', 'Real Score', 'Last Update'];
+            let csvContent = headers.join(",") + "\n";
+            const trueRankings = latestStats.slice().sort((a,b) => b.trueScore - a.trueScore).map((stat, index) => ({ id: stat.id, rank: index + 1 }));
+            const rows = latestStats.map(stat => {
+                const rank = trueRankings.find(r => r.id === stat.id)?.rank || '-';
+                const formattedDate = stat.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', '');
+                const row = [rank, sanitizeCSV(stat.playerName), sanitizeCSV(stat.alliance), stat.infAttack, stat.infDefense, stat.infLethality, stat.infHp, stat.cavAttack, stat.cavDefense, stat.cavLethality, stat.cavHp, stat.arcAttack, stat.arcDefense, stat.arcLethality, stat.arcHp, stat.trueScore, stat.realScore, sanitizeCSV(formattedDate)];
+                return row.join(",");
+            });
+            csvContent += rows.join("\n");
+            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "alliance_stats.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
 
-        // --- ANALYTICS & CHARTS --- 
+        // --- ANALYTICS & CHARTS ---
+        const getSpecialization = (stat) => {
+            const troopScores = { inf: stat.infAttack + stat.infDefense + stat.infLethality + stat.infHp, cav: stat.cavAttack + stat.cavDefense + stat.cavLethality + stat.cavHp, arc: stat.arcAttack + stat.arcDefense + stat.arcLethality + stat.arcHp };
+            const sortedTroops = Object.entries(troopScores).sort((a, b) => b[1] - a[1]);
+            const [highestType, highestScore] = sortedTroops[0];
+            const [, secondHighestScore] = sortedTroops[1];
+            if (!secondHighestScore || highestScore < secondHighestScore * 1.10) return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' };
+            switch(highestType) {
+                case 'inf': return { key: 'infantry', icon: 'fa-shield-alt', color: 'text-blue-400', title: 'Infantry Specialist' };
+                case 'cav': return { key: 'cavalry', icon: 'fa-horse', color: 'text-green-400', title: 'Cavalry Specialist' };
+                case 'arc': return { key: 'archer', icon: 'fa-bullseye', color: 'text-red-400', title: 'Archer Specialist' };
+                default: return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' };
+            }
+        };
         const renderAnalytics = (players, container, title) => {
-             container.innerHTML = '';
-             if (players.length === 0) { container.innerHTML = `<p class="text-gray-400 italic">Not enough data for analytics.</p>`; return; }
-             const mainGrid = document.createElement('div'); mainGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6';
-             const col1 = document.createElement('div'); col1.className = 'space-y-6';
-             const col2 = document.createElement('div'); col2.className = 'space-y-6';
-             const topPlayers = [...players].sort((a,b) => b.trueScore - a.trueScore).slice(0, 10);
-             let topHtml = `<div><h4 class="text-lg font-semibold text-yellow-400 mb-2">${title === 'alliance' ? 'Top 10 Rally Leaders (by True Score)' : 'Top Players (by True Score)'}</h4><ol class="list-decimal list-inside space-y-1">`;
-             topPlayers.forEach(p => topHtml += `<li>${p.playerName} - ${p.trueScore.toLocaleString()}</li>`);
-             topHtml += '</ol></div>';
-             col1.innerHTML += topHtml;
-             if (title === 'alliance' || title === 'global' || title === 'kingdom') { 
-                 const playerGroups = {};
-                 allStats.forEach(stat => { (playerGroups[stat.playerName] = playerGroups[stat.playerName] || []).push(stat); });
-                 const improvements = Object.values(playerGroups).filter(g => g.length > 1).map(g => { const sorted = g.sort((a,b) => b.date - a.date); return { name: sorted[0].playerName, improvement: sorted[0].realScore - sorted[1].realScore }; }).filter(p => p.improvement > 0).sort((a,b) => b.improvement - a.improvement).slice(0, 5);
-                 let improvedHtml = `<div><h4 class="text-lg font-semibold text-green-400 mb-2">Most Improved Players (by Real Score)</h4>`;
-                 if (improvements.length > 0) { improvedHtml += `<ol class="list-decimal list-inside space-y-1">`; improvements.forEach(p => improvedHtml += `<li>${p.name} <span class="text-green-400 font-bold">(+${p.improvement.toLocaleString()})</span></li>`); improvedHtml += `</ol>`; } else { improvedHtml += `<p class="italic text-gray-400 text-sm">Not enough historical data yet.</p>`; }
-                 col1.innerHTML += improvedHtml + '</div>';
-                 const recentEntries = [...allStats].sort((a,b) => b.date - a.date).slice(0, 5);
-                 let recentHtml = `<div><h4 class="text-lg font-semibold text-cyan-400 mb-2">Last 5 New Entries</h4>`;
-                 if (recentEntries.length > 0) {
-                     recentHtml += `<ul class="space-y-1 text-sm list-disc list-inside">`;
-                     recentEntries.forEach(p => { const d = p.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); recentHtml += `<li><span class="font-semibold text-white">${p.playerName}</span> (${p.alliance}) submitted on <span class="text-gray-400">${d}</span></li>`; });
-                     recentHtml += '</ul>';
-                 } else { recentHtml += `<p class="italic text-gray-400 text-sm">No entries yet.</p>`; }
-                 col1.innerHTML += recentHtml + '</div>';
-             }
-             const specCounts = { infantry: 0, cavalry: 0, archer: 0, balanced: 0 };
-             players.forEach(stat => specCounts[getSpecialization(stat).key]++);
-             const chartId = `${title}-analytics-chart-canvas`;
-             col2.innerHTML += `<div><h4 class="text-lg font-semibold text-indigo-400 mb-2">${title === 'alliance' ? 'Alliance Composition' : (title === 'team' ? 'Team Composition' : 'Overall Composition')}</h4><div class="relative h-64"><canvas id="${chartId}"></canvas></div></div>`; 
-             const topByTroopContainer = document.createElement('div');
-             ['inf', 'cav', 'arc'].forEach(type => {
-                 const topUnitPlayers = [...players].sort((a,b) => (b[`${type}Attack`] + b[`${type}Defense`] + b[`${type}Lethality`] + b[`${type}Hp`]) - (a[`${type}Attack`] + a[`${type}Defense`] + a[`${type}Lethality`] + a[`${type}Hp`])).slice(0,5);
-                 const titleText = `Top 5 ${type.charAt(0).toUpperCase() + type.slice(1)} Players`;
-                 let troopHtml = `<div class="mb-4"><h5 class="text-md font-semibold text-gray-300 mb-1">${titleText}</h5>`;
-                 if (topUnitPlayers.length > 0) { troopHtml += `<ol class="list-decimal list-inside text-sm">`; topUnitPlayers.forEach(p => troopHtml += `<li>${p.playerName} ${title !== 'alliance' ? `(${p.alliance})` : ''}</li>`); troopHtml += `</ol>`; } else { troopHtml += `<p class="italic text-gray-400 text-sm">No entries yet.</p>`; } 
-                 topByTroopContainer.innerHTML += troopHtml + `</div>`;
-             });
-             col2.appendChild(topByTroopContainer);
-             mainGrid.appendChild(col1); mainGrid.appendChild(col2); container.appendChild(mainGrid);
-             const ctx = getEl(chartId).getContext('2d');
-             const chartVar = title === 'alliance' ? 'analyticsChart' : 'teamAnalyticsChart'; 
-             if(window[chartVar]) window[chartVar].destroy();
-             window[chartVar] = new Chart(ctx, { type: 'pie', data: { labels: ['Infantry', 'Cavalry', 'Archer', 'Balanced'], datasets: [{ data: [specCounts.infantry, specCounts.cavalry, specCounts.archer, specCounts.balanced], backgroundColor: ['#60a5fa', '#4ade80', '#f87171', '#9ca3af'], borderColor: '#1f2937' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: '#e5e7eb' } } } } });
+            container.innerHTML = '';
+            if (players.length === 0) { container.innerHTML = `<p class="text-gray-400 italic">Not enough data for analytics.</p>`; return; }
+            const mainGrid = document.createElement('div'); mainGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6';
+            const col1 = document.createElement('div'); col1.className = 'space-y-6';
+            const col2 = document.createElement('div'); col2.className = 'space-y-6';
+            const topPlayers = [...players].sort((a,b) => b.trueScore - a.trueScore).slice(0, 10);
+            let topHtml = `<div><h4 class="text-lg font-semibold text-yellow-400 mb-2">${title === 'alliance' ? 'Top 10 Rally Leaders (by True Score)' : 'Top Players (by True Score)'}</h4><ol class="list-decimal list-inside space-y-1">`;
+            topPlayers.forEach(p => topHtml += `<li>${p.playerName} - ${p.trueScore.toLocaleString()}</li>`);
+            topHtml += '</ol></div>';
+            col1.innerHTML += topHtml;
+            if (title === 'alliance' || title === 'global' || title === 'kingdom') { 
+                const playerGroups = {};
+                allStats.forEach(stat => { (playerGroups[stat.playerName] = playerGroups[stat.playerName] || []).push(stat); });
+                const improvements = Object.values(playerGroups).filter(g => g.length > 1).map(g => { const sorted = g.sort((a,b) => b.date - a.date); return { name: sorted[0].playerName, improvement: sorted[0].realScore - sorted[1].realScore }; }).filter(p => p.improvement > 0).sort((a,b) => b.improvement - a.improvement).slice(0, 5);
+                let improvedHtml = `<div><h4 class="text-lg font-semibold text-green-400 mb-2">Most Improved Players (by Real Score)</h4>`;
+                if (improvements.length > 0) { improvedHtml += `<ol class="list-decimal list-inside space-y-1">`; improvements.forEach(p => improvedHtml += `<li>${p.name} <span class="text-green-400 font-bold">(+${p.improvement.toLocaleString()})</span></li>`); improvedHtml += `</ol>`; } else { improvedHtml += `<p class="italic text-gray-400 text-sm">Not enough historical data yet.</p>`; }
+                col1.innerHTML += improvedHtml + '</div>';
+                const recentEntries = [...allStats].sort((a,b) => b.date - a.date).slice(0, 5);
+                let recentHtml = `<div><h4 class="text-lg font-semibold text-cyan-400 mb-2">Last 5 New Entries</h4>`;
+                if (recentEntries.length > 0) {
+                    recentHtml += `<ul class="space-y-1 text-sm list-disc list-inside">`;
+                    recentEntries.forEach(p => { const d = p.date.toLocaleString([], { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); recentHtml += `<li><span class="font-semibold text-white">${p.playerName}</span> (${p.alliance}) submitted on <span class="text-gray-400">${d}</span></li>`; });
+                    recentHtml += '</ul>';
+                } else { recentHtml += `<p class="italic text-gray-400 text-sm">No entries yet.</p>`; }
+                col1.innerHTML += recentHtml + '</div>';
+            }
+            const specCounts = { infantry: 0, cavalry: 0, archer: 0, balanced: 0 };
+            players.forEach(stat => specCounts[getSpecialization(stat).key]++);
+            const chartId = `${title}-analytics-chart-canvas`;
+            col2.innerHTML += `<div><h4 class="text-lg font-semibold text-indigo-400 mb-2">${title === 'alliance' ? 'Alliance Composition' : 'Team Composition'}</h4><div class="relative h-64"><canvas id="${chartId}"></canvas></div></div>`; 
+            const topByTroopContainer = document.createElement('div');
+            ['inf', 'cav', 'arc'].forEach(type => {
+                const topUnitPlayers = [...players].sort((a,b) => (b[`${type}Attack`] + b[`${type}Defense`] + b[`${type}Lethality`] + b[`${type}Hp`]) - (a[`${type}Attack`] + a[`${type}Defense`] + a[`${type}Lethality`] + a[`${type}Hp`])).slice(0,5);
+                const titleText = `Top 5 ${type.charAt(0).toUpperCase() + type.slice(1)} Players`;
+                let troopHtml = `<div class="mb-4"><h5 class="text-md font-semibold text-gray-300 mb-1">${titleText}</h5>`;
+                if (topUnitPlayers.length > 0) { troopHtml += `<ol class="list-decimal list-inside text-sm">`; topUnitPlayers.forEach(p => troopHtml += `<li>${p.playerName} ${title !== 'alliance' ? `(${p.alliance})` : ''}</li>`); troopHtml += `</ol>`; } else { troopHtml += `<p class="italic text-gray-400 text-sm">No entries yet.</p>`; } 
+                topByTroopContainer.innerHTML += troopHtml + `</div>`;
+            });
+            col2.appendChild(topByTroopContainer);
+            mainGrid.appendChild(col1); mainGrid.appendChild(col2); container.appendChild(mainGrid);
+            const ctx = getEl(chartId).getContext('2d');
+            const chartVar = title === 'alliance' ? 'analyticsChart' : 'teamAnalyticsChart'; 
+            if(window[chartVar]) window[chartVar].destroy();
+            window[chartVar] = new Chart(ctx, { type: 'pie', data: { labels: ['Infantry', 'Cavalry', 'Archer', 'Balanced'], datasets: [{ data: [specCounts.infantry, specCounts.cavalry, specCounts.archer, specCounts.balanced], backgroundColor: ['#60a5fa', '#4ade80', '#f87171', '#9ca3af'], borderColor: '#1f2937' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: '#e5e7eb' } } } } });
         };
         const showComparisonChartForPlayers = (players, title) => {
             const statKeys = ['infAttack','infDefense','infLethality','infHp','cavAttack','cavDefense','cavLethality','cavHp','arcAttack','arcDefense','arcLethality','arcHp'];
@@ -520,17 +664,16 @@
              statKeys.forEach(key => averages[key] = parseFloat((averages[key] / currentViewPlayers.length).toFixed(1)));
              return averages;
         };
+        window.showSinglePlayerChart = (playerName) => { const playerStat = latestStats.find(s => s.playerName === playerName.toLowerCase()); if (!playerStat) return; showComparisonChartForPlayers([playerStat], `Stat Comparison for ${playerName}`); };
         const showComparisonChart = () => { if (selectedForComparison.length === 0) return; const playersToCompare = selectedForComparison.map(name => latestStats.find(s => s.playerName === name)).filter(Boolean); showComparisonChartForPlayers(playersToCompare, `Comparing ${playersToCompare.length} players`); };
         const renderHistoryGraph = (fullHistory, filter) => { const canvas = getEl('history-chart-canvas'); if (!canvas) return; const now = new Date(); let cutoffDate = new Date(0); if (filter === '1m') cutoffDate.setMonth(now.getMonth() - 1); else if (filter === '3m') cutoffDate.setMonth(now.getMonth() - 3); else if (filter === '6m') cutoffDate.setMonth(now.getMonth() - 6); else if (filter === '1y') cutoffDate.setFullYear(now.getFullYear() - 1); const filteredHistory = fullHistory.filter(stat => stat.date >= cutoffDate).sort((a, b) => a.date - b.date); if (historyChart) historyChart.destroy(); historyChart = new Chart(canvas.getContext('2d'), { type: 'line', data: { labels: filteredHistory.map(s => s.date.toLocaleDateString()), datasets: [{ label: 'Real Score', data: filteredHistory.map(s => s.realScore), borderColor: '#facc15', backgroundColor: 'rgba(250, 204, 21, 0.2)', fill: true, tension: 0.1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }, x: { ticks: { color: '#e5e7eb' }, grid: { color: 'transparent' } } }, plugins: { legend: { display: false } } } }); };
-        const showHistory = (playerName) => { const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()).sort((a,b) => b.date - a.date); getEl('history-modal-title').textContent = `Update History for ${playerName}`; const historyBody = getEl('history-modal-body'); historyBody.innerHTML = ''; playerHistory.forEach((stat, index) => { const prevStat = playerHistory[index + 1]; let growthHtml = ''; if(prevStat) { const growth = stat.realScore - prevStat.realScore; const growthColor = growth >= 0 ? 'text-green-400' : 'text-red-400'; growthHtml = `<span class="font-bold ${growthColor}">(${growth >= 0 ? '+' : ''}${growth})</span>`; } const entryDiv = document.createElement('div'); entryDiv.className = 'p-3 rounded-md border border-gray-700 history-entry'; entryDiv.innerHTML = `<div class="flex justify-between items-center cursor-pointer"><div onclick="toggleHistoryDetails(this.parentElement)"><div><span class="font-semibold">${stat.date.toLocaleString()}</span><div><span class="text-gray-400">Real Score:</span> <span class="font-bold text-white">${stat.realScore.toLocaleString()}</span> ${growthHtml}</div></div></div><button onclick="event.stopPropagation(); revertToStat('${stat.id}', '${stat.playerName}')" class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn"><i class="fas fa-undo text-lg"></i> Revert</button></div><div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden" data-id="${stat.id}"></div>`; historyBody.appendChild(entryDiv); }); getEl('history-modal').classList.remove('hidden'); renderHistoryGraph(playerHistory, 'all'); getEl('history-time-filter').onchange = (e) => renderHistoryGraph(playerHistory, e.target.value); };
-        const toggleHistoryDetails = (element) => { const detailsDiv = element.nextElementSibling; const statId = detailsDiv.dataset.id; const stat = allStats.find(s => s.id === statId); if (!stat) return; if (detailsDiv.classList.contains('hidden')) { detailsDiv.classList.remove('hidden'); detailsDiv.innerHTML = `<div><strong>Inf:</strong> ${stat.infAttack}/${stat.infDefense}/${stat.infLethality}/${stat.infHp}</div><div><strong>Cav:</strong> ${stat.cavAttack}/${stat.cavDefense}/${stat.cavLethality}/${stat.cavHp}</div><div><strong>Arc:</strong> ${stat.arcAttack}/${stat.arcDefense}/${stat.arcLethality}/${stat.arcHp}</div>`; } else { detailsDiv.classList.add('hidden'); } };
-        
-        // --- TEAM BUILDER LOGIC --- (Definitions complete)
-        const saveTeamsToFirestore = async () => { if (isAnonymous || !userId) return; try { await setDoc(doc(db, 'users', userId), { teams }); } catch(e) { console.error("Error saving teams:", e); showToast("Failed to save teams to cloud."); } };
-        const loadTeamsFromFirestore = async () => { if (isAnonymous || !userId) return; try { const docSnap = await getDoc(doc(db, 'users', userId)); teams = docSnap.exists() && docSnap.data().teams ? docSnap.data().teams : []; } catch(e) { console.error("Error loading teams:", e); teams = []; } };
-        const saveTeamsToLocalStorage = () => localStorage.setItem(`allianceTeams_anon`, JSON.stringify(teams));
-        const loadTeamsFromLocalStorage = () => { const saved = localStorage.getItem(`allianceTeams_anon`); if (saved) teams = JSON.parse(saved); };
-        const updateTeams = () => isAnonymous ? saveTeamsToLocalStorage() : saveTeamsToFirestore();
+        window.showHistory = (playerName) => { const playerHistory = allStats.filter(s => s.playerName === playerName.toLowerCase()).sort((a,b) => b.date - a.date); getEl('history-modal-title').textContent = `Update History for ${playerName}`; const historyBody = getEl('history-modal-body'); historyBody.innerHTML = ''; playerHistory.forEach((stat, index) => { const prevStat = playerHistory[index + 1]; let growthHtml = ''; if(prevStat) { const growth = stat.realScore - prevStat.realScore; const growthColor = growth >= 0 ? 'text-green-400' : 'text-red-400'; growthHtml = `<span class="font-bold ${growthColor}">(${growth >= 0 ? '+' : ''}${growth})</span>`; } const entryDiv = document.createElement('div'); entryDiv.className = 'p-3 rounded-md border border-gray-700 history-entry'; entryDiv.innerHTML = `<div class="flex justify-between items-center cursor-pointer"><div onclick="toggleHistoryDetails(this.parentElement)"><div><span class="font-semibold">${stat.date.toLocaleString()}</span><div><span class="text-gray-400">Real Score:</span> <span class="font-bold text-white">${stat.realScore.toLocaleString()}</span> ${growthHtml}</div></div></div><button onclick="event.stopPropagation(); revertToStat('${stat.id}', '${stat.playerName}')" class="text-sm text-yellow-400 hover:text-yellow-300 ml-4 btn"><i class="fas fa-undo text-lg"></i> Revert</button></div><div class="text-xs text-gray-400 grid grid-cols-3 gap-x-4 mt-2 hidden" data-id="${stat.id}"></div>`; historyBody.appendChild(entryDiv); }); getEl('history-modal').classList.remove('hidden'); renderHistoryGraph(playerHistory, 'all'); getEl('history-time-filter').onchange = (e) => renderHistoryGraph(playerHistory, e.target.value); };
+        window.toggleHistoryDetails = (element) => { const detailsDiv = element.nextElementSibling; const statId = detailsDiv.dataset.id; const stat = allStats.find(s => s.id === statId); if (!stat) return; if (detailsDiv.classList.contains('hidden')) { detailsDiv.classList.remove('hidden'); detailsDiv.innerHTML = `<div><strong>Inf:</strong> ${stat.infAttack}/${stat.infDefense}/${stat.infLethality}/${stat.infHp}</div><div><strong>Cav:</strong> ${stat.cavAttack}/${stat.cavDefense}/${stat.cavLethality}/${stat.cavHp}</div><div><strong>Arc:</strong> ${stat.arcAttack}/${stat.arcDefense}/${stat.arcLethality}/${stat.arcHp}</div>`; } else { detailsDiv.classList.add('hidden'); } };
+
+        // --- TEAM BUILDER LOGIC ---
+        const saveTeamsToFirestore = async () => { if (!userId) return; try { await setDoc(doc(db, 'users', userId), { teams }); } catch(e) { console.error("Error saving teams:", e); showToast("Failed to save teams to cloud."); } };
+        const loadTeamsFromFirestore = async () => { if (!userId) return; try { const docSnap = await getDoc(doc(db, 'users', userId)); teams = docSnap.exists() && docSnap.data().teams ? docSnap.data().teams : []; } catch(e) { console.error("Error loading teams:", e); teams = []; } };
+        const updateTeams = () => saveTeamsToFirestore();
         const renderTeamBuilder = () => {
             const availablePlayersList = getEl('available-players-list');
             const teamsContainer = getEl('teams-container');
@@ -565,21 +708,22 @@
                 teamsContainer.appendChild(teamCard);
             });
         };
-        const createNewTeam = () => { teams.push({ id: Date.now(), name: `Team ${teams.length + 1}`, players: [] }); updateTeams(); renderTeamBuilder(); };
-        const addPlayerToTeam = (playerName, teamId) => { const team = teams.find(t => t.id === teamId); if(team && !team.players.includes(playerName)) { team.players.push(playerName); updateTeams(); renderTeamBuilder(); } document.querySelector('.team-add-dropdown')?.remove(); };
-        const removePlayerFromTeam = (playerName, teamId) => { const team = teams.find(t => t.id === teamId); if(team) { team.players = team.players.filter(p => p !== playerName); updateTeams(); renderTeamBuilder(); } };
-        const renameTeam = (teamId, newName) => { const team = teams.find(t => t.id === teamId); if (team) { team.name = newName.trim() || `Team ${teamId}`; updateTeams(); } };
-        const deleteTeam = async (teamId) => { if (await showModal('Confirm Deletion', 'Are you sure you want to delete this team? This cannot be undone.')) { teams = teams.filter(t => t.id !== teamId); updateTeams(); renderTeamBuilder(); } };
-        const showPlayerDetails = (playerName) => { const player = latestStats.find(p => p.playerName === playerName); if (!player) return; getEl('player-details-title').textContent = `Stats for ${player.playerName}`; getEl('player-details-body').innerHTML = `<div class="grid grid-cols-4 gap-x-4 gap-y-1 text-sm"><span class="font-semibold text-gray-400 col-span-2">True Score:</span> <span class="text-yellow-400 font-bold col-span-2">${player.trueScore.toLocaleString()}</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-blue-400">Inf Att:</span> <span>${player.infAttack}%</span> <span class="font-semibold text-blue-400">Inf Def:</span> <span>${player.infDefense}%</span><span class="font-semibold text-blue-400">Inf Let:</span> <span>${player.infLethality}%</span> <span class="font-semibold text-blue-400">Inf HP:</span> <span>${player.infHp}%</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-green-400">Cav Att:</span> <span>${player.cavAttack}%</span> <span class="font-semibold text-green-400">Cav Def:</span> <span>${player.cavDefense}%</span><span class="font-semibold text-green-400">Cav Let:</span> <span>${player.cavLethality}%</span> <span class="font-semibold text-green-400">Cav HP:</span> <span>${player.cavHp}%</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-red-400">Arc Att:</span> <span>${player.arcAttack}%</span> <span class="font-semibold text-red-400">Arc Def:</span> <span>${player.arcDefense}%</span><span class="font-semibold text-red-400">Arc Let:</span> <span>${player.arcLethality}%</span> <span class="font-semibold text-red-400">Arc HP:</span> <span>${player.arcHp}%</span></div>`; getEl('player-details-modal').classList.remove('hidden'); };
-        const showTeamAnalyticsModal = (teamId) => { const team = teams.find(t => t.id === teamId); if (!team) return; const teamPlayers = latestStats.filter(p => team.players.includes(p.playerName)); getEl('team-analytics-title').textContent = `Team Analytics for ${team.name}`; renderAnalytics(teamPlayers, getEl('team-analytics-body'), 'team'); getEl('team-analytics-modal').classList.remove('hidden'); };
+        window.createNewTeam = () => { teams.push({ id: Date.now(), name: `Team ${teams.length + 1}`, players: [] }); updateTeams(); renderTeamBuilder(); };
+        window.addPlayerToTeam = (playerName, teamId) => { const team = teams.find(t => t.id === teamId); if(team && !team.players.includes(playerName)) { team.players.push(playerName); updateTeams(); renderTeamBuilder(); } };
+        window.removePlayerFromTeam = (playerName, teamId) => { const team = teams.find(t => t.id === teamId); if(team) { team.players = team.players.filter(p => p !== playerName); updateTeams(); renderTeamBuilder(); } };
+        window.renameTeam = (teamId, newName) => { const team = teams.find(t => t.id === teamId); if (team) { team.name = newName; updateTeams(); } };
+        window.deleteTeam = async (teamId) => { if (await showModal('Confirm Deletion', 'Are you sure you want to delete this team? This cannot be undone.')) { teams = teams.filter(t => t.id !== teamId); updateTeams(); renderTeamBuilder(); } };
+        window.showPlayerDetails = (playerName) => { const player = latestStats.find(p => p.playerName === playerName); if (!player) return; getEl('player-details-title').textContent = `Stats for ${player.playerName}`; getEl('player-details-body').innerHTML = `<div class="grid grid-cols-4 gap-x-4 gap-y-1 text-sm"><span class="font-semibold text-gray-400 col-span-2">True Score:</span> <span class="text-yellow-400 font-bold col-span-2">${player.trueScore.toLocaleString()}</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-blue-400">Inf Att:</span> <span>${player.infAttack}%</span> <span class="font-semibold text-blue-400">Inf Def:</span> <span>${player.infDefense}%</span><span class="font-semibold text-blue-400">Inf Let:</span> <span>${player.infLethality}%</span> <span class="font-semibold text-blue-400">Inf HP:</span> <span>${player.infHp}%</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-green-400">Cav Att:</span> <span>${player.cavAttack}%</span> <span class="font-semibold text-green-400">Cav Def:</span> <span>${player.cavDefense}%</span><span class="font-semibold text-green-400">Cav Let:</span> <span>${player.cavLethality}%</span> <span class="font-semibold text-green-400">Cav HP:</span> <span>${player.cavHp}%</span><div class="col-span-4 mt-2 pt-2 border-t border-gray-600"></div><span class="font-semibold text-red-400">Arc Att:</span> <span>${player.arcAttack}%</span> <span class="font-semibold text-red-400">Arc Def:</span> <span>${player.arcDefense}%</span><span class="font-semibold text-red-400">Arc Let:</span> <span>${player.arcLethality}%</span> <span class="font-semibold text-red-400">Arc HP:</span> <span>${player.arcHp}%</span></div>`; getEl('player-details-modal').classList.remove('hidden'); };
+        window.showTeamAnalyticsModal = (teamId) => { const team = teams.find(t => t.id === teamId); if (!team) return; const teamPlayers = latestStats.filter(p => team.players.includes(p.playerName)); getEl('team-analytics-title').textContent = `Team Analytics for ${team.name}`; renderAnalytics(teamPlayers, getEl('team-analytics-body'), 'team'); getEl('team-analytics-modal').classList.remove('hidden'); };
         
         // --- EVENT LISTENERS ---
         const setupEventListeners = () => {
-            getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Kingdom/Alliance Filtering:</strong> Use the dropdowns above the table to view stats globally, for a specific kingdom, or for a specific alliance. Add new K/A names using the '+' buttons (saved globally).</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account (otherwise saved locally).</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze Data:</strong> Click the 'Analytics' button to see a high-level overview for the currently selected scope (Global, Kingdom, or Alliance).</li>`; getEl('help-modal').classList.remove('hidden'); };
+            getEl('help-btn').onclick = () => { getEl('help-list').innerHTML = `<li><strong>User Accounts:</strong> You can log in with Google to save your created teams to the cloud and access them from any device.</li><li><strong>Kingdom/Alliance Filtering:</strong> Use the dropdowns above the table to view stats globally, for a specific kingdom, or for a specific alliance. Add new K/A names using the '+' buttons.</li><li><strong>Weighted Ranking:</strong> The 'True Score' ranks players based on a formula that values Lethality (x1.2) and Health (x1.1) more than Attack/Defense.</li><li><strong>Track Progress:</strong> After an update, small <span class="text-green-400">(+green)</span> or <span class="text-red-400">(-red)</span> numbers show the change in each stat.</li><li><strong>View History:</strong> Click the <i class="fas fa-history text-indigo-400"></i> icon on any row to see a player's full update history, including a growth chart.</li><li><strong>Team Builder:</strong> Click the purple 'Team Builder' button to create and manage teams. When logged in, your teams are saved to your account.</li><li><strong>Quick Compare:</strong> Double-click anywhere on a player's row to open a chart comparing their stats to the alliance average.</li><li><strong>Multi-Compare:</strong> Use the checkboxes on the left to select up to 5 players, then click the 'Compare Selected' button to see them all on one chart.</li><li><strong>Analyze Data:</strong> Click the 'Analytics' button to see a high-level overview for the currently selected scope (Global, Kingdom, or Alliance).</li>`; getEl('help-modal').classList.remove('hidden'); };
             getEl('analytics-btn').onclick = () => { renderAnalytics(latestStats, getEl('analytics-modal-body'), selectedAlliance !== 'all' ? 'alliance' : (selectedKingdom !== 'all' ? 'kingdom' : 'global')); getEl('analytics-modal').classList.remove('hidden'); }; 
             getEl('team-builder-btn').onclick = () => { renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden'); };
             getEl('changelog-btn').onclick = () => getEl('changelog-modal').classList.remove('hidden');
             getEl('compare-selected-btn').onclick = showComparisonChart;
+            getEl('export-btn').onclick = exportToCSV;
             getEl('kingdom-select').onchange = handleKingdomChange;
             getEl('alliance-select').onchange = handleAllianceChange;
             getEl('add-kingdom-btn').onclick = () => addManually('kingdom');
@@ -593,27 +737,6 @@
             window.handleCompareSelect = (checkbox) => { const name = checkbox.value; if (checkbox.checked) { if(selectedForComparison.length < 5) selectedForComparison.push(name); } else { selectedForComparison = selectedForComparison.filter(p => p !== name); } getEl('compare-count').textContent = selectedForComparison.length; getEl('compare-selected-btn').disabled = selectedForComparison.length === 0; };
             window.sortStats = (column) => { if (currentSort.column === column) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc'; else { currentSort.column = column; currentSort.direction = ['playerName', 'rank', 'alliance'].includes(column) ? 'asc' : 'desc'; } sortAndRender(); };
         };
-
-        // --- Assign functions to window scope for inline event handlers ---
-        window.signInWithGoogle = signInWithGoogle;
-        window.logout = logout;
-        window.handleSaveOrUpdate = handleSaveOrUpdate;
-        window.cancelEdit = cancelEdit;
-        window.sortStats = sortStats;
-        window.handleCompareSelect = handleCompareSelect;
-        window.showHistory = showHistory;
-        window.toggleHistoryDetails = toggleHistoryDetails;
-        window.enterEditMode = enterEditMode;
-        window.deleteStat = deleteStat;
-        window.revertToStat = revertToStat;
-        window.showSinglePlayerChart = showSinglePlayerChart;
-        window.createNewTeam = createNewTeam;
-        window.addPlayerToTeam = addPlayerToTeam;
-        window.removePlayerFromTeam = removePlayerFromTeam;
-        window.renameTeam = renameTeam;
-        window.deleteTeam = deleteTeam;
-        window.showPlayerDetails = showPlayerDetails;
-        window.showTeamAnalyticsModal = showTeamAnalyticsModal;
 
         // --- RUN INITIALIZATION ---
         document.addEventListener('DOMContentLoaded', init);
