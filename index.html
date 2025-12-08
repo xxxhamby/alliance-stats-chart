@@ -39,18 +39,13 @@
         };
 
         const State = {
-            // AUTH
-            user: null, dbUser: null,
-            // DATA
-            profile: null, alliance: null,
+            current: 'loading',
+            user: null, dbUser: null, profile: null, alliance: null,
             leaderboard: [], roster: [],
             stats: { totalProfiles: 0 },
-            // UI
-            current: 'loading',
+            config: { lockdown: false, accessCode: '' },
             viewMode: 'alliance',
             filters: { ign: '', kingdom: '' },
-            config: { lockdown: false, accessCode: '' },
-            // FORM
             form: {
                 ign: '', kingdom: '', pid: '',
                 privacy: { hideName: false, hideStats: false },
@@ -133,7 +128,6 @@
                                 </div>
                                 <button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button>
                             </header>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div class="md:col-span-1 space-y-6">
                                     <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500">
@@ -173,7 +167,8 @@
                                         <img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600">
                                         <div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div>
                                     </div>
-                                    <div class="flex gap-3">
+                                    <div class="flex gap-3 items-center">
+                                        ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white p-2 rounded shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
                                         <button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button>
                                         <button onclick="window.triggerLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-power-off"></i></button>
                                     </div>
@@ -219,7 +214,6 @@
                             <div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div>
                             <div class="text-right flex flex-col gap-2 items-end">
                                 ${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : ''}
-                                ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1 rounded">GOD MODE</button>` : ''}
                             </div>
                         </div>`;
                     }
@@ -278,14 +272,9 @@
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
                             q = query(q, where('allianceID', '==', State.profile.allianceID), limit(50));
                         } else {
-                            // SERVER-SIDE QUERY (Fixed Logic)
-                            if (State.filters.ign) {
-                                q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
-                            } else if (State.filters.kingdom) {
-                                q = query(q, where('kingdom', '==', State.filters.kingdom), limit(50));
-                            } else {
-                                q = query(q, orderBy('kingdom', 'asc'), limit(50));
-                            }
+                            if (State.filters.ign) q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
+                            else if (State.filters.kingdom) q = query(q, where('kingdom', '==', State.filters.kingdom), limit(50));
+                            else q = query(q, orderBy('kingdom', 'asc'), limit(50));
                         }
                         const snap = await getDocs(q);
                         State.leaderboard = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -360,12 +349,10 @@
                     const hideStats = document.getElementById('frm-hideStats').checked;
                     if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
                     if(pid.length > 9) return App.ui.toast("Player ID must be 9 digits or less", "error");
-                    
                     const qPid = query(collection(App.db, 'profiles'), where('pid', '==', pid));
                     const snapPid = await getDocs(qPid);
                     const pidTaken = snapPid.docs.find(d => d.id !== State.user.uid);
                     if(pidTaken) return App.ui.toast("Player ID already registered!", "error");
-                    
                     const profileData = { ign, kingdom, pid, privacy: { hideName, hideStats }, troops: State.form.troops, updatedAt: serverTimestamp() };
                     try {
                         await setDoc(doc(App.db, 'profiles', State.user.uid), profileData, { merge: true });
@@ -379,7 +366,7 @@
                 },
 
                 initOwnerView: async () => {
-                    onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
+                    const unsubCode = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
                         if(snap.exists() && document.getElementById('owner-global-code')) {
                             document.getElementById('owner-global-code').innerText = snap.data().accessCode;
                         }
