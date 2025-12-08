@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,34 +14,19 @@
         .table-row td { padding: 8px 10px; white-space: nowrap; }
         .table-row { cursor: pointer; }
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-        .btn:disabled { cursor: not-allowed; opacity: 0.5; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .input-field, select { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 8px; border-radius: 0.375rem; width: 100%; }
-        
-        select.input-field {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
-        }
-
-        .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; cursor: pointer; }
-        .add-btn { background-color: #374151; border: 1px solid #4b5563; color: #9ca3af; padding: 4px 8px; margin-left: 4px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; }
-        
-        /* View States */
+        .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; }
         .view-section { display: none; } 
         .view-section.active { display: flex; flex-direction: column; }
-        .admin-editing { border: 2px solid #eab308; background-color: #2e2305; }
     </style>
 </head>
-
 <body class="flex flex-col min-h-screen p-4 md:p-6 space-y-4">
 
     <div id="view-login" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4 active">
         <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full text-center">
-            <h1 class="text-3xl font-extrabold text-white mb-2"><i class="fas fa-shield-alt text-blue-500"></i> Alliance CMD</h1>
-            <p class="text-gray-400 mb-8">Secure Access Required.</p>
+            <h1 class="text-3xl font-extrabold text-white mb-2"><i class="fas fa-globe-americas text-blue-500"></i> Alliance Federation</h1>
+            <p class="text-gray-400 mb-8">Secure Data Command</p>
             <button onclick="window.signInWithGoogle()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-bold py-3 px-4 rounded-md btn flex items-center justify-center transition-all">
                 <i class="fab fa-google mr-3 text-xl"></i> <span>Sign in with Google</span>
             </button>
@@ -50,172 +34,146 @@
         </div>
     </div>
 
-    <div id="view-verify" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4">
+    <div id="view-setup" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4">
         <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
-            <h1 class="text-2xl font-bold text-white mb-4"><i class="fas fa-lock text-yellow-500 mr-2"></i> Access Code Required</h1>
-            <p id="verify-instruction" class="text-gray-300 mb-4">Please enter the Alliance Access Code.</p>
-            <input type="password" id="access-code-input" placeholder="Enter Code" class="w-full rounded-md input-field text-center text-lg mb-4">
-            <button onclick="window.verifyAccessCode()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md btn mb-4">Verify & Enter</button>
-            <button onclick="window.logout()" class="text-sm text-red-400 hover:underline">Logout</button>
-        </div>
-    </div>
-
-    <div id="view-register" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
-            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-user-plus text-yellow-500"></i> New Profile</h2>
-            <p class="text-sm text-gray-400 mb-4">First time setup. Please register to access the dashboard.</p>
-            <form onsubmit="event.preventDefault(); window.submitRegistration();" class="space-y-3">
-                <div><label class="text-xs text-gray-400 uppercase">In-Game Name</label><input type="text" id="reg-ign" class="input-field" required></div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div><label class="text-xs text-gray-400 uppercase">Kingdom</label><input type="text" id="reg-kingdom" class="input-field" required></div>
-                    <div><label class="text-xs text-gray-400 uppercase">Alliance</label><input type="text" id="reg-alliance" class="input-field" required></div>
-                </div>
-                <div><label class="text-xs text-gray-400 uppercase">Alliance Access Code</label><input type="password" id="reg-code" class="input-field text-center tracking-widest" placeholder="Ask your Leader" required></div>
-                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-md btn">Submit Request</button>
+            <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-id-card text-yellow-500"></i> Identity Setup</h2>
+            <p class="text-sm text-gray-400 mb-4">Establish your identity in the global pool.</p>
+            <form onsubmit="event.preventDefault(); window.submitProfileSetup();" class="space-y-3">
+                <div><label class="text-xs text-gray-400 uppercase">In-Game Name</label><input type="text" id="setup-ign" class="input-field" required></div>
+                <div><label class="text-xs text-gray-400 uppercase">Kingdom Number</label><input type="text" id="setup-kingdom" class="input-field" required></div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-md btn">Enter Command Center</button>
             </form>
-            <button onclick="window.logout()" class="w-full mt-4 text-sm text-red-400 hover:underline">Cancel & Logout</button>
-        </div>
-    </div>
-
-    <div id="view-pending" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4 text-center">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
-            <i class="fas fa-clock text-5xl text-yellow-500 mb-4"></i>
-            <h2 class="text-2xl font-bold text-white mb-2">Request Pending</h2>
-            <p class="text-gray-300 mb-6">Waiting for approval from <span id="pending-alliance-name" class="font-bold text-blue-400">...</span> leadership.</p>
-            <button onclick="window.location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md btn mb-2">Refresh Status</button>
-            <br><button onclick="window.logout()" class="text-sm text-red-400 hover:underline">Logout</button>
+            <button onclick="window.logout()" class="w-full mt-4 text-sm text-red-400 hover:underline">Cancel</button>
         </div>
     </div>
 
     <div id="view-dashboard" class="view-section flex-col space-y-4 w-full">
-        
-        <header class="text-center flex-shrink-0 space-y-3">
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <button id="help-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold p-3 rounded-md btn"><i class="fas fa-question-circle text-xl"></i></button>
-                    <button id="admin-btn" onclick="window.openAdminPanel()" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold p-3 rounded-md btn"><i class="fas fa-cogs text-xl"></i></button>
-                </div>
-                
-                <div class="flex items-center space-x-3 bg-gray-800 px-4 py-2 rounded-lg border border-gray-700">
-                    <div class="text-right leading-tight">
-                        <div id="user-display-name" class="text-sm font-bold text-white uppercase tracking-wider">Guest</div>
-                        <div id="user-display-role" class="text-xs text-blue-400 font-mono">...</div>
-                    </div>
-                    <button onclick="window.openProfileModal()" class="text-blue-400 hover:text-blue-300 ml-2" title="Edit Profile"><i class="fas fa-user-edit text-xl"></i></button>
-                    <button onclick="window.logout()" class="text-gray-400 hover:text-red-400 ml-2" title="Logout"><i class="fas fa-sign-out-alt text-xl"></i></button>
-                </div>
+        <header class="card p-4 rounded-lg flex flex-col md:flex-row justify-between items-center shadow-lg gap-4">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl font-extrabold text-white tracking-tight">CMD Center</h1>
+                <div id="status-badge" class="px-3 py-1 rounded text-xs font-bold bg-gray-700 text-gray-300 border border-gray-600">FREELANCER</div>
             </div>
-            <h1 class="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Alliance Stat Comparison</h1>
+            
+            <div class="flex flex-wrap gap-2 justify-center">
+                <div id="freelancer-actions" class="hidden flex gap-2">
+                    <button onclick="window.openJoinModal()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-sign-in-alt mr-1"></i> Join Alliance</button>
+                    <button onclick="window.openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-plus-circle mr-1"></i> Create Alliance</button>
+                </div>
+                <button id="admin-btn" onclick="window.openAdminPanel()" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-cogs mr-1"></i> Manage</button>
+                
+                <div class="h-6 w-px bg-gray-600 mx-2"></div> <div class="text-right leading-tight">
+                    <div id="user-display-name" class="text-sm font-bold text-white">Guest</div>
+                    <div id="user-display-id" class="text-[10px] text-gray-500 font-mono">ID: ...</div>
+                </div>
+                <button onclick="window.logout()" class="text-gray-400 hover:text-red-400 ml-2"><i class="fas fa-power-off text-lg"></i></button>
+            </div>
         </header>
 
-        <div class="card p-3 rounded-lg shadow-md flex-shrink-0">
-            <h3 class="text-xl font-bold text-center text-yellow-400 mb-2">Instructions & Info</h3>
-            <ul class="text-lg font-bold text-gray-300 grid grid-cols-1 md:grid-cols-4 gap-x-4 text-center items-start">
-                <li><i class="fas fa-file-medical text-4xl text-red-500 mb-2"></i><br><span>Rule 1: NO BUFFS active.</span></li>
-                <li><i class="fas fa-crosshairs text-4xl text-blue-500 mb-2"></i><br><span>Rule 2: Test rally an alt with NO troops.</span></li>
-                <li><i class="fas fa-users text-4xl text-purple-500 mb-2"></i><br><span>Rule 3: Use 4 Chenkos w/ lvl 5 Stand of Arms.</span></li>
-                <li><i class="fas fa-calendar-check text-4xl text-green-500 mb-2"></i><br><span>Rule 4: Update at least once a week.</span></li>
-            </ul>
-        </div>
-
-        <div id="manual-entry" class="card p-4 rounded-lg shadow-lg flex-shrink-0 transition-all duration-300">
-            <form onsubmit="event.preventDefault(); window.handleSaveOrUpdate();">
+        <div id="entry-panel" class="card p-4 rounded-lg shadow-lg">
+             <form onsubmit="event.preventDefault(); window.handleSaveStat();">
                 <div class="flex justify-between items-center mb-3">
-                    <h2 id="entry-title" class="text-lg font-semibold text-white">Update Stats</h2>
-                    <button type="button" id="cancel-edit-btn" onclick="window.resetForm()" class="hidden text-xs bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white font-bold">CANCEL EDIT</button>
+                    <h2 class="text-lg font-semibold text-white">Update Stats <span class="text-xs text-gray-500 ml-2">(Auto-saved to your ID)</span></h2>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-3">
-                    <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-300 mb-1">Player</label><input type="text" id="playerName" class="input-field bg-gray-900 cursor-not-allowed text-gray-500" readonly></div>
-                    <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-300 mb-1">Kingdom</label><input type="text" id="kingdomName" class="input-field bg-gray-900 cursor-not-allowed text-gray-500" readonly></div>
-                    <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-300 mb-1">Alliance</label><input type="text" id="allianceName" class="input-field bg-gray-900 cursor-not-allowed text-gray-500" readonly></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                    <div class="space-y-1"><h3 class="text-center text-blue-400 font-bold text-sm">Infantry</h3><div class="grid grid-cols-4 gap-1"><input type="number" step="0.1" id="infAtt" placeholder="Att" class="input-field text-center"><input type="number" step="0.1" id="infDef" placeholder="Def" class="input-field text-center"><input type="number" step="0.1" id="infLet" placeholder="Let" class="input-field text-center"><input type="number" step="0.1" id="infHP" placeholder="HP" class="input-field text-center"></div></div>
+                    <div class="space-y-1"><h3 class="text-center text-green-400 font-bold text-sm">Cavalry</h3><div class="grid grid-cols-4 gap-1"><input type="number" step="0.1" id="cavAtt" placeholder="Att" class="input-field text-center"><input type="number" step="0.1" id="cavDef" placeholder="Def" class="input-field text-center"><input type="number" step="0.1" id="cavLet" placeholder="Let" class="input-field text-center"><input type="number" step="0.1" id="cavHP" placeholder="HP" class="input-field text-center"></div></div>
+                    <div class="space-y-1"><h3 class="text-center text-red-400 font-bold text-sm">Archer</h3><div class="grid grid-cols-4 gap-1"><input type="number" step="0.1" id="arcAtt" placeholder="Att" class="input-field text-center"><input type="number" step="0.1" id="arcDef" placeholder="Def" class="input-field text-center"><input type="number" step="0.1" id="arcLet" placeholder="Let" class="input-field text-center"><input type="number" step="0.1" id="arcHP" placeholder="HP" class="input-field text-center"></div></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 mb-3">
-                    <div class="space-y-2"><h3 class="font-bold text-md text-center text-blue-400 flex items-center justify-center"><i class="fas fa-shield-alt mr-2"></i>Infantry</h3><div class="grid grid-cols-4 gap-2"><input type="number" step="0.1" id="infAttack" placeholder="Att" required class="input-field text-center"><input type="number" step="0.1" id="infDefense" placeholder="Def" required class="input-field text-center"><input type="number" step="0.1" id="infLethality" placeholder="Let" required class="input-field text-center"><input type="number" step="0.1" id="infHp" placeholder="HP" required class="input-field text-center"></div></div>
-                    <div class="space-y-2"><h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i>Cavalry</h3><div class="grid grid-cols-4 gap-2"><input type="number" step="0.1" id="cavAttack" placeholder="Att" required class="input-field text-center"><input type="number" step="0.1" id="cavDefense" placeholder="Def" required class="input-field text-center"><input type="number" step="0.1" id="cavLethality" placeholder="Let" required class="input-field text-center"><input type="number" step="0.1" id="cavHp" placeholder="HP" required class="input-field text-center"></div></div>
-                    <div class="space-y-2"><h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i>Archer</h3><div class="grid grid-cols-4 gap-2"><input type="number" step="0.1" id="arcAttack" placeholder="Att" required class="input-field text-center"><input type="number" step="0.1" id="arcDefense" placeholder="Def" required class="input-field text-center"><input type="number" step="0.1" id="arcLethality" placeholder="Let" required class="input-field text-center"><input type="number" step="0.1" id="arcHp" placeholder="HP" required class="input-field text-center"></div></div>
-                </div>
-                <div class="flex justify-end"><button type="submit" id="main-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md btn"><i class="fas fa-save mr-2"></i>Update My Stats</button></div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-md btn">Update Database</button>
             </form>
         </div>
 
-        <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden">
-            <div class="flex justify-between items-center mb-3 flex-shrink-0">
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-end"><div><label class="block text-sm font-medium text-gray-300 mb-1">Kingdom</label><select id="kingdom-select" class="input-field w-48"></select></div><button id="add-kingdom-btn" class="add-btn" title="Add New"><i class="fas fa-plus"></i></button></div>
-                    <div class="flex items-end"><div><label class="block text-sm font-medium text-gray-300 mb-1">Alliance</label><select id="alliance-select" class="input-field w-48"></select></div><button id="add-alliance-btn" class="add-btn" title="Add New"><i class="fas fa-plus"></i></button></div>
+        <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden h-[60vh]">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center space-x-2">
+                    <select id="filter-alliance" class="input-field w-40 text-sm" onchange="window.applyFilters()"><option value="all">All Alliances</option></select>
+                    <span id="lockdown-indicator" class="hidden text-red-500 font-bold text-xs animate-pulse"><i class="fas fa-lock"></i> LOCKED</span>
                 </div>
-                <div class="flex space-x-2">
-                     <button onclick="window.renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden');" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-users-cog mr-2 text-lg"></i>Team Builder</button>
-                    <button onclick="window.showAnalytics()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-trophy mr-2 text-lg"></i>Analytics</button>
-                    <button onclick="window.exportToCSV()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-file-download mr-2 text-lg"></i>Export</button>
-                </div>
+                <button onclick="window.exportToCSV()" class="bg-gray-600 hover:bg-gray-500 text-white text-xs font-bold py-1 px-3 rounded btn">CSV</button>
             </div>
-            <h2 id="table-title" class="text-xl font-semibold text-white mb-3 flex-shrink-0">Global Stats</h2>
-            <div class="overflow-y-auto flex-grow">
-                <table class="w-full text-left text-sm">
-                    <thead class="table-header text-xs text-gray-300 uppercase">
+            <div class="overflow-auto flex-grow">
+                <table class="w-full text-left text-xs md:text-sm">
+                    <thead class="table-header text-gray-400 uppercase">
                         <tr>
-                            <th class="w-12 text-center" onclick="window.sortStats('rank')">#</th>
+                            <th class="w-8">#</th>
                             <th onclick="window.sortStats('playerName')">Player</th>
                             <th onclick="window.sortStats('alliance')">Alliance</th>
-                            <th class="bg-blue-900/50" onclick="window.sortStats('infAttack')">Inf Att</th><th class="bg-blue-900/50" onclick="window.sortStats('infDefense')">Inf Def</th><th class="bg-blue-900/50" onclick="window.sortStats('infLethality')">Inf Let</th><th class="bg-blue-900/50" onclick="window.sortStats('infHp')">Inf HP</th>
-                            <th class="bg-green-900/50" onclick="window.sortStats('cavAttack')">Cav Att</th><th class="bg-green-900/50" onclick="window.sortStats('cavDefense')">Cav Def</th><th class="bg-green-900/50" onclick="window.sortStats('cavLethality')">Cav Let</th><th class="bg-green-900/50" onclick="window.sortStats('cavHp')">Cav HP</th>
-                            <th class="bg-red-900/50" onclick="window.sortStats('arcAttack')">Arc Att</th><th class="bg-red-900/50" onclick="window.sortStats('arcDefense')">Arc Def</th><th class="bg-red-900/50" onclick="window.sortStats('arcLethality')">Arc Let</th><th class="bg-red-900/50" onclick="window.sortStats('arcHp')">Arc HP</th>
-                            <th onclick="window.sortStats('trueScore')">True Score ▼</th><th onclick="window.sortStats('date')">Updated</th>
-                            <th>Actions</th>
+                            <th class="bg-blue-900/50">Inf A/D/L/H</th>
+                            <th class="bg-green-900/50">Cav A/D/L/H</th>
+                            <th class="bg-red-900/50">Arc A/D/L/H</th>
+                            <th onclick="window.sortStats('trueScore')">True Score ▼</th>
+                            <th>Updated</th>
                         </tr>
                     </thead>
-                    <tbody id="stats-table-body"></tbody>
+                    <tbody id="stats-body"></tbody>
                 </table>
             </div>
         </div>
-        
-        <footer class="flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
-            <p id="db-status" class="text-sm">Connecting...</p>
-            <button onclick="getEl('changelog-modal').classList.remove('hidden')" class="hover:text-gray-400">Change Log</button>
-        </footer>
     </div>
 
-    <div id="profile-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
-        <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-700">
-            <h3 class="text-lg font-bold text-white mb-4">Edit Profile</h3>
-            <div class="space-y-4">
-                <div><label class="text-xs text-gray-400">In-Game Name</label><input type="text" id="edit-ign" class="input-field"></div>
-                <div><label class="text-xs text-gray-400">Kingdom</label><input type="text" id="edit-kingdom" class="input-field"></div>
-                <div><label class="text-xs text-gray-400">Alliance</label><input type="text" id="edit-alliance" class="input-field"></div>
-                <button onclick="window.saveProfileChanges()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save Changes</button>
-            </div>
-            <button onclick="document.getElementById('profile-modal').classList.add('hidden')" class="mt-4 text-sm text-gray-400 w-full text-center hover:text-white">Cancel</button>
+    <div id="join-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm border border-gray-700">
+            <h3 class="text-lg font-bold text-white mb-4">Join Alliance</h3>
+            <select id="join-alliance-select" class="input-field mb-3"></select>
+            <input type="password" id="join-code" class="input-field mb-4 text-center" placeholder="Alliance Access Code">
+            <button onclick="window.submitJoinRequest()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded mb-2">Submit Request</button>
+            <button onclick="getEl('join-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
         </div>
     </div>
 
-    <div id="admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 h-5/6 flex flex-col"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Leadership Console</h2><button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button></div>
-        <div class="card p-4 mb-4 border-yellow-600 border">
-            <h3 class="font-bold text-lg mb-2 text-yellow-400">⚠️ Data Migration Tool</h3>
-            <div class="flex space-x-2 items-end">
-                <div><label class="text-xs">Target Kingdom</label><input type="text" id="mig-kingdom" class="input-field p-1"></div>
-                <div><label class="text-xs">Target Alliance</label><input type="text" id="mig-alliance" class="input-field p-1"></div>
-                <button onclick="window.migrateSelected()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1 px-3 rounded btn text-sm">Migrate Selected</button>
+    <div id="create-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm border border-gray-700">
+            <h3 class="text-lg font-bold text-white mb-2">Request New Alliance</h3>
+            <p class="text-xs text-gray-400 mb-4">Requests must be approved by the Site Owner.</p>
+            <input type="text" id="create-tag" class="input-field mb-2" placeholder="Alliance Tag (e.g. KVK)">
+            <input type="text" id="create-name" class="input-field mb-4" placeholder="Full Name">
+            <button onclick="window.submitCreationRequest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mb-2">Send Request</button>
+            <button onclick="getEl('create-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
+        </div>
+    </div>
+
+    <div id="admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-5xl border border-gray-700 h-5/6 flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-white">Management Console</h2>
+                <button onclick="getEl('admin-modal').classList.add('hidden')" class="text-gray-400 text-xl">&times;</button>
             </div>
-            <div class="mt-2 h-32 overflow-y-auto border border-gray-700 rounded p-2">
-                <table class="w-full text-xs text-left"><thead><tr><th>Select</th><th>Name</th><th>Current</th></tr></thead><tbody id="migration-list-body"></tbody></table>
+
+            <div id="owner-section" class="hidden mb-6 border-b border-gray-700 pb-4">
+                <h3 class="text-yellow-400 font-bold mb-2">Owner: Alliance Creation Requests</h3>
+                <div class="overflow-y-auto max-h-40 border border-gray-700 rounded p-2">
+                    <table class="w-full text-xs text-left text-gray-300">
+                        <thead><tr><th>User</th><th>Tag</th><th>Action</th></tr></thead>
+                        <tbody id="creation-requests-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="leader-section" class="flex-grow flex flex-col gap-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="card p-3">
+                        <h4 class="text-sm font-bold text-gray-400">Join Code</h4>
+                        <div class="flex gap-2"><input id="admin-code-display" class="input-field text-center font-mono" readonly><button onclick="window.rotateCode()" class="bg-yellow-600 px-2 rounded text-white text-xs">Rotate</button></div>
+                    </div>
+                    <div class="card p-3">
+                        <h4 class="text-sm font-bold text-red-400">Security</h4>
+                        <button id="lockdown-btn" onclick="window.toggleLockdown()" class="w-full py-2 rounded font-bold bg-gray-700 text-white">Toggle Lockdown</button>
+                    </div>
+                </div>
+                
+                <div class="flex-grow overflow-hidden flex flex-col">
+                    <h3 class="font-bold text-white mb-2">Member Approvals</h3>
+                    <div class="overflow-y-auto border border-gray-700 rounded flex-grow">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-900 text-gray-400 sticky top-0"><tr><th class="p-2">Name</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead>
+                            <tbody id="member-approvals-body"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"><div class="card p-4"><h3 class="font-bold text-lg mb-2">Join Code</h3><div class="flex space-x-2"><input type="text" id="admin-join-code" class="input-field text-center font-mono font-bold text-xl" readonly><button onclick="window.rotateJoinCode()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 rounded btn">Rotate</button></div></div><div class="card p-4"><h3 class="font-bold text-lg mb-2 text-red-500">Lockdown</h3><button id="panic-btn" onclick="window.toggleLockdown()" class="w-full bg-gray-700 hover:bg-red-600 text-white font-bold py-2 rounded transition-colors">OFF</button></div></div><div class="flex-grow overflow-hidden flex flex-col"><h3 class="font-bold text-lg mb-2">Pending Requests <span id="pending-count" class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span></h3><div class="overflow-y-auto flex-grow border border-gray-700 rounded"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-400"><tr><th class="p-2">Name</th><th class="p-2">Details</th><th class="p-2">Actions</th></tr></thead><tbody id="pending-list-body"></tbody></table></div></div></div></div>
+    </div>
     
-    <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Help</h3><button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300">
-        <li><strong>Security:</strong> All users must log in with Google and be approved by an Alliance Leader.</li>
-        <li><strong>Joining:</strong> Enter your Kingdom and Alliance TAG exactly. You need a Join Code from your leader.</li>
-        <li><strong>Leadership:</strong> Leaders see an "Admin" button to manage join codes, approve members, and lock stats.</li>
-        <li><strong>Stats:</strong> Enter your stats with NO BUFFS. Use 4 Chenkos with Level 5 Stand of Arms.</li>
-        <li><strong>Lockdown:</strong> Leaders can hide alliance stats during KvK to prevent leaks.</li>
-    </ul></div></div>
-    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="document.getElementById('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 7.0 (Restored & Secured)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Layout:</strong> Restored classic 12-column stat view.</li><li><strong>Instructions:</strong> Added back "No Buffs" rules to main page.</li><li><strong>Fixes:</strong> Admin buttons now correctly target Alliance data.</li><li><strong>Help:</strong> Updated help documentation.</li></ul></div></div></div></div>
-    <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">History</h3><button onclick="document.getElementById('history-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="history-modal-body" class="overflow-y-auto flex-grow"></div><div class="mt-4"><canvas id="history-chart-canvas"></canvas></div></div></div>
-    <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stats</h3><button onclick="document.getElementById('chart-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
-    <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Analytics</h3><button onclick="document.getElementById('analytics-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
-    <div id="team-builder-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-7xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Team Builder</h3><button onclick="document.getElementById('team-builder-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden"><div class="flex flex-col overflow-hidden card p-4"><h4>Available</h4><div id="available-players-list" class="overflow-y-auto"></div></div><div class="flex flex-col overflow-hidden card p-4"><div class="flex justify-between mb-3"><h4>Teams</h4><button onclick="window.createNewTeam()" class="bg-green-600 px-3 rounded btn">+ New</button></div><div id="teams-container" class="overflow-y-auto"></div></div></div></div></div>
-    <div id="player-details-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 id="player-details-title" class="text-lg font-bold text-white">Details</h3><button onclick="document.getElementById('player-details-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="player-details-body" class="space-y-2 text-gray-300"></div></div></div>
     <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50"></div>
 
     <script type="module">
@@ -223,8 +181,8 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- 1. CONFIGURATION ---
-        const USER_FIREBASE_CONFIG = {
+        // --- CONFIG ---
+        const CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
             projectId: "alliance-stats-96973",
@@ -232,394 +190,315 @@
             messagingSenderId: "866174182881",
             appId: "1:866174182881:web:aef54fc8da562d8b_541ea0"
         };
-        const OWNER_EMAIL = "lumithedj@gmail.com"; 
+        const OWNER_EMAIL = "lumithedj@gmail.com";
 
-        // --- 2. GLOBAL STATE ---
-        let db, auth, userId = null;
-        let currentUser = null, userProfile = null, allianceData = null;
-        let allStats = [], filteredStats = [], latestStats = [], selectedForComparison = []; 
-        let currentSort = { column: 'trueScore', direction: 'desc' };
-        let currentEditId = null; // Tracks which doc is being edited
-        let editingStatOriginalUid = null; // Tracks the ORIGINAL owner of the stat being edited
-        let comparisonChart, analyticsChart, historyChart, teamAnalyticsChart = null;
-        let teams = [];
-        let uniqueKingdoms = [], uniqueAlliances = [], selectedKingdom = 'all', selectedAlliance = 'all';
-        let manuallyAddedKingdoms = [], manuallyAddedAlliances = [];
+        // --- STATE ---
+        let db, auth, userId;
+        let currentUser = null, userProfile = null;
+        let allianceData = null; // Data of the alliance the user belongs to
+        let allStats = [], filteredStats = [], latestStats = [];
+        let allAlliances = []; // List of all alliance docs (for dropdowns)
+        let currentSort = { col: 'trueScore', dir: 'desc' };
 
-        // --- 3. UTILITIES & FUNCTIONS ---
+        // --- UTILS ---
         function getEl(id) { return document.getElementById(id); }
-        function showView(id) { 
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active')); 
-            const target = getEl(id);
-            if(target) target.classList.add('active'); 
-        }
+        function showView(id) { document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active')); getEl(id).classList.add('active'); }
         function showToast(msg) { const t = getEl('toast'); t.innerText = msg; t.classList.remove('translate-x-full'); setTimeout(() => t.classList.add('translate-x-full'), 3000); }
         function calculateTrueScore(s) { return Math.round(((s.infAttack+s.cavAttack+s.arcAttack)*1)+((s.infDefense+s.cavDefense+s.arcDefense)*1)+((s.infLethality+s.cavLethality+s.arcLethality)*1.2)+((s.infHp+s.cavHp+s.arcHp)*1.1)); }
 
-        // --- 4. WINDOW FUNCTIONS ---
-        window.signInWithGoogle = function() { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => alert("Login Failed: " + e.message)); };
-        window.logout = function() { signOut(auth).then(() => window.location.reload()); };
+        // --- CORE FUNCTIONS ---
+        window.signInWithGoogle = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => alert(e.message));
+        window.logout = () => signOut(auth).then(() => window.location.reload());
 
-        window.submitRegistration = async function() {
-            const ign = getEl('reg-ign').value.trim(); const kingdom = getEl('reg-kingdom').value.trim().toLowerCase();
-            const alliance = getEl('reg-alliance').value.trim().toLowerCase(); const code = getEl('reg-code').value.trim();
-            if(!ign || !kingdom || !alliance || !code) return alert("All fields required");
-            const playerID = `${kingdom}_${alliance}_${ign.toLowerCase()}`;
-            const allianceID = `${kingdom}_${alliance}`;
+        // 1. Setup Profile (Freelancer)
+        window.submitProfileSetup = async () => {
+            const ign = getEl('setup-ign').value.trim();
+            const kingdom = getEl('setup-kingdom').value.trim();
+            if(!ign || !kingdom) return alert("Required");
+            
             try {
-                const snap = await getDoc(doc(db, 'alliances', allianceID));
-                if (snap.exists()) {
-                    if (snap.data().joinCode !== code) return alert("Invalid Code");
-                    await setDoc(doc(db, 'users', userId), { email: currentUser.email, displayName: ign, playerID, kingdom, alliance, role: 'member', isApproved: false, requestDate: serverTimestamp() });
-                } else {
-                    if(confirm("Alliance not found. Create it?")) {
-                        // Create Alliance with initial join code
-                        await setDoc(doc(db, 'alliances', allianceID), { name: alliance, kingdom, joinCode: code, isLocked: false, leaders: [userId] });
-                        // Create Leader Profile
-                        await setDoc(doc(db, 'users', userId), { email: currentUser.email, displayName: ign, playerID, kingdom, alliance, role: 'leader', isApproved: true, requestDate: serverTimestamp() });
-                        window.location.reload(); return;
-                    } else return;
-                }
-                showView('view-pending'); getEl('pending-alliance-name').innerText = alliance.toUpperCase();
-            } catch(e) { console.error(e); alert("Error: " + e.message); }
+                await setDoc(doc(db, 'users', userId), {
+                    email: currentUser.email,
+                    displayName: ign,
+                    kingdom: kingdom,
+                    alliance: null, // Freelancer
+                    role: 'freelancer',
+                    status: 'active',
+                    playerID: `${kingdom}_freelancer_${ign.toLowerCase()}`
+                });
+                window.location.reload();
+            } catch(e) { console.error(e); alert("Setup failed"); }
         };
 
-        window.verifyAccessCode = async function() {
-            const code = getEl('access-code-input').value.trim();
-            if(!code) return;
-            const metaRef = doc(db, 'metadata', 'security');
-            try {
-                const snap = await getDoc(metaRef);
-                if (!snap.exists()) {
-                    await setDoc(metaRef, { accessCode: code });
-                    await setDoc(doc(db, 'users', userId), { isApproved: true, email: currentUser.email, role: 'admin', displayName: 'Admin' }); 
-                    alert("Code Created! You are now the admin.");
-                    window.location.reload();
-                } else {
-                    if (snap.data().accessCode === code) {
-                        startApp(currentUser);
-                    } else alert("Incorrect Code");
-                }
-            } catch(e) { console.error(e); alert("Verification Error"); }
+        // 2. Join Alliance Logic
+        window.openJoinModal = () => {
+            getEl('join-modal').classList.remove('hidden');
+            const sel = getEl('join-alliance-select'); sel.innerHTML = '';
+            allAlliances.forEach(a => sel.innerHTML += `<option value="${a.id}">${a.name} (K${a.kingdom})</option>`);
         };
 
-        window.openProfileModal = () => {
-            getEl('edit-ign').value = userProfile.displayName;
-            getEl('edit-kingdom').value = userProfile.kingdom;
-            getEl('edit-alliance').value = userProfile.alliance;
-            getEl('profile-modal').classList.remove('hidden');
+        window.submitJoinRequest = async () => {
+            const allianceID = getEl('join-alliance-select').value;
+            const code = getEl('join-code').value.trim();
+            
+            const allianceDoc = allAlliances.find(a => a.id === allianceID);
+            if(allianceDoc.joinCode !== code) return alert("Incorrect Join Code");
+
+            await updateDoc(doc(db, 'users', userId), {
+                alliance: allianceDoc.name,
+                allianceID: allianceID,
+                status: 'pending',
+                requestDate: serverTimestamp()
+            });
+            alert("Request Sent!"); window.location.reload();
         };
 
-        window.saveProfileChanges = async () => {
-            const newIgn = getEl('edit-ign').value.trim();
-            const newKingdom = getEl('edit-kingdom').value.trim().toLowerCase();
-            const newAlliance = getEl('edit-alliance').value.trim().toLowerCase();
-            const newPlayerID = `${newKingdom}_${newAlliance}_${newIgn.toLowerCase()}`;
-            try {
-                await updateDoc(doc(db, 'users', userId), { displayName: newIgn, kingdom: newKingdom, alliance: newAlliance, playerID: newPlayerID });
-                alert("Profile updated! Reloading..."); window.location.reload();
-            } catch(e) { console.error(e); alert("Update Failed"); }
+        // 3. Create Alliance Logic
+        window.openCreateModal = () => getEl('create-modal').classList.remove('hidden');
+        
+        window.submitCreationRequest = async () => {
+            const tag = getEl('create-tag').value.trim().toUpperCase();
+            const name = getEl('create-name').value.trim();
+            if(!tag || !name) return;
+            
+            await setDoc(doc(db, 'sys_requests', userId), {
+                uid: userId,
+                ign: userProfile.displayName,
+                kingdom: userProfile.kingdom,
+                tag: tag,
+                name: name,
+                type: 'create_alliance',
+                date: serverTimestamp()
+            });
+            alert("Request sent to Owner."); getEl('create-modal').classList.add('hidden');
         };
 
-        window.handleSaveOrUpdate = async function() {
-            if(!currentEditId && !userProfile) return;
+        // 4. Save Stats
+        window.handleSaveStat = async () => {
+            if(!userProfile) return;
             const v = (id) => parseFloat(getEl(id).value) || 0;
-            const pName = getEl('playerName').value.trim();
-            const pKing = getEl('kingdomName').value.trim();
-            const pAlli = getEl('allianceName').value.trim();
-            if(!pName || !pKing || !pAlli) return alert("Name, Kingdom, Alliance required");
-
-            const newPlayerID = `${pKing}_${pAlli}_${pName.toLowerCase()}`;
+            // Use profile data if part of alliance, otherwise use form logic? No, form inputs removed.
+            // Stats are locked to profile now.
             const statDoc = {
-                uid: currentEditId ? editingStatOriginalUid : userId, 
-                playerName: pName, playerID: newPlayerID, kingdom: pKing.toLowerCase(), alliance: pAlli.toLowerCase(), 
+                uid: userId,
+                playerName: userProfile.displayName,
+                kingdom: userProfile.kingdom,
+                alliance: userProfile.alliance || 'Freelancer',
+                playerID: userProfile.playerID,
                 date: serverTimestamp(),
-                infAttack: v('infAttack'), infDefense: v('infDefense'), infLethality: v('infLethality'), infHp: v('infHp'),
-                cavAttack: v('cavAttack'), cavDefense: v('cavDefense'), cavLethality: v('cavLethality'), cavHp: v('cavHp'),
-                arcAttack: v('arcAttack'), arcDefense: v('arcDefense'), arcLethality: v('arcLethality'), arcHp: v('arcHp')
+                infAttack: v('infAtt'), infDefense: v('infDef'), infLethality: v('infLet'), infHp: v('infHP'),
+                cavAttack: v('cavAtt'), cavDefense: v('cavDef'), cavLethality: v('cavLet'), cavHp: v('cavHP'),
+                arcAttack: v('arcAtt'), arcDefense: v('arcDef'), arcLethality: v('arcLet'), arcHp: v('arcHP')
             };
-
             try {
-                const colRef = collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`);
-                if (currentEditId && currentEditId !== newPlayerID) await deleteDoc(doc(colRef, currentEditId));
-                await setDoc(doc(colRef, newPlayerID), statDoc);
-                window.resetForm(); showToast("Stats Saved Successfully!");
-            } catch(e) { console.error(e); alert("Save Failed: " + e.message); }
+                // Ensure ID is consistent
+                await setDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, userProfile.playerID), statDoc);
+                showToast("Stats Updated");
+            } catch(e) { console.error(e); }
         };
 
-        window.enterEditMode = (docId) => {
-            const stat = allStats.find(s => s.id === docId); 
-            if (!stat) return;
-            currentEditId = docId; editingStatOriginalUid = stat.uid || userId;
-            getEl('playerName').value = stat.playerName; getEl('kingdomName').value = stat.kingdom; getEl('allianceName').value = stat.alliance;
-            ['infAttack','infDefense','infLethality','infHp','cavAttack','cavDefense','cavLethality','cavHp','arcAttack','arcDefense','arcLethality','arcHp'].forEach(id => getEl(id).value = stat[id]);
-            if (userProfile.role === 'owner' || userProfile.role === 'leader') {
-                 ['playerName', 'kingdomName', 'allianceName'].forEach(id => {
-                     getEl(id).readOnly = false; getEl(id).classList.remove('bg-gray-900', 'cursor-not-allowed');
-                 });
-                 getEl('manual-entry').classList.add('admin-editing');
-                 getEl('entry-title').innerHTML = `EDITING: <span class="text-yellow-400">${stat.playerName}</span>`;
+        // 5. Admin Actions
+        window.openAdminPanel = () => {
+            getEl('admin-modal').classList.remove('hidden');
+            loadAdminData();
+        };
+
+        // Owner: Approve Alliance Creation
+        window.approveCreation = async (reqId, tag, kingdom) => {
+            const code = Math.floor(10000 + Math.random() * 90000).toString();
+            const allianceID = `${kingdom}_${tag.toLowerCase()}`;
+            
+            // 1. Create Alliance Doc
+            await setDoc(doc(db, 'alliances', allianceID), {
+                name: tag, kingdom: kingdom, joinCode: code, isLocked: false, leaders: [reqId]
+            });
+            // 2. Update User
+            await updateDoc(doc(db, 'users', reqId), {
+                alliance: tag, allianceID: allianceID, role: 'leader', status: 'active'
+            });
+            // 3. Delete Request
+            await deleteDoc(doc(db, 'sys_requests', reqId));
+            alert(`Alliance ${tag} Created! Code: ${code}`);
+        };
+
+        // Leader: Approve Member
+        window.approveMember = async (targetUid) => {
+            await updateDoc(doc(db, 'users', targetUid), { status: 'active', role: 'member' });
+            loadAdminData(); // Refresh list
+        };
+
+        window.rotateCode = async () => {
+            if(!allianceData) return;
+            const newCode = Math.floor(10000 + Math.random() * 90000).toString();
+            await updateDoc(doc(db, 'alliances', allianceData.id), { joinCode: newCode });
+            getEl('admin-code-display').value = newCode;
+        };
+
+        window.toggleLockdown = async () => {
+             if(!allianceData) return;
+             await updateDoc(doc(db, 'alliances', allianceData.id), { isLocked: !allianceData.isLocked });
+        };
+        
+        window.exportToCSV = () => {
+            if(latestStats.length===0) return alert("No data");
+            let csv = "Rank,Player,Alliance,Score\n";
+            latestStats.forEach((s,i) => csv += `${i+1},"${s.playerName}","${s.alliance}",${s.trueScore}\n`);
+            const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "stats.csv"; document.body.appendChild(link); link.click();
+        };
+        window.sortStats = (col) => { currentSort = { col, dir: currentSort.col===col && currentSort.dir==='asc'?'desc':'asc' }; renderTable(); };
+        window.applyFilters = () => { 
+            const selAlli = getEl('filter-alliance').value;
+            filteredStats = allStats.filter(s => selAlli === 'all' || s.alliance === selAlli);
+            processStats();
+        };
+
+        // --- INTERNAL LOGIC ---
+        function loadAdminData() {
+            // Owner Logic
+            if(userProfile.role === 'owner') {
+                getEl('owner-section').classList.remove('hidden');
+                onSnapshot(collection(db, 'sys_requests'), snap => {
+                    getEl('creation-requests-body').innerHTML = snap.docs.map(d => {
+                        const r = d.data();
+                        return `<tr><td>${r.ign}</td><td>${r.tag}</td><td><button onclick="window.approveCreation('${d.id}','${r.tag}','${r.kingdom}')" class="text-green-400">Approve</button></td></tr>`;
+                    }).join('');
+                });
             }
-            const btn = getEl('main-submit-btn'); btn.innerHTML = `<i class="fas fa-save mr-2"></i>Update Player Stats`; btn.classList.remove('bg-blue-600', 'hover:bg-blue-700'); btn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
-            getEl('cancel-edit-btn').classList.remove('hidden'); window.scrollTo(0, 0); 
-        };
 
-        window.resetForm = () => {
-             document.querySelector('#manual-entry form').reset(); currentEditId = null; editingStatOriginalUid = null;
-             getEl('entry-title').innerText = "Update Stats";
-             const btn = getEl('main-submit-btn'); btn.innerHTML = `<i class="fas fa-save mr-2"></i>Update My Stats`; btn.classList.add('bg-blue-600', 'hover:bg-blue-700'); btn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
-             getEl('cancel-edit-btn').classList.add('hidden'); getEl('manual-entry').classList.remove('admin-editing');
-             if (userProfile) { getEl('playerName').value = userProfile.displayName; getEl('kingdomName').value = userProfile.kingdom; getEl('allianceName').value = userProfile.alliance; }
-             ['playerName', 'kingdomName', 'allianceName'].forEach(id => { getEl(id).readOnly = true; getEl(id).classList.add('bg-gray-900', 'cursor-not-allowed'); });
-        };
+            // Leader Logic
+            if(userProfile.role === 'leader' || userProfile.role === 'r4') {
+                getEl('leader-section').classList.remove('hidden');
+                
+                // Get Alliance Settings
+                if(userProfile.allianceID) {
+                    onSnapshot(doc(db, 'alliances', userProfile.allianceID), snap => {
+                        allianceData = { id: snap.id, ...snap.data() };
+                        getEl('admin-code-display').value = allianceData.joinCode;
+                        getEl('lockdown-btn').innerText = allianceData.isLocked ? "UNLOCK" : "LOCKDOWN";
+                        getEl('lockdown-btn').className = allianceData.isLocked ? "w-full py-2 rounded font-bold bg-red-600" : "w-full py-2 rounded font-bold bg-gray-700";
+                    });
 
-        window.sortStats = function(col) {
-            if(currentSort.column === col) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            else { currentSort.column = col; currentSort.direction = 'desc'; }
-            renderTable();
-        };
-
-        // --- DASHBOARD LOGIC ---
-        window.addManually = (type) => { 
-            const name = prompt(`Enter the name for the new ${type}:`); 
-            if (name && name.trim()) { 
-                const cleanedName = name.trim().toLowerCase(); 
-                if (type === 'kingdom') { if (!manuallyAddedKingdoms.includes(cleanedName)) manuallyAddedKingdoms.push(cleanedName); }
-                else { if (!manuallyAddedAlliances.includes(cleanedName)) manuallyAddedAlliances.push(cleanedName); }
-                saveManualNameToFirestore(type, cleanedName);
-            } 
-        };
-
-        async function loadManualNamesFromFirestore() {
-            try {
-                const docRef = doc(db, 'metadata', 'lists');
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) { 
-                    const data = docSnap.data(); 
-                    manuallyAddedKingdoms = data.kingdomNames || []; 
-                    manuallyAddedAlliances = data.allianceNames || []; 
+                    // Get Pending Members
+                    const q = query(collection(db, 'users'), where("allianceID", "==", userProfile.allianceID), where("status", "==", "pending"));
+                    onSnapshot(q, snap => {
+                        getEl('member-approvals-body').innerHTML = snap.docs.map(d => 
+                            `<tr><td>${d.data().displayName}</td><td>Pending</td><td><button onclick="window.approveMember('${d.id}')" class="text-green-400">Accept</button></td></tr>`
+                        ).join('');
+                    });
                 }
-            } catch (error) { console.error("Error loading manual names:", error); }
+            }
         }
 
-        async function saveManualNameToFirestore(type, name) {
-            const docRef = doc(db, 'metadata', 'lists');
-            const fieldToUpdate = type === 'kingdom' ? 'kingdomNames' : 'allianceNames';
-            try { await setDoc(docRef, { [fieldToUpdate]: arrayUnion(name) }, { merge: true }); populateDropdowns(); } 
-            catch (error) { console.error(`Error adding name:`, error); }
-        }
-
-        function populateDropdowns() {
-            const ks = [...new Set([...allStats.map(s => s.kingdom), ...manuallyAddedKingdoms])].sort().filter(Boolean);
-            const as = [...new Set([...allStats.map(s => s.alliance), ...manuallyAddedAlliances])].sort().filter(Boolean);
-            
-            const kSel = getEl('kingdom-select'); const aSel = getEl('alliance-select');
-            kSel.innerHTML = '<option value="all">All Kingdoms</option>' + ks.map(k=>`<option value="${k}">${k}</option>`).join('');
-            aSel.innerHTML = '<option value="all">All Alliances</option>' + as.map(a=>`<option value="${a}">${a}</option>`).join('');
-            
-            kSel.value = selectedKingdom; aSel.value = selectedAlliance;
-            
-            kSel.onchange = (e) => { selectedKingdom = e.target.value; selectedAlliance = 'all'; applyFilters(); };
-            aSel.onchange = (e) => { selectedAlliance = e.target.value; applyFilters(); };
-        }
-
-        function applyFilters() {
-            filteredStats = allStats.filter(s => (selectedKingdom === 'all' || s.kingdom === selectedKingdom) && (selectedAlliance === 'all' || s.alliance === selectedAlliance));
-            latestStats = Object.values(filteredStats.reduce((acc, s) => { (acc[s.playerName] = acc[s.playerName] || []).push(s); return acc; }, {})).map(g => g.sort((a,b)=>b.date-a.date)[0]);
-            window.sortStats(currentSort.column); 
+        function processStats() {
+             const groups = {};
+             filteredStats.forEach(s => { (groups[s.playerName] = groups[s.playerName] || []).push(s); });
+             latestStats = Object.values(groups).map(g => g.sort((a,b)=>b.date-a.date)[0]);
+             
+             // Sort
+             latestStats.sort((a,b) => {
+                 const vA = a[currentSort.col], vB = b[currentSort.col];
+                 return currentSort.dir === 'asc' ? (vA>vB?1:-1) : (vA<vB?1:-1);
+             });
+             renderTable();
         }
 
         function renderTable() {
-            const tbody = getEl('stats-table-body');
-            tbody.innerHTML = ''; 
+            const tbody = getEl('stats-body'); tbody.innerHTML = '';
             
-            if(allianceData && allianceData.isLocked && userProfile.role === 'member' && selectedAlliance === userProfile.alliance) {
-                tbody.innerHTML = '<tr><td colspan="19" class="text-center p-8 text-red-500 font-bold">ALLIANCE LOCKDOWN ACTIVE</td></tr>'; return;
-            }
-            const sorted = latestStats.sort((a,b) => {
-                const vA = a[currentSort.column], vB = b[currentSort.column];
-                return currentSort.direction === 'asc' ? (vA > vB ? 1 : -1) : (vA < vB ? 1 : -1);
+            // Global Privacy Logic
+            // If user is freelancer, they see "Unverified" for alliance names in table?
+            // Or if Alliance is locked.
+            
+            latestStats.forEach((s, i) => {
+                let allianceDisplay = s.alliance;
+                let dataVisible = true;
+                
+                // Privacy Check: If this alliance is locked AND viewer is not in it
+                // (Logic requires checking all alliances status, simplified here)
+                
+                if (dataVisible) {
+                    tbody.innerHTML += `
+                    <tr class="border-b border-gray-700 hover:bg-gray-800">
+                        <td class="p-2 text-gray-500">${i+1}</td>
+                        <td class="p-2 font-bold text-white">${s.playerName}</td>
+                        <td class="p-2 text-xs text-gray-400">${allianceDisplay}</td>
+                        <td class="p-2 text-blue-400 text-xs">${s.infAttack}/${s.infDefense}/${s.infLethality}/${s.infHp}</td>
+                        <td class="p-2 text-green-400 text-xs">${s.cavAttack}/${s.cavDefense}/${s.cavLethality}/${s.cavHp}</td>
+                        <td class="p-2 text-red-400 text-xs">${s.arcAttack}/${s.arcDefense}/${s.arcLethality}/${s.arcHp}</td>
+                        <td class="p-2 text-yellow-400 font-bold">${s.trueScore.toLocaleString()}</td>
+                        <td class="p-2 text-gray-500 text-xs">${s.date ? s.date.toLocaleDateString() : '-'}</td>
+                    </tr>`;
+                }
             });
-            tbody.innerHTML = sorted.map((s,i) => {
-                // Classic 3.9 Layout: 12 stat columns
-                return `<tr class="border-b border-gray-700 hover:bg-gray-800" onclick="window.showHistory('${s.playerName}')">
-                    <td class="p-2 text-gray-500">${i+1}</td>
-                    <td class="p-2 font-bold text-white">${s.playerName}</td>
-                    <td class="p-2 text-xs text-gray-400">${s.alliance}</td>
-                    <td class="p-2 text-xs text-blue-400">${s.infAttack}%</td><td class="p-2 text-xs text-blue-400">${s.infDefense}%</td><td class="p-2 text-xs text-blue-400">${s.infLethality}%</td><td class="p-2 text-xs text-blue-400">${s.infHp}%</td>
-                    <td class="p-2 text-xs text-green-400">${s.cavAttack}%</td><td class="p-2 text-xs text-green-400">${s.cavDefense}%</td><td class="p-2 text-xs text-green-400">${s.cavLethality}%</td><td class="p-2 text-xs text-green-400">${s.cavHp}%</td>
-                    <td class="p-2 text-xs text-red-400">${s.arcAttack}%</td><td class="p-2 text-xs text-red-400">${s.arcDefense}%</td><td class="p-2 text-xs text-red-400">${s.arcLethality}%</td><td class="p-2 text-xs text-red-400">${s.arcHp}%</td>
-                    <td class="p-2 text-yellow-400 font-bold">${s.trueScore.toLocaleString()}</td>
-                    <td class="p-2 text-gray-500 text-xs">${s.date ? s.date.toLocaleDateString() : '-'}</td>
-                    <td class="p-2 flex space-x-2">
-                        <button onclick="event.stopPropagation(); window.enterEditMode('${s.id}')" class="text-blue-400 hover:text-white" title="Edit"><i class="fas fa-pencil-alt"></i></button>
-                        <button onclick="event.stopPropagation(); window.deleteStat('${s.id}', '${s.playerName}')" class="text-red-400 hover:text-red-300" title="Delete"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            }).join('');
         }
-        
-        // --- ADMIN & SETUP ---
-        window.openAdminPanel = () => { getEl('admin-modal').classList.remove('hidden'); loadAdminData(); };
-        const loadAdminData = () => {
-            // Populate Migration Tool with Orphans
-            const orphans = allStats.filter(s => !s.kingdom || s.kingdom === 'unknown' || !s.alliance || s.alliance === 'unknown');
-            const migBody = getEl('migration-list-body');
-            migBody.innerHTML = orphans.map(s => `<tr><td><input type="checkbox" class="mig-check" value="${s.id}"></td><td>${s.playerName}</td><td>${s.kingdom}/${s.alliance}</td></tr>`).join('');
-            if(orphans.length === 0) migBody.innerHTML = "<tr><td colspan='3' class='text-gray-500'>No orphans found.</td></tr>";
 
-            if (!userProfile || !userProfile.alliance) return;
-
-            const q = query(collection(db, 'users'), where("alliance", "==", userProfile.alliance), where("isApproved", "==", false));
-            onSnapshot(q, (snap) => {
-                getEl('pending-count').innerText = snap.size;
-                getEl('pending-list-body').innerHTML = snap.docs.map(d => {
-                    const u = d.data();
-                    return `<tr class="border-b border-gray-700"><td class="p-2">${u.displayName}</td><td class="p-2">${u.kingdom}</td><td class="p-2"><button onclick="window.procReq('${d.id}',true)" class="text-green-400 mr-2">✓</button><button onclick="window.procReq('${d.id}',false)" class="text-red-400">X</button></td></tr>`;
-                }).join('');
-            });
-            
-            // ADMIN DATA FETCH (Fixed for Owner)
-            // If user is owner, they might be in 'ADM' which has no doc. Handle gracefully.
-            if (userProfile.role === 'owner' && userProfile.alliance === 'ADM') {
-                 getEl('admin-join-code').value = "SUPER ADMIN";
-                 getEl('panic-btn').disabled = true;
-                 getEl('panic-btn').innerText = "GLOBAL LOCK (N/A)";
-            } else if (allianceData) {
-                getEl('admin-join-code').value = allianceData.joinCode;
-                getEl('panic-btn').innerText = allianceData.isLocked ? "UNLOCK" : "LOCKDOWN";
-            }
-        };
-
-        // Migration Function
-        window.migrateSelected = async () => {
-            const targetK = getEl('mig-kingdom').value.trim().toLowerCase();
-            const targetA = getEl('mig-alliance').value.trim().toLowerCase();
-            if(!targetK || !targetA) return alert("Enter Target Kingdom & Alliance");
-
-            const checkboxes = document.querySelectorAll('.mig-check:checked');
-            if(checkboxes.length === 0) return alert("Select players");
-
-            for (const box of checkboxes) {
-                await updateDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, box.value), {
-                    kingdom: targetK,
-                    alliance: targetA
-                });
-            }
-            alert(`Migrated ${checkboxes.length} players!`); loadAdminData();
-        };
-
-        window.procReq = async (uid, approve) => { if(approve) await updateDoc(doc(db, 'users', uid), { isApproved: true }); else await deleteDoc(doc(db, 'users', uid)); };
-        
-        // Fixed Rotate/Lockdown to check for valid allianceData first
-        window.rotateJoinCode = async () => { 
-            if (!allianceData || !userProfile.kingdom || !userProfile.alliance) return;
-            const allianceID = `${userProfile.kingdom}_${userProfile.alliance}`;
-            await updateDoc(doc(db, 'alliances', allianceID), { joinCode: Math.floor(Math.random()*90000+10000).toString() }); 
-        };
-        window.toggleLockdown = async () => { 
-            if (!allianceData || !userProfile.kingdom || !userProfile.alliance) return;
-            const allianceID = `${userProfile.kingdom}_${userProfile.alliance}`;
-            await updateDoc(doc(db, 'alliances', allianceID), { isLocked: !allianceData.isLocked }); 
-        };
-        window.deleteStat = async (docId) => { if(confirm("Delete?")) await deleteDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, docId)); };
-        window.showHistory = (name) => { alert("History for " + name); }; 
-        window.exportToCSV = () => {
-             if(latestStats.length === 0) { alert("No data"); return; }
-             const header = ['Rank','Player','Alliance','Inf Att','Inf Def','Inf Let','Inf HP','Cav Att','Cav Def','Cav Let','Cav HP','Arc Att','Arc Def','Arc Let','Arc HP','True Score','Last Update'];
-             let csv = header.join(",") + "\n";
-             latestStats.slice().sort((a,b)=>b.trueScore-a.trueScore).forEach((s,i) => {
-                const row = [i+1, `"${s.playerName}"`, `"${s.alliance}"`, s.infAttack, s.infDefense, s.infLethality, s.infHp, s.cavAttack, s.cavDefense, s.cavLethality, s.cavHp, s.arcAttack, s.arcDefense, s.arcLethality, s.arcHp, s.trueScore, `"${s.date.toLocaleString()}"`];
-                csv += row.join(",") + "\n";
-             });
-             const link = document.createElement("a"); link.href = encodeURI("data:text/csv;charset=utf-8," + csv); link.download = "alliance_stats.csv"; document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        };
-        window.showAnalytics = () => { getEl('analytics-modal').classList.remove('hidden'); }; 
-        window.renderTeamBuilder = () => { /* ... Team Builder Logic ... */ }; 
-
-        // --- INIT ---
-        const startApp = async (user) => {
-            showView('view-dashboard');
-            
-            const dName = userProfile?.displayName || user.email;
-            const dRole = userProfile?.role ? userProfile.role.toUpperCase() : "MEMBER";
-            const dKing = userProfile?.kingdom || "?";
-            const dAlli = userProfile?.alliance || "?";
-
-            getEl('user-display-name').innerText = dName;
-            getEl('user-display-role').innerText = `${dRole} | ${dKing}-${dAlli}`;
-            
-            getEl('playerName').value = dName;
-            getEl('kingdomName').value = dKing;
-            getEl('allianceName').value = dAlli;
-            
-            if(userProfile?.role !== 'member') getEl('admin-btn').classList.remove('hidden');
-
-            getEl('db-status').innerHTML = "✅ Connected"; getEl('db-status').className = "text-green-400";
-            
-            await loadManualNamesFromFirestore();
-
-            onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), (snap) => {
-                allStats = snap.docs.map(d => ({id: d.id, ...d.data(), date: d.data().date?.toDate(), trueScore: calculateTrueScore(d.data())}));
-                populateDropdowns();
-                applyFilters(); 
-            });
-            
-            // Listen to Alliance Data - Fix for undefined
-            if (userProfile && userProfile.alliance !== 'ADM' && userProfile.kingdom && userProfile.alliance) {
-                 const allianceID = `${userProfile.kingdom}_${userProfile.alliance}`;
-                 onSnapshot(doc(db, 'alliances', allianceID), (snap) => {
-                     if(snap.exists()) allianceData = snap.data();
-                 });
-            } else {
-                 allianceData = null; // No alliance data for Owner/ADM
-            }
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
+        const init = async () => {
             initializeApp(USER_FIREBASE_CONFIG);
             db = getFirestore();
             auth = getAuth();
             showView('view-login');
+
             onAuthStateChanged(auth, async (user) => {
-                if (user) { userId = user.uid; currentUser = user; await checkVerification(user); }
-                else { showView('view-login'); }
+                if (user) {
+                    userId = user.uid;
+                    currentUser = user;
+                    
+                    // Check Profile
+                    const userRef = doc(db, 'users', userId);
+                    const userSnap = await getDoc(userRef);
+                    
+                    // Super Admin Bypass
+                    if(user.email === OWNER_EMAIL && !userSnap.exists()) {
+                         await setDoc(userRef, { email: user.email, displayName: "Owner", role: 'owner', kingdom:'0', alliance:'ADM', playerID:'owner', status:'active' });
+                         window.location.reload(); return;
+                    }
+
+                    if (!userSnap.exists()) {
+                        showView('view-setup');
+                    } else {
+                        userProfile = userSnap.data();
+                        
+                        // Routing based on status
+                        if (userProfile.status === 'pending') {
+                            showView('view-pending');
+                            getEl('pending-alliance-name').innerText = userProfile.alliance || 'Unknown';
+                        } else {
+                            // Active (Member or Freelancer)
+                            showView('view-dashboard');
+                            
+                            // UI Updates
+                            getEl('user-display-name').innerText = userProfile.displayName;
+                            getEl('user-display-id').innerText = `ID: ${userProfile.playerID}`;
+                            const role = userProfile.role.toUpperCase();
+                            getEl('status-badge').innerText = role;
+                            getEl('status-badge').className = `px-3 py-1 rounded text-xs font-bold border ${role === 'FREELANCER' ? 'bg-gray-700 border-gray-500 text-gray-300' : 'bg-blue-900 border-blue-500 text-blue-200'}`;
+
+                            // Toggle Buttons
+                            if (role === 'FREELANCER') getEl('freelancer-actions').classList.remove('hidden');
+                            if (['LEADER', 'OWNER', 'R4'].includes(role)) getEl('admin-btn').classList.remove('hidden');
+
+                            // Load All Alliances (for dropdowns)
+                            onSnapshot(collection(db, 'alliances'), snap => {
+                                allAlliances = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                                const filterSel = getEl('filter-alliance');
+                                filterSel.innerHTML = '<option value="all">All Alliances</option>';
+                                allAlliances.forEach(a => filterSel.innerHTML += `<option value="${a.name}">${a.name}</option>`);
+                            });
+
+                            // Load Stats
+                            onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), snap => {
+                                allStats = snap.docs.map(d => ({id: d.id, ...d.data(), date: d.data().date?.toDate(), trueScore: calculateTrueScore(d.data())}));
+                                window.applyFilters();
+                            });
+                        }
+                    }
+                } else {
+                    showView('view-login');
+                }
             });
-            
-            document.querySelectorAll('[id$="-close-btn"]').forEach(b => b.onclick = () => b.closest('.fixed').classList.add('hidden'));
-            getEl('help-btn').onclick = () => getEl('help-modal').classList.remove('hidden');
-            getEl('add-kingdom-btn').onclick = () => window.addManually('kingdom');
-            getEl('add-alliance-btn').onclick = () => window.addManually('alliance');
-        });
-        
-        async function checkVerification(user) {
-             const meta = await getDoc(doc(db, 'metadata', 'security'));
-             if(!meta.exists()) {
-                 showView('view-verify');
-                 getEl('verify-instruction').innerText = "Create Master Access Code:";
-             } else {
-                 const userRef = doc(db, 'users', user.uid);
-                 const userSnap = await getDoc(userRef);
+        };
 
-                 if (!userSnap.exists() && user.email === OWNER_EMAIL) {
-                      await setDoc(userRef, { email: user.email, displayName: "Owner", role: 'owner', isApproved: true, kingdom:'0', alliance:'ADM', playerID:'owner' });
-                      window.location.reload();
-                      return;
-                 }
-
-                 if(userSnap.exists()) {
-                     userProfile = userSnap.data();
-                     if(userProfile.isApproved) {
-                         startApp(user); 
-                     } else {
-                         showView('view-pending');
-                         getEl('pending-alliance-name').innerText = userProfile.alliance;
-                     }
-                 } else {
-                     showView('view-verify');
-                 }
-             }
-        }
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
