@@ -28,7 +28,6 @@
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
 
     <script type="module">
-        // FIXED IMPORT: Added onSnapshot
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy, limit, where, startAt, endAt, getCountFromServer, addDoc, writeBatch, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -52,6 +51,8 @@
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             config: { lockdown: false, accessCode: '' },
+            // NEW: Track listeners to prevent leaks
+            listeners: { security: null },
             form: {
                 ign: '', kingdom: '', pid: '',
                 privacy: { hideName: false, hideStats: false },
@@ -72,7 +73,6 @@
             handleAuth: async (user) => {
                 State.user = user;
                 if (!user) {
-                    // FIXED: Gate Logic Restored
                     if (!localStorage.getItem('acc_gate_token')) {
                         State.current = 'gate';
                     } else {
@@ -107,19 +107,7 @@
                 const views = {
                     loading: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><h2 class="font-bold tracking-widest">LOADING...</h2></div>`,
                     
-                    // FIXED: Added Gate View Back
-                    gate: `
-                        <div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6">
-                            <div class="bg-slate-800 p-8 rounded-lg border-t-4 border-red-500 max-w-md w-full text-center shadow-2xl">
-                                <i class="fas fa-dungeon text-5xl text-red-500 mb-4"></i>
-                                <h1 class="text-2xl font-bold text-white mb-2">Restricted Access</h1>
-                                <p class="text-slate-400 text-xs mb-4">This system is protected. Enter the global access code.</p>
-                                <form onsubmit="event.preventDefault(); window.submitGate()">
-                                    <input type="password" id="gate-input" class="input-field text-center text-xl tracking-[0.5em] font-mono mb-4" placeholder="•••••">
-                                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow-lg">AUTHORIZE</button>
-                                </form>
-                            </div>
-                        </div>`,
+                    gate: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6"><div class="bg-slate-800 p-8 rounded-lg border-t-4 border-red-500 max-w-md w-full text-center shadow-2xl"><i class="fas fa-dungeon text-5xl text-red-500 mb-4"></i><h1 class="text-2xl font-bold text-white mb-2">Restricted Access</h1><p class="text-slate-400 text-xs mb-4">This system is protected. Enter the global access code.</p><form onsubmit="event.preventDefault(); window.submitGate()"><input type="password" id="gate-input" class="input-field text-center text-xl tracking-[0.5em] font-mono mb-4" placeholder="•••••"><button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow-lg">AUTHORIZE</button></form></div></div>`,
 
                     login: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-4"><div class="bg-slate-800 p-8 rounded-lg shadow-xl max-w-sm w-full text-center border-t-4 border-blue-500"><h1 class="text-2xl font-bold text-white mb-2">Alliance Command</h1><button onclick="window.triggerLogin()" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 rounded flex items-center justify-center gap-2 mt-6"><i class="fab fa-google text-red-500"></i> Sign in</button></div></div>`,
                     
@@ -147,22 +135,17 @@
                     allianceManager: `
                         <div class="min-h-screen bg-slate-900 p-6">
                             <header class="flex justify-between items-center mb-6">
-                                <div>
-                                    <h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1>
-                                    <p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p>
-                                </div>
+                                <div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div>
                                 <div class="flex gap-2">
                                     ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
                                     <button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Dashboard</button>
                                 </div>
                             </header>
-                            
                             <div class="flex border-b border-slate-700 mb-6">
                                 <button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button>
                                 <button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button>
                                 <button onclick="window.switchManagerTab('recruit')" class="tab-btn ${State.managerTab === 'recruit' ? 'active' : ''}">Recruit</button>
                             </div>
-
                             ${State.managerTab === 'roster' ? App.ui.managerRoster() : ''}
                             ${State.managerTab === 'settings' ? App.ui.managerSettings() : ''}
                             ${State.managerTab === 'recruit' ? App.ui.managerRecruit() : ''}
@@ -172,10 +155,7 @@
                         <div class="min-h-screen bg-slate-900 text-slate-200">
                             <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-md">
                                 <div class="max-w-6xl mx-auto flex justify-between items-center">
-                                    <div class="flex items-center gap-3">
-                                        <img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600">
-                                        <div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div>
-                                    </div>
+                                    <div class="flex items-center gap-3"><img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600"><div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div></div>
                                     <div class="flex gap-3 items-center">
                                         ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white p-2 rounded shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
                                         <button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button>
@@ -183,10 +163,8 @@
                                     </div>
                                 </div>
                             </nav>
-
                             <div class="p-4 max-w-6xl mx-auto">
                                 ${App.ui.allianceCard()}
-
                                 <div class="bg-slate-800 rounded shadow overflow-hidden border border-slate-700 mt-6">
                                     <div class="p-4 border-b border-slate-700 bg-slate-900 flex flex-col md:flex-row gap-4 items-center">
                                         <div class="flex gap-2">
@@ -217,79 +195,20 @@
                     document.getElementById('toast-container').appendChild(el);
                     setTimeout(() => el.remove(), 3000);
                 },
-                
                 allianceCard: () => {
                     if (State.alliance) {
                         const isLeader = State.alliance.leader === State.user.uid;
-                        return `
-                        <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center">
-                            <div class="w-full">
-                                <div class="flex justify-between items-start">
-                                    <div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div>
-                                    <div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : ''}</div>
-                                </div>
-                                ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
-                            </div>
-                        </div>`;
+                        return `<div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center"><div class="w-full"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div><div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : ''}</div></div>${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}</div></div>`;
                     }
                     return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Join Alliance</h3><div class="flex gap-2"><input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1"><input type="text" id="join-code" placeholder="Code" class="input-field py-1"><button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button></div></div><div class="bg-slate-800 p-4 rounded border-l-4 border-green-500"><h3 class="font-bold text-white mb-2">Create Alliance</h3><div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div></div></div>`;
                 },
-
-                managerRoster: () => `
-                    <div class="bg-slate-800 rounded shadow overflow-hidden">
-                        <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center"><h3 class="font-bold text-white">Active Roster (${State.roster.length})</h3><span class="text-xs text-slate-500">Limit: 100</span></div>
-                        <div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3 text-right">Actions</th></tr></thead><tbody class="divide-y divide-slate-700">${State.roster.map(m => `<tr class="hover:bg-slate-700"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-right">${m.id === State.user.uid ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' : `<button onclick="window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`}</td></tr>`).join('')}</tbody></table></div>
-                    </div>`,
-
-                managerSettings: () => `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
-                            <h3 class="font-bold text-white mb-4">General Settings</h3>
-                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div>
-                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div>
-                            <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
-                        </div>
-                        <div class="space-y-6">
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Access Control</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div><button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button></div>
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition"><h3 class="font-bold text-red-500 mb-2">Danger Zone</h3><p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p><button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button></div>
-                        </div>
-                    </div>`,
-
-                managerRecruit: () => `
-                    <div class="bg-slate-800 rounded shadow overflow-hidden">
-                        <div class="p-4 border-b border-slate-700 bg-slate-900"><h3 class="font-bold text-white">Scout Freelancers (Kingdom ${State.alliance.kingdom})</h3><p class="text-xs text-slate-400">Players currently without an alliance. Message them in-game to recruit.</p></div>
-                        <div class="overflow-x-auto h-96 overflow-y-auto">
-                            <table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">Stats</th></tr></thead><tbody class="divide-y divide-slate-700">${State.freelancers.length === 0 ? '<tr><td colspan="3" class="p-4 text-center text-slate-500">No freelancers found.</td></tr>' : State.freelancers.map(m => { const t = m.troops; return `<tr class="hover:bg-slate-700"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-xs"><span class="text-blue-400">I:${t?.inf?.tier}</span> <span class="text-green-400">C:${t?.cav?.tier}</span></td></tr>` }).join('')}</tbody></table>
-                        </div>
-                    </div>`,
-
-                editorForm: (btnText) => `
-                    <form onsubmit="event.preventDefault(); window.saveProfile()">
-                        <div class="grid grid-cols-2 gap-3 mb-4"><div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" class="input-field" required value="${State.form.ign}"></div><div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" class="input-field" required value="${State.form.kingdom}"></div><div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" class="input-field" required value="${State.form.pid}"></div></div>
-                        <div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label></div>
-                        <div class="space-y-3 mb-6">${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}${App.ui.troopRow('arc', 'Archer', 'text-red-400')}</div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button>
-                    </form>`,
-                
-                troopRow: (type, label, colorClass) => `
-                    <div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label}</span><span id="display-${type}" class="text-white">T10</span></div><div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div><div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div></div>`,
-                
+                managerRoster: () => `<div class="bg-slate-800 rounded shadow overflow-hidden"><div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center"><h3 class="font-bold text-white">Active Roster (${State.roster.length})</h3><span class="text-xs text-slate-500">Limit: 100</span></div><div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3 text-right">Actions</th></tr></thead><tbody class="divide-y divide-slate-700">${State.roster.map(m => `<tr class="hover:bg-slate-700"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-right">${m.id === State.user.uid ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' : `<button onclick="window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`}</td></tr>`).join('')}</tbody></table></div></div>`,
+                managerSettings: () => `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500"><h3 class="font-bold text-white mb-4">General Settings</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div><button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button></div><div class="space-y-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Access Control</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div><button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button></div><div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition"><h3 class="font-bold text-red-500 mb-2">Danger Zone</h3><p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p><button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button></div></div></div>`,
+                managerRecruit: () => `<div class="bg-slate-800 rounded shadow overflow-hidden"><div class="p-4 border-b border-slate-700 bg-slate-900"><h3 class="font-bold text-white">Scout Freelancers (Kingdom ${State.alliance.kingdom})</h3><p class="text-xs text-slate-400">Players currently without an alliance. Message them in-game to recruit.</p></div><div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">Stats</th></tr></thead><tbody class="divide-y divide-slate-700">${State.freelancers.length === 0 ? '<tr><td colspan="3" class="p-4 text-center text-slate-500">No freelancers found.</td></tr>' : State.freelancers.map(m => { const t = m.troops; return `<tr class="hover:bg-slate-700"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-xs"><span class="text-blue-400">I:${t?.inf?.tier}</span> <span class="text-green-400">C:${t?.cav?.tier}</span></td></tr>` }).join('')}</tbody></table></div></div>`,
+                editorForm: (btnText) => `<form onsubmit="event.preventDefault(); window.saveProfile()"><div class="grid grid-cols-2 gap-3 mb-4"><div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" class="input-field" required value="${State.form.ign}"></div><div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" class="input-field" required value="${State.form.kingdom}"></div><div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" class="input-field" required value="${State.form.pid}"></div></div><div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label></div><div class="space-y-3 mb-6">${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}${App.ui.troopRow('arc', 'Archer', 'text-red-400')}</div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button></form>`,
+                troopRow: (type, label, colorClass) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label}</span><span id="display-${type}" class="text-white">T10</span></div><div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div><div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div></div>`,
                 initEditor: () => { ['inf', 'cav', 'arc'].forEach(t => { window.setTroop(t, 'tier', State.form.troops[t].tier, false); window.setTroop(t, 'tg', State.form.troops[t].tg, false); }); },
-                
-                renderRows: () => {
-                    if (State.leaderboard.length === 0) return `<tr><td colspan="3" class="p-4 text-center text-slate-500">No Commanders Found</td></tr>`;
-                    return State.leaderboard.map(p => {
-                        const isMe = State.user.uid === p.id;
-                        const sameAlliance = State.alliance && p.allianceID === State.alliance.id;
-                        const isNameHidden = p.privacy?.hideName && !isMe && !sameAlliance;
-                        const isStatsHidden = p.privacy?.hideStats && !isMe && !sameAlliance;
-                        const displayName = isNameHidden ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
-                        const displayPid = isNameHidden ? `***` : p.pid;
-                        let t = p.troops; if (!t || typeof t.inf === 'string') { t = { inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0} }; }
-                        const renderStat = (t, type) => { if (isStatsHidden) return `<span class="text-slate-600">???</span>`; const tgStr = t.tg > 0 ? `<span class="text-yellow-500 text-[10px]">+TG${t.tg}</span>` : ''; return `T${t.tier}${tgStr}`; };
-                        return `<tr class="hover:bg-slate-700 transition border-b border-slate-700"><td class="p-3"><div class="font-bold text-white text-sm">${displayName}</div><div class="text-[10px] text-slate-500 font-mono">ID: ${displayPid}</div></td><td class="p-3 text-slate-300 text-sm">${p.kingdom}</td><td class="p-3"><div class="flex gap-2 text-xs"><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-blue-300 font-mono">${renderStat(t.inf, 'INF')}</div><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-green-300 font-mono">${renderStat(t.cav, 'CAV')}</div><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-red-300 font-mono">${renderStat(t.arc, 'ARC')}</div></div></td></tr>`;
-                    }).join('');
-                }
+                renderRows: () => { if (State.leaderboard.length === 0) return `<tr><td colspan="3" class="p-4 text-center text-slate-500">No Commanders Found</td></tr>`; return State.leaderboard.map(p => { const isMe = State.user.uid === p.id; const sameAlliance = State.alliance && p.allianceID === State.alliance.id; const isNameHidden = p.privacy?.hideName && !isMe && !sameAlliance; const isStatsHidden = p.privacy?.hideStats && !isMe && !sameAlliance; const displayName = isNameHidden ? `<span class="italic text-slate-500">Classified</span>` : p.ign; const displayPid = isNameHidden ? `***` : p.pid; let t = p.troops; if (!t || typeof t.inf === 'string') { t = { inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0} }; } const renderStat = (t, type) => { if (isStatsHidden) return `<span class="text-slate-600">???</span>`; const tgStr = t.tg > 0 ? `<span class="text-yellow-500 text-[10px]">+TG${t.tg}</span>` : ''; return `T${t.tier}${tgStr}`; }; return `<tr class="hover:bg-slate-700 transition border-b border-slate-700"><td class="p-3"><div class="font-bold text-white text-sm">${displayName}</div><div class="text-[10px] text-slate-500 font-mono">ID: ${displayPid}</div></td><td class="p-3 text-slate-300 text-sm">${p.kingdom}</td><td class="p-3"><div class="flex gap-2 text-xs"><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-blue-300 font-mono">${renderStat(t.inf, 'INF')}</div><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-green-300 font-mono">${renderStat(t.cav, 'CAV')}</div><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-red-300 font-mono">${renderStat(t.arc, 'ARC')}</div></div></td></tr>`; }).join(''); }
             },
 
             actions: {
@@ -308,18 +227,14 @@
                     } catch (e) { console.error("Load Error", e); }
                 },
 
-                // FIXED: Gate Submit Logic
                 submitGate: async () => {
                     const code = document.getElementById('gate-input').value.trim();
                     try {
                         const snap = await getDoc(doc(App.db, 'metadata', 'security'));
                         if (snap.exists() && snap.data().accessCode === code) {
                             localStorage.setItem('acc_gate_token', 'valid');
-                            // Re-run Auth check to send them to login or dashboard
                             App.handleAuth(State.user);
-                        } else {
-                            App.ui.toast("Access Denied", "error");
-                        }
+                        } else { App.ui.toast("Access Denied", "error"); }
                     } catch(e) { App.ui.toast("Error checking code", "error"); }
                 },
 
@@ -442,12 +357,18 @@
                 },
 
                 initOwnerView: async () => {
-                    // FIX: Using onSnapshot correctly
-                    onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
-                        if(snap.exists() && document.getElementById('owner-global-code')) {
-                            document.getElementById('owner-global-code').innerText = snap.data().accessCode;
+                    // FIXED: Prevent duplicate listener
+                    if (State.listeners.security) return; 
+                    
+                    const unsub = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
+                        if(snap.exists()) {
+                            State.config = snap.data();
+                            const el = document.getElementById('owner-global-code');
+                            if(el) el.innerText = State.config.accessCode;
                         }
                     });
+                    State.listeners.security = unsub;
+
                     try {
                         const coll = collection(App.db, "profiles");
                         const snapshot = await getCountFromServer(coll);
@@ -459,16 +380,14 @@
                 rotateCode: async () => {
                     const newCode = Math.floor(Math.random() * 90000 + 10000).toString();
                     await setDoc(doc(App.db, 'metadata', 'security'), { accessCode: newCode }, { merge: true });
-                    State.config.accessCode = newCode;
-                    App.render();
+                    // No need to set State or Render, the onSnapshot listener handles it automatically
                     App.ui.toast("Gate Code Generated");
                 },
 
                 toggleLockdown: async () => {
                     const newState = !State.config.lockdown;
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
-                    State.config.lockdown = newState;
-                    App.render();
+                    // No need to set State, listener handles it
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 }
             }
