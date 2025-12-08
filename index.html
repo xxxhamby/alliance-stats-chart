@@ -12,6 +12,7 @@
         body { font-family: 'Inter', sans-serif; background-color: #111827; color: #e5e7eb; -webkit-tap-highlight-color: transparent; }
         .card { background-color: #1f2937; border: 1px solid #374151; }
         
+        /* Table Styling */
         .table-header th { padding: 12px 8px; position: sticky; top: 0; background-color: #1f2937; white-space: nowrap; cursor: pointer; z-index: 10; font-size: 0.75rem; text-transform: uppercase; color: #9ca3af; border-bottom: 2px solid #374151; }
         .table-row td { padding: 10px 8px; white-space: nowrap; font-size: 0.85rem; border-bottom: 1px solid #374151; }
         .table-row:hover { background-color: #374151; }
@@ -22,6 +23,7 @@
         .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; cursor: pointer; }
         .add-btn { background-color: #374151; border: 1px solid #4b5563; color: #9ca3af; height: 48px; width: 48px; display: flex; align-items: center; justify-content: center; border-radius: 0.375rem; }
         
+        /* View States */
         .view-section { display: none; height: 100%; width: 100%; } 
         .view-section.active { display: flex; flex-direction: column; }
         .admin-editing { border: 2px solid #eab308; background-color: #2e2305; }
@@ -56,7 +58,7 @@
         <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full">
             <h2 class="text-2xl font-bold text-white mb-4"><i class="fas fa-user-plus text-yellow-500"></i> Create Identity</h2>
             <p class="text-sm text-gray-400 mb-6">Establish your profile to access the command center.</p>
-            <form onsubmit="event.preventDefault(); window.submitProfileSetup();" class="space-y-4">
+            <form onsubmit="event.preventDefault(); window.submitRegistration();" class="space-y-4">
                 <div><label class="text-xs text-gray-400 uppercase font-bold">In-Game Name</label><input type="text" id="setup-ign" class="input-field" placeholder="e.g. KingArthur" required></div>
                 <div><label class="text-xs text-gray-400 uppercase font-bold">Kingdom Number</label><input type="text" id="setup-kingdom" class="input-field" placeholder="e.g. 1042" required></div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg btn text-lg">Enter Dashboard</button>
@@ -85,7 +87,7 @@
                      <button id="admin-btn" onclick="window.openAdminPanel()" class="hidden bg-blue-600 text-white font-bold p-3 rounded-md btn"><i class="fas fa-cogs text-xl"></i></button>
                 </div>
                 <div id="freelancer-actions" class="hidden flex gap-2">
-                    <button onclick="window.openJoinModal()" class="bg-green-600 text-white text-xs font-bold py-2 px-3 rounded btn whitespace-nowrap"><i class="fas fa-sign-in-alt mr-1"></i> Join Alliance</button>
+                    <button onclick="window.openJoinModal()" class="bg-green-600 text-white text-xs font-bold py-2 px-3 rounded btn whitespace-nowrap"><i class="fas fa-sign-in-alt mr-1"></i> Join</button>
                     <button onclick="window.openCreateModal()" class="bg-indigo-600 text-white text-xs font-bold py-2 px-3 rounded btn whitespace-nowrap"><i class="fas fa-plus-circle mr-1"></i> Create</button>
                 </div>
             </div>
@@ -167,36 +169,25 @@
     <div id="profile-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
         <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md border border-gray-700">
             <h3 class="text-lg font-bold text-white mb-4">Edit Profile</h3>
-            <form onsubmit="event.preventDefault(); window.submitProfileEdit();">
+            <form onsubmit="event.preventDefault(); window.saveProfileChanges();">
                 <div class="space-y-4 mb-4">
                     <div><label class="text-xs text-gray-400">In-Game Name</label><input type="text" id="edit-ign" class="input-field" required></div>
                     <div><label class="text-xs text-gray-400">Public Alias</label><input type="text" id="edit-public" class="input-field" required></div>
-                    
                     <div class="grid grid-cols-2 gap-2">
                         <div><label class="text-xs text-gray-400">Kingdom</label><input type="text" id="edit-kingdom" class="input-field bg-gray-900 text-gray-500" readonly></div>
                         <div><label class="text-xs text-gray-400">Alliance</label><input type="text" id="edit-alliance" class="input-field bg-gray-900 text-gray-500" readonly></div>
                     </div>
-                    
                     <div class="flex flex-col gap-2 p-3 bg-gray-700 rounded border border-gray-600">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" id="privacy-hide-name" class="form-checkbox text-blue-600"> <span class="text-sm text-gray-200">Hide Name Globally</span>
-                        </label>
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="checkbox" id="privacy-hide-stats" class="form-checkbox text-blue-600"> <span class="text-sm text-gray-200">Hide Stats Globally</span>
-                        </label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="privacy-hide-name" class="form-checkbox text-blue-600"> <span class="text-sm text-gray-200">Hide Name Globally</span></label>
+                        <label class="flex items-center space-x-2 cursor-pointer"><input type="checkbox" id="privacy-hide-stats" class="form-checkbox text-blue-600"> <span class="text-sm text-gray-200">Hide Stats Globally</span></label>
                     </div>
-
-                    <div class="text-center pt-2">
-                        <button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden'); document.getElementById('join-modal').classList.remove('hidden'); window.populateJoinDropdown();" class="text-yellow-400 hover:text-white text-xs underline">Switch Alliance</button>
-                    </div>
+                    <div class="text-center pt-2"><button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden'); document.getElementById('join-modal').classList.remove('hidden'); window.populateJoinDropdown();" class="text-yellow-400 hover:text-white text-xs underline">Switch Alliance</button></div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save Changes</button>
                 <button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden')" class="mt-4 text-sm text-gray-400 w-full text-center hover:text-white">Cancel</button>
             </form>
         </div>
     </div>
-
-    <div id="join-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50"><div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm border border-gray-700"><h3 class="text-lg font-bold text-white mb-2">Join or Create</h3><div class="space-y-4"><div><label class="text-xs text-gray-400">Join Existing</label><select id="join-alliance-select" class="input-field mb-2"></select><input type="password" id="join-code" class="input-field mb-2 text-center" placeholder="Alliance Code"><button onclick="window.submitJoinRequest()" class="w-full bg-green-600 text-white font-bold py-2 rounded">Join</button></div><div class="border-t border-gray-600 pt-4"><label class="text-xs text-gray-400">Create New</label><input type="text" id="create-tag" class="input-field mb-2" placeholder="Tag (e.g. KVK)"><input type="text" id="create-name" class="input-field mb-2" placeholder="Full Name"><button onclick="window.submitCreationRequest()" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Request Creation</button></div></div><button onclick="document.getElementById('join-modal').classList.add('hidden')" class="w-full mt-4 text-gray-400 text-sm">Cancel</button></div></div>
 
     <div id="super-admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50">
         <div class="bg-gray-800 rounded-lg p-6 w-full max-w-4xl border-2 border-red-600 h-5/6 flex flex-col shadow-red-900/50 shadow-2xl">
@@ -217,8 +208,10 @@
     <div class="mt-4 flex-grow overflow-hidden flex flex-col"><h3 class="font-bold text-lg mb-2">Roster</h3><div class="overflow-y-auto flex-grow border border-gray-700 rounded"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-400"><tr><th class="p-2">Name</th><th class="p-2">Role</th><th class="p-2">Action</th></tr></thead><tbody id="roster-list-body"></tbody></table></div></div>
     </div></div>
     
+    <div id="join-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50"><div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm border border-gray-700"><h3 class="text-lg font-bold text-white mb-2">Join or Create</h3><div class="space-y-4"><div><label class="text-xs text-gray-400">Join Existing</label><select id="join-alliance-select" class="input-field mb-2"></select><input type="password" id="join-code" class="input-field mb-2 text-center" placeholder="Alliance Code"><button onclick="window.submitJoinRequest()" class="w-full bg-green-600 text-white font-bold py-2 rounded">Join</button></div><div class="border-t border-gray-600 pt-4"><label class="text-xs text-gray-400">Create New</label><input type="text" id="create-tag" class="input-field mb-2" placeholder="Tag (e.g. KVK)"><input type="text" id="create-name" class="input-field mb-2" placeholder="Full Name"><button onclick="window.submitCreationRequest()" class="w-full bg-blue-600 text-white font-bold py-2 rounded">Request Creation</button></div></div><button onclick="document.getElementById('join-modal').classList.add('hidden')" class="w-full mt-4 text-gray-400 text-sm">Cancel</button></div></div>
+    
     <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Help</h3><button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
-    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="document.getElementById('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 10.2 (Stable)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Fixed:</strong> Function reference errors.</li><li><strong>Layout:</strong> Classic 12-column table.</li><li><strong>Owner:</strong> Dedicated Overlord Console.</li></ul></div></div></div></div>
+    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="document.getElementById('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 11.0 (Restoration)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Restored:</strong> Team Builder, Analytics, Comparison Charts.</li><li><strong>Fixed:</strong> Null profile crash.</li><li><strong>Admin:</strong> Owner tools and Privacy settings fully functional.</li></ul></div></div></div></div>
     <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">History</h3><button onclick="document.getElementById('history-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="history-modal-body" class="overflow-y-auto flex-grow"></div><div class="mt-4"><canvas id="history-chart-canvas"></canvas></div></div></div>
     <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stats</h3><button onclick="document.getElementById('chart-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
     <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Analytics</h3><button onclick="document.getElementById('analytics-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
@@ -231,7 +224,7 @@
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // --- 1. CONFIGURATION ---
+        // --- CONFIGURATION ---
         const USER_FIREBASE_CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
@@ -242,7 +235,7 @@
         };
         const OWNER_EMAIL = "lumithedj@gmail.com"; 
 
-        // --- 2. GLOBAL STATE ---
+        // --- GLOBAL STATE ---
         let db, auth, userId = null;
         let currentUser = null, userProfile = null, allianceData = null;
         let allStats = [], filteredStats = [], latestStats = [], selectedForComparison = []; 
@@ -256,7 +249,7 @@
         let statsListenerUnsubscribe = null; 
         let globalSettings = { globalLockdown: false };
 
-        // --- 3. UTILITIES & FUNCTIONS ---
+        // --- UTILITIES & FUNCTIONS ---
         function getEl(id) { return document.getElementById(id); }
         function safeSetValue(id, val) { const el = getEl(id); if(el) el.value = val; }
         function safeQuote(str) { return str ? str.replace(/'/g, "\\'") : ''; }
@@ -267,8 +260,15 @@
         }
         function showToast(msg) { const t = getEl('toast'); t.innerText = msg; t.classList.remove('translate-x-full'); setTimeout(() => t.classList.add('translate-x-full'), 3000); }
         function calculateTrueScore(s) { return Math.round(((s.infAttack+s.cavAttack+s.arcAttack)*1)+((s.infDefense+s.cavDefense+s.arcDefense)*1)+((s.infLethality+s.cavLethality+s.arcLethality)*1.2)+((s.infHp+s.cavHp+s.arcHp)*1.1)); }
+        function getSpecialization(stat) {
+            const troopScores = { inf: stat.infAttack + stat.infDefense + stat.infLethality + stat.infHp, cav: stat.cavAttack + stat.cavDefense + stat.cavLethality + stat.cavHp, arc: stat.arcAttack + stat.arcDefense + stat.arcLethality + stat.arcHp };
+            const sortedTroops = Object.entries(troopScores).sort((a, b) => b[1] - a[1]); const [highestType, highestScore] = sortedTroops[0]; const [, secondHighestScore] = sortedTroops[1];
+            if (!secondHighestScore || highestScore < secondHighestScore * 1.10) return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' };
+            switch(highestType) { case 'inf': return { key: 'infantry', icon: 'fa-shield-alt', color: 'text-blue-400', title: 'Infantry Specialist' }; case 'cav': return { key: 'cavalry', icon: 'fa-horse', color: 'text-green-400', title: 'Cavalry Specialist' }; case 'arc': return { key: 'archer', icon: 'fa-bullseye', color: 'text-red-400', title: 'Archer Specialist' }; default: return { key: 'balanced', icon: 'fa-balance-scale', color: 'text-yellow-500', title: 'Balanced' }; }
+        }
+        function calculateAllianceAverages() { const statKeys = ['infAttack','infDefense','infLethality','infHp','cavAttack','cavDefense','cavLethality','cavHp','arcAttack','arcDefense','arcLethality','arcHp']; const averages = {}; statKeys.forEach(k => averages[k] = 0); if (latestStats.length === 0) return averages; latestStats.forEach(player => statKeys.forEach(key => averages[key] += player[key] || 0)); statKeys.forEach(key => averages[key] = parseFloat((averages[key] / latestStats.length).toFixed(1))); return averages; }
 
-        // --- 4. WINDOW FUNCTIONS ---
+        // --- WINDOW FUNCTIONS ---
         window.signInWithGoogle = function() { signInWithPopup(auth, new GoogleAuthProvider()).catch(e => alert("Login Failed: " + e.message)); };
         window.logout = function() { signOut(auth).then(() => window.location.reload()); };
 
@@ -320,6 +320,7 @@
         };
 
         window.openProfileModal = () => {
+            if(!userProfile) return alert("Profile loading...");
             safeSetValue('edit-ign', userProfile.displayName);
             safeSetValue('edit-public', userProfile.publicName || userProfile.displayName);
             safeSetValue('edit-kingdom', userProfile.kingdom);
@@ -382,17 +383,8 @@
             alert(`Seized control of ${tag.toUpperCase()}!`); window.location.reload();
         };
         
-        window.deleteAlliance = async (aid) => {
-             if(confirm("Permanently delete this alliance? Users will be reset.")) {
-                 await deleteDoc(doc(db, 'alliances', aid));
-                 alert("Alliance Deleted");
-             }
-        };
-
-        window.toggleGlobalLockdown = async () => {
-             const newState = !globalSettings.globalLockdown;
-             await setDoc(doc(db, 'metadata', 'config'), { globalLockdown: newState }, {merge:true});
-        };
+        window.deleteAlliance = async (aid) => { if(confirm("Permanently delete this alliance? Users will be reset.")) { await deleteDoc(doc(db, 'alliances', aid)); alert("Alliance Deleted"); } };
+        window.toggleGlobalLockdown = async () => { const newState = !globalSettings.globalLockdown; await setDoc(doc(db, 'metadata', 'config'), { globalLockdown: newState }, {merge:true}); };
 
         window.handleSaveOrUpdate = async function() {
             if(!currentEditId && !userProfile) return;
@@ -507,12 +499,6 @@
             const tbody = getEl('stats-table-body');
             tbody.innerHTML = ''; 
             
-            // Check for profile loading state
-            if (!userProfile) {
-                tbody.innerHTML = '<tr><td colspan="19" class="text-center p-8 text-gray-500 font-bold">Loading Profile...</td></tr>';
-                return;
-            }
-
             if(globalSettings.globalLockdown && userProfile.role !== 'owner') {
                  getEl('global-lockdown-banner').classList.remove('hidden');
                  tbody.innerHTML = '<tr><td colspan="19" class="text-center p-8 text-red-500 font-bold">SYSTEM MAINTENANCE</td></tr>'; return;
@@ -556,7 +542,6 @@
         // --- ADMIN & SETUP ---
         window.openAdminPanel = () => { getEl('admin-modal').classList.remove('hidden'); loadAdminData(); };
         const loadAdminData = () => {
-            // OWNER ONLY SECTIONS
             if(userProfile.role === 'owner') {
                 getEl('owner-section').classList.remove('hidden');
                 onSnapshot(collection(db, 'alliances'), snap => {
@@ -582,13 +567,12 @@
 
             if (!userProfile || !userProfile.alliance) return;
 
-            // LEADER: Pending & Roster
             const q = query(collection(db, 'users'), where("alliance", "==", userProfile.alliance), where("isApproved", "==", false));
             onSnapshot(q, (snap) => {
                 getEl('pending-count').innerText = snap.size;
                 getEl('pending-list-body').innerHTML = snap.docs.map(d => {
                     const u = d.data();
-                    return `<tr class="border-b border-gray-700"><td class="p-2">${u.displayName}</td><td class="p-2 text-xs">${u.role}</td><td class="p-2"><button onclick="window.procReq('${d.id}',true)" class="text-green-400 mr-2">✓</button><button onclick="window.procReq('${d.id}',false)" class="text-red-400">X</button></td></tr>`;
+                    return `<tr class="border-b border-gray-700"><td class="p-2">${u.displayName}</td><td class="p-2">${u.kingdom}</td><td class="p-2"><button onclick="window.procReq('${d.id}',true)" class="text-green-400 mr-2">✓</button><button onclick="window.procReq('${d.id}',false)" class="text-red-400">X</button></td></tr>`;
                 }).join('');
             });
             
@@ -614,8 +598,7 @@
         window.deleteAlliance = async (aid) => { if(confirm("Delete Alliance? Users will be reset.")) await deleteDoc(doc(db, 'alliances', aid)); };
         window.showHistory = (name) => { alert("History for " + name); }; 
         window.exportToCSV = () => { if(latestStats.length===0) return alert("No data"); alert("Exporting..."); };
-        window.showAnalytics = () => { getEl('analytics-modal').classList.remove('hidden'); }; 
-        window.renderTeamBuilder = () => { /* ... */ }; 
+        window.showAnalytics = () => { getEl('analytics-modal').classList.remove('hidden'); renderAnalytics(latestStats, getEl('analytics-modal-body'), 'alliance'); }; 
         window.approveCreation = async (reqId, tag, kingdom) => {
             const code = Math.floor(10000 + Math.random() * 90000).toString();
             const allianceID = `${kingdom}_${tag.toLowerCase()}`;
@@ -624,6 +607,56 @@
             await deleteDoc(doc(db, 'sys_requests', reqId));
             alert(`Alliance ${tag} Created! Code: ${code}`);
         };
+
+        // --- TEAM BUILDER, ANALYTICS, CHARTS ---
+        window.renderTeamBuilder = () => {
+             const availablePlayersList = getEl('available-players-list'); const teamsContainer = getEl('teams-container'); availablePlayersList.innerHTML = ''; teamsContainer.innerHTML = ''; const playersOnTeams = new Set(teams.flatMap(team => team.players)); const availablePlayers = latestStats.filter(p => !playersOnTeams.has(p.playerName)).sort((a,b) => a.playerName.localeCompare(b.playerName));
+             availablePlayers.forEach(player => { const playerEl = document.createElement('div'); playerEl.className = 'flex justify-between items-center bg-gray-700 p-2 rounded mb-1'; playerEl.innerHTML = `<div><span class="font-semibold text-white cursor-pointer hover:underline">${player.playerName}</span><span class="text-xs text-yellow-400 ml-2">(${player.trueScore.toLocaleString()})</span></div><div class="relative"><button class="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded btn add-player-btn" data-player-name="${player.playerName}">Add</button></div>`; availablePlayersList.appendChild(playerEl); });
+             document.querySelectorAll('.add-player-btn').forEach(button => { button.onclick = (e) => { e.stopPropagation(); document.querySelector('.team-add-dropdown')?.remove(); const playerName = e.target.dataset.playerName; const optionsDiv = document.createElement('div'); optionsDiv.className = 'team-add-dropdown absolute right-0 top-full mt-1 bg-gray-900 border border-gray-600 rounded shadow-lg z-10 w-40'; if (teams.length === 0) optionsDiv.innerHTML = `<div class="px-3 py-2 text-xs text-gray-400">Create a team first.</div>`; else teams.forEach(team => optionsDiv.innerHTML += `<div class="px-3 py-2 hover:bg-gray-700 cursor-pointer text-sm" onclick="window.addPlayerToTeam('${playerName}', ${team.id})">${team.name}</div>`); e.target.parentElement.appendChild(optionsDiv); }; });
+             teams.forEach(team => { const teamCard = document.createElement('div'); teamCard.className = 'card p-3 rounded-lg mb-2'; const teamPlayers = team.players.map(pName => latestStats.find(p => p.playerName === pName)).filter(Boolean); const avgTrueScore = teamPlayers.length > 0 ? Math.round(teamPlayers.reduce((acc, p) => acc + p.trueScore, 0) / teamPlayers.length) : 0; let playersHtml = teamPlayers.map(player => `<div class="flex justify-between items-center bg-gray-800 p-1.5 rounded text-sm mt-1"><div><span class="font-semibold text-white cursor-pointer">${player.playerName}</span><span class="text-xs text-yellow-400 ml-2">(${player.trueScore.toLocaleString()})</span></div><button onclick="window.removePlayerFromTeam('${player.playerName}', ${team.id})" class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-times-circle"></i></button></div>`).join(''); teamCard.innerHTML = `<div class="flex justify-between items-center mb-2"><input type="text" value="${team.name}" onchange="window.renameTeam(${team.id}, this.value)" class="input-field !p-1 text-md font-bold w-1/2 bg-transparent border-0 focus:ring-0 focus:border-b" placeholder="Team Name"><div class="flex items-center space-x-2"><button onclick="window.showTeamAnalyticsModal(${team.id})" class="text-yellow-400 hover:text-yellow-300 text-sm btn" title="Team Analytics"><i class="fas fa-trophy"></i></button><button onclick="window.deleteTeam(${team.id})" class="text-red-500 hover:text-red-400 text-sm btn" title="Delete Team"><i class="fas fa-trash-alt"></i></button></div></div><div class="text-xs text-gray-400 mb-2">Avg. True Score: <span class="font-bold text-yellow-300">${avgTrueScore.toLocaleString()}</span></div><div class="space-y-1.5">${playersHtml || '<div class="text-xs text-gray-500 italic">No players added yet.</div>'}</div>`; teamsContainer.appendChild(teamCard); });
+        };
+        window.createNewTeam = () => { teams.push({id:Date.now(), name:`Team ${teams.length+1}`, players:[]}); saveTeamsToFirestore(); renderTeamBuilder(); };
+        window.addPlayerToTeam = (name, tid) => { const t = teams.find(x=>x.id===tid); if(t) { t.players.push(name); saveTeamsToFirestore(); renderTeamBuilder(); } document.querySelector('.team-add-dropdown')?.remove(); };
+        window.removePlayerFromTeam = (name, tid) => { const t = teams.find(x=>x.id===tid); if(t) t.players = t.players.filter(x=>x!==name); saveTeamsToFirestore(); renderTeamBuilder(); };
+        window.renameTeam = (tid, val) => { const t = teams.find(x=>x.id===tid); if(t) t.name=val; saveTeamsToFirestore(); };
+        window.deleteTeam = (tid) => { if(confirm('Delete team?')) { teams=teams.filter(x=>x.id!==tid); saveTeamsToFirestore(); renderTeamBuilder(); } };
+        async function saveTeamsToFirestore() { if (!userId) return; try { await setDoc(doc(db, 'users', userId), { teams }, {merge: true}); } catch(e) { console.error("Error saving teams:", e); } }
+        async function loadTeamsFromFirestore() { if (!userId) return; try { const docSnap = await getDoc(doc(db, 'users', userId)); teams = docSnap.exists() && docSnap.data().teams ? docSnap.data().teams : []; } catch(e) { console.error("Error loading teams:", e); teams = []; } }
+
+        function renderAnalytics(players, container, title) {
+            container.innerHTML = ''; if (players.length === 0) { container.innerHTML = `<p class="text-gray-400 italic">Not enough data.</p>`; return; }
+            const mainGrid = document.createElement('div'); mainGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6';
+            const col1 = document.createElement('div'); col1.className = 'space-y-6';
+            const col2 = document.createElement('div'); col2.className = 'space-y-6';
+            const topPlayers = [...players].sort((a,b) => b.trueScore - a.trueScore).slice(0, 10);
+            let topHtml = `<div><h4 class="text-lg font-semibold text-yellow-400 mb-2">Top 10 Leaders</h4><ol class="list-decimal list-inside space-y-1">`;
+            topPlayers.forEach(p => topHtml += `<li>${p.playerName} - ${p.trueScore.toLocaleString()}</li>`);
+            topHtml += '</ol></div>';
+            col1.innerHTML += topHtml;
+            const specCounts = { infantry: 0, cavalry: 0, archer: 0, balanced: 0 };
+            players.forEach(stat => specCounts[getSpecialization(stat).key]++);
+            const chartId = `${title}-analytics-chart-canvas`;
+            col2.innerHTML += `<div><h4 class="text-lg font-semibold text-indigo-400 mb-2">Composition</h4><div class="relative h-64"><canvas id="${chartId}"></canvas></div></div>`;
+            mainGrid.appendChild(col1); mainGrid.appendChild(col2); container.appendChild(mainGrid);
+            const ctx = getEl(chartId).getContext('2d');
+            if(window.analyticsChart) window.analyticsChart.destroy();
+            window.analyticsChart = new Chart(ctx, { type: 'pie', data: { labels: ['Infantry', 'Cavalry', 'Archer', 'Balanced'], datasets: [{ data: [specCounts.infantry, specCounts.cavalry, specCounts.archer, specCounts.balanced], backgroundColor: ['#60a5fa', '#4ade80', '#f87171', '#9ca3af'], borderColor: '#1f2937' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top', labels: { color: '#e5e7eb' } } } } });
+        }
+        
+        function showComparisonChartForPlayers(players, title) {
+            const statKeys = ['infAttack','infDefense','infLethality','infHp','cavAttack','cavDefense','cavLethality','cavHp','arcAttack','arcDefense','arcLethality','arcHp'];
+            const labels = ['Inf Atk','Inf Def','Inf Let','Inf HP','Cav Atk','Cav Def','Cav Let','Cav HP','Arc Atk','Arc Def','Arc Let','Arc HP'];
+            const playerColors = ['rgba(59, 130, 246, 0.7)','rgba(239, 68, 68, 0.7)','rgba(245, 158, 11, 0.7)','rgba(16, 185, 129, 0.7)','rgba(139, 92, 246, 0.7)'];
+            const datasets = players.map((playerStat, index) => ({ label: playerStat.playerName, data: statKeys.map(key => playerStat[key]), backgroundColor: playerColors[index % playerColors.length], }));
+            const currentAverage = calculateAllianceAverages(); 
+            datasets.push({ label: 'View Average', data: statKeys.map(key => currentAverage[key]), backgroundColor: 'rgba(107, 114, 128, 0.7)' }); 
+            getEl('chart-modal-title').textContent = title;
+            const ctx = getEl('comparison-chart-canvas').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+            comparisonChart = new Chart(ctx, { type: 'bar', data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } }, x: { ticks: { color: '#e5e7eb' }, grid: { color: '#374151' } } }, plugins: { legend: { labels: { color: '#e5e7eb' } } } } });
+            getEl('chart-modal').classList.remove('hidden');
+        }
+        window.showSinglePlayerChart = (playerName) => { const playerStat = latestStats.find(s => s.playerName === playerName.toLowerCase()); if (!playerStat) return; showComparisonChartForPlayers([playerStat], `Stat Comparison for ${playerName}`); };
 
         // --- INIT ---
         const startApp = async (user) => {
@@ -665,6 +698,8 @@
                  allianceData = { joinCode: "ADMIN", isLocked: false };
                  setDoc(doc(db, 'alliances', '0_adm'), { name: 'ADM', kingdom: '0', joinCode: 'ADMIN', isLocked: false, leaders: [user.uid] }, {merge:true});
             }
+            
+            await loadTeamsFromFirestore(); // Load user teams
         };
 
         document.addEventListener('DOMContentLoaded', () => {
