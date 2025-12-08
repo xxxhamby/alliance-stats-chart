@@ -51,7 +51,6 @@
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             config: { lockdown: false, accessCode: '' },
-            // NEW: Track listeners to prevent leaks
             listeners: { security: null },
             form: {
                 ign: '', kingdom: '', pid: '',
@@ -181,10 +180,7 @@
                 document.getElementById('app-root').innerHTML = views[State.current];
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
                 if (State.current === 'owner') App.actions.initOwnerView();
-                if (State.current === 'allianceManager') {
-                    if (State.managerTab === 'roster') App.actions.loadRoster();
-                    if (State.managerTab === 'recruit') App.actions.loadFreelancers();
-                }
+                // FIXED: REMOVED AUTO-LOAD LOGIC FROM HERE
             },
 
             ui: {
@@ -357,9 +353,7 @@
                 },
 
                 initOwnerView: async () => {
-                    // FIXED: Prevent duplicate listener
-                    if (State.listeners.security) return; 
-                    
+                    if (State.listeners.security) return;
                     const unsub = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
                         if(snap.exists()) {
                             State.config = snap.data();
@@ -368,7 +362,6 @@
                         }
                     });
                     State.listeners.security = unsub;
-
                     try {
                         const coll = collection(App.db, "profiles");
                         const snapshot = await getCountFromServer(coll);
@@ -380,14 +373,12 @@
                 rotateCode: async () => {
                     const newCode = Math.floor(Math.random() * 90000 + 10000).toString();
                     await setDoc(doc(App.db, 'metadata', 'security'), { accessCode: newCode }, { merge: true });
-                    // No need to set State or Render, the onSnapshot listener handles it automatically
                     App.ui.toast("Gate Code Generated");
                 },
 
                 toggleLockdown: async () => {
                     const newState = !State.config.lockdown;
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
-                    // No need to set State, listener handles it
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 }
             }
@@ -405,9 +396,22 @@
         };
 
         window.openOwner = () => { State.current = 'owner'; App.render(); };
-        window.openAllianceManager = () => { State.current = 'allianceManager'; App.render(); };
+        window.openAllianceManager = () => {
+            // FIXED: Load Roster ON CLICK, not in render loop
+            State.current = 'allianceManager';
+            State.managerTab = 'roster';
+            App.actions.loadRoster(); 
+            App.render(); 
+        };
         window.cancelEdit = () => { State.current = 'dashboard'; App.render(); };
-        window.switchManagerTab = (tab) => { State.managerTab = tab; App.render(); };
+        
+        // FIXED: Load data when switching tabs
+        window.switchManagerTab = (tab) => { 
+            State.managerTab = tab; 
+            if (tab === 'roster') App.actions.loadRoster();
+            if (tab === 'recruit') App.actions.loadFreelancers();
+            App.render(); 
+        };
         
         window.refreshData = () => App.actions.loadLeaderboard();
         window.ownerRotateCode = () => App.actions.rotateCode();
