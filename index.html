@@ -31,11 +31,10 @@
 
     <div id="app-root" class="min-h-screen flex flex-col"></div>
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
-
-    <script type="module">
+<script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, serverTimestamp, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
@@ -46,14 +45,9 @@
             appId: "1:866174182881:web:aef54fc8da562d8b_541ea0"
         };
 
-        // --- STATE ---
         const State = {
             current: 'loading',
-            user: null,
-            dbUser: null,
-            profile: null,
-            leaderboard: [],
-            // Temp state for Editing/Registering
+            user: null, dbUser: null, profile: null, leaderboard: [],
             form: {
                 ign: '', kingdom: '', pid: '',
                 privacy: { hideName: false, hideStats: false },
@@ -65,10 +59,8 @@
             }
         };
 
-        // --- APP ENGINE ---
         const App = {
-            db: null,
-            auth: null,
+            db: null, auth: null,
 
             init: () => {
                 const app = initializeApp(CONFIG);
@@ -90,7 +82,7 @@
                         const profileSnap = await getDoc(doc(App.db, 'profiles', user.uid));
                         if (!profileSnap.exists()) {
                             State.current = 'register';
-                            // Reset form for new user
+                            // Reset form with clean structure
                             State.form = { ign: '', kingdom: '', pid: '', privacy: {hideName: false, hideStats: false}, troops: { inf: {tier:10, tg:0}, cav: {tier:10, tg:0}, arc: {tier:10, tg:0} } };
                         } else {
                             State.profile = profileSnap.data();
@@ -102,92 +94,21 @@
                 App.render();
             },
 
-            // --- RENDERER ---
             render: () => {
                 const views = {
-                    loading: `
-                        <div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white">
-                            <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
-                            <h2 class="font-bold tracking-widest">LOADING...</h2>
-                        </div>`,
+                    loading: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><h2 class="font-bold tracking-widest">LOADING...</h2></div>`,
+                    login: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-4"><div class="bg-slate-800 p-8 rounded-lg shadow-xl max-w-sm w-full text-center border-t-4 border-blue-500"><h1 class="text-2xl font-bold text-white mb-2">Alliance Command</h1><button onclick="window.triggerLogin()" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 rounded flex items-center justify-center gap-2 mt-6"><i class="fab fa-google text-red-500"></i> Sign in</button></div></div>`,
+                    
+                    register: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-yellow-500"><h2 class="text-xl font-bold text-white mb-4">Initial Setup</h2>${App.ui.editorForm('Register')}</div></div>`,
+                    
+                    editor: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-white">Update Profile</h2><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button></div>${App.ui.editorForm('Save Changes')}</div></div>`,
 
-                    login: `
-                        <div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-4">
-                            <div class="bg-slate-800 p-8 rounded-lg shadow-xl max-w-sm w-full text-center border-t-4 border-blue-500">
-                                <h1 class="text-2xl font-bold text-white mb-2">Alliance Command</h1>
-                                <button onclick="window.triggerLogin()" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 rounded flex items-center justify-center gap-2 mt-6">
-                                    <i class="fab fa-google text-red-500"></i> Sign in
-                                </button>
-                            </div>
-                        </div>`,
-
-                    register: `
-                        <div class="min-h-screen bg-slate-900 p-4 flex justify-center">
-                            <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-yellow-500">
-                                <h2 class="text-xl font-bold text-white mb-4">Initial Setup</h2>
-                                ${App.ui.editorForm('Register')}
-                            </div>
-                        </div>`,
-
-                    editor: `
-                        <div class="min-h-screen bg-slate-900 p-4 flex justify-center">
-                            <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h2 class="text-xl font-bold text-white">Update Profile</h2>
-                                    <button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
-                                </div>
-                                ${App.ui.editorForm('Save Changes')}
-                            </div>
-                        </div>`,
-
-                    dashboard: `
-                        <div class="min-h-screen bg-slate-900 text-slate-200">
-                            <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-md">
-                                <div class="max-w-6xl mx-auto flex justify-between items-center">
-                                    <div class="flex items-center gap-3">
-                                        <img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600">
-                                        <div>
-                                            <div class="font-bold text-white leading-tight">${State.profile?.ign}</div>
-                                            <div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-3">
-                                        <button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button>
-                                        <button onclick="window.triggerLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-power-off"></i></button>
-                                    </div>
-                                </div>
-                            </nav>
-
-                            <div class="p-4 max-w-6xl mx-auto">
-                                <div class="bg-slate-800 rounded shadow overflow-hidden border border-slate-700">
-                                    <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
-                                        <h3 class="font-bold text-white"><i class="fas fa-globe-americas text-slate-500 mr-2"></i>Global Roster</h3>
-                                        <button onclick="App.actions.loadLeaderboard()" class="text-xs text-blue-400 hover:text-white"><i class="fas fa-sync"></i> Refresh</button>
-                                    </div>
-                                    <div class="overflow-x-auto">
-                                        <table class="w-full text-left text-sm whitespace-nowrap">
-                                            <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider">
-                                                <tr>
-                                                    <th class="p-3">Commander</th>
-                                                    <th class="p-3">Kingdom</th>
-                                                    <th class="p-3">Troop Tech (I/C/A)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="divide-y divide-slate-700">
-                                                ${App.ui.renderRows()}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`
+                    dashboard: `<div class="min-h-screen bg-slate-900 text-slate-200"><nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-md"><div class="max-w-6xl mx-auto flex justify-between items-center"><div class="flex items-center gap-3"><img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600"><div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div></div><div class="flex gap-3"><button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button><button onclick="window.triggerLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-power-off"></i></button></div></div></nav><div class="p-4 max-w-6xl mx-auto"><div class="bg-slate-800 rounded shadow overflow-hidden border border-slate-700"><div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800"><h3 class="font-bold text-white"><i class="fas fa-globe-americas text-slate-500 mr-2"></i>Global Roster</h3><button onclick="App.actions.loadLeaderboard()" class="text-xs text-blue-400 hover:text-white"><i class="fas fa-sync"></i> Refresh</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">Troop Tech (I/C/A)</th></tr></thead><tbody class="divide-y divide-slate-700">${App.ui.renderRows()}</tbody></table></div></div></div></div>`
                 };
-
                 document.getElementById('app-root').innerHTML = views[State.current];
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
             },
 
-            // --- UI HELPERS ---
             ui: {
                 toast: (msg, type = 'info') => {
                     const el = document.createElement('div');
@@ -196,128 +117,83 @@
                     document.getElementById('toast-container').appendChild(el);
                     setTimeout(() => el.remove(), 3000);
                 },
-
-                // The Form Component (Shared between Register and Edit)
                 editorForm: (btnText) => `
                     <form onsubmit="event.preventDefault(); window.saveProfile()">
                         <div class="grid grid-cols-2 gap-3 mb-4">
-                            <div class="col-span-2">
-                                <label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label>
-                                <input type="text" id="frm-ign" class="input-field" required value="${State.form.ign}">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label>
-                                <input type="number" id="frm-kingdom" class="input-field" required value="${State.form.kingdom}">
-                            </div>
-                            <div>
-                                <label class="text-[10px] text-slate-400 uppercase font-bold">Player ID</label>
-                                <input type="number" id="frm-pid" class="input-field" required value="${State.form.pid}">
-                            </div>
+                            <div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" class="input-field" required value="${State.form.ign}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" class="input-field" required value="${State.form.kingdom}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID</label><input type="number" id="frm-pid" class="input-field" required value="${State.form.pid}"></div>
                         </div>
-
                         <div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}>
-                                <span class="text-xs text-slate-300">Hide Name</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}>
-                                <span class="text-xs text-slate-300">Hide Stats</span>
-                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
                         </div>
-
-                        <div class="space-y-3 mb-6">
-                            ${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}
-                            ${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}
-                            ${App.ui.troopRow('arc', 'Archer', 'text-red-400')}
-                        </div>
-
+                        <div class="space-y-3 mb-6">${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}${App.ui.troopRow('arc', 'Archer', 'text-red-400')}</div>
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button>
-                    </form>
-                `,
-
+                    </form>`,
                 troopRow: (type, label, colorClass) => `
                     <div class="bg-slate-900 p-2 rounded border border-slate-700">
-                        <div class="text-[10px] uppercase font-bold ${colorClass} mb-1 flex justify-between">
-                            <span>${label}</span>
-                            <span id="display-${type}" class="text-white">T10</span>
-                        </div>
-                        <div class="grid grid-cols-4 gap-1 mb-1">
-                            ${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}
-                        </div>
-                        <div class="grid grid-cols-6 gap-1">
-                            ${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}
-                        </div>
-                    </div>
-                `,
-
-                // Highlight cards based on current state
-                initEditor: () => {
-                    ['inf', 'cav', 'arc'].forEach(t => {
-                        window.setTroop(t, 'tier', State.form.troops[t].tier, false);
-                        window.setTroop(t, 'tg', State.form.troops[t].tg, false);
-                    });
-                },
-
+                        <div class="text-[10px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label}</span><span id="display-${type}" class="text-white">T10</span></div>
+                        <div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div>
+                        <div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div>
+                    </div>`,
+                initEditor: () => { ['inf', 'cav', 'arc'].forEach(t => { window.setTroop(t, 'tier', State.form.troops[t].tier, false); window.setTroop(t, 'tg', State.form.troops[t].tg, false); }); },
                 renderRows: () => {
                     if (State.leaderboard.length === 0) return `<tr><td colspan="3" class="p-4 text-center text-slate-500">No Commanders Found</td></tr>`;
                     return State.leaderboard.map(p => {
-                        // PRIVACY LOGIC
                         const isMe = State.user.uid === p.id;
                         const isNameHidden = p.privacy?.hideName && !isMe;
                         const isStatsHidden = p.privacy?.hideStats && !isMe;
-
                         const displayName = isNameHidden ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
                         const displayPid = isNameHidden ? `***` : p.pid;
                         
+                        // SAFE DATA ACCESS (Prevents crashes on old data)
+                        let t = p.troops;
+                        if (!t || typeof t.inf === 'string') { t = { inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0} }; }
+
                         const renderStat = (t, type) => {
                             if (isStatsHidden) return `<span class="text-slate-600">???</span>`;
                             const tgStr = t.tg > 0 ? `<span class="text-yellow-500 text-[10px]">+TG${t.tg}</span>` : '';
                             return `T${t.tier}${tgStr}`;
                         };
-
-                        const t = p.troops || { inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0} }; // Fallback
-
-                        return `
-                        <tr class="hover:bg-slate-700 transition border-b border-slate-700">
-                            <td class="p-3">
-                                <div class="font-bold text-white text-sm">${displayName}</div>
-                                <div class="text-[10px] text-slate-500 font-mono">ID: ${displayPid}</div>
-                            </td>
-                            <td class="p-3 text-slate-300 text-sm">${p.kingdom}</td>
-                            <td class="p-3">
-                                <div class="flex gap-2 text-xs">
-                                    <div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-blue-300 font-mono">${renderStat(t.inf, 'INF')}</div>
-                                    <div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-green-300 font-mono">${renderStat(t.cav, 'CAV')}</div>
-                                    <div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-red-300 font-mono">${renderStat(t.arc, 'ARC')}</div>
-                                </div>
-                            </td>
-                        </tr>
-                    `}).join('');
+                        return `<tr class="hover:bg-slate-700 transition border-b border-slate-700"><td class="p-3"><div class="font-bold text-white text-sm">${displayName}</div><div class="text-[10px] text-slate-500 font-mono">ID: ${displayPid}</div></td><td class="p-3 text-slate-300 text-sm">${p.kingdom}</td><td class="p-3"><div class="flex gap-2 text-xs"><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-blue-300 font-mono">${renderStat(t.inf, 'INF')}</div><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-green-300 font-mono">${renderStat(t.cav, 'CAV')}</div><div class="bg-slate-900/50 px-2 py-1 rounded border border-slate-600 text-red-300 font-mono">${renderStat(t.arc, 'ARC')}</div></div></td></tr>`;
+                    }).join('');
                 }
             },
 
-            // --- ACTIONS ---
             actions: {
                 loadLeaderboard: async () => {
                     try {
                         const q = query(collection(App.db, 'profiles'), orderBy('kingdom', 'asc'), limit(50));
                         const snap = await getDocs(q);
-                        // Map ID into data for privacy check
                         State.leaderboard = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     } catch (e) { console.error("Load Error", e); }
                 },
 
+                // NEW: Uniqueness Check + Saving
                 saveProfile: async () => {
-                    // Extract form data
-                    const ign = document.getElementById('frm-ign').value;
-                    const kingdom = document.getElementById('frm-kingdom').value;
-                    const pid = document.getElementById('frm-pid').value;
+                    const ign = document.getElementById('frm-ign').value.trim();
+                    const kingdom = document.getElementById('frm-kingdom').value.trim();
+                    const pid = document.getElementById('frm-pid').value.trim();
                     const hideName = document.getElementById('frm-hideName').checked;
                     const hideStats = document.getElementById('frm-hideStats').checked;
 
                     if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
 
+                    // 1. UNIQUE CHECK
+                    // Check PID
+                    const qPid = query(collection(App.db, 'profiles'), where('pid', '==', pid));
+                    const snapPid = await getDocs(qPid);
+                    const pidTaken = snapPid.docs.find(d => d.id !== State.user.uid);
+                    if(pidTaken) return App.ui.toast("Player ID already registered!", "error");
+
+                    // Check IGN within Kingdom
+                    const qIgn = query(collection(App.db, 'profiles'), where('kingdom', '==', kingdom), where('ign', '==', ign));
+                    const snapIgn = await getDocs(qIgn);
+                    const ignTaken = snapIgn.docs.find(d => d.id !== State.user.uid);
+                    if(ignTaken) return App.ui.toast(`Name "${ign}" already exists in Kingdom ${kingdom}`, "error");
+
+                    // 2. SAVE
                     const profileData = {
                         ign, kingdom, pid,
                         privacy: { hideName, hideStats },
@@ -327,7 +203,7 @@
 
                     try {
                         await setDoc(doc(App.db, 'profiles', State.user.uid), profileData, { merge: true });
-                        State.profile = profileData; // Optimistic update
+                        State.profile = profileData;
                         await App.actions.loadLeaderboard();
                         State.current = 'dashboard';
                         App.render();
@@ -337,35 +213,40 @@
             }
         };
 
-        // --- GLOBAL EXPORTS ---
         window.triggerLogin = () => signInWithPopup(App.auth, new GoogleAuthProvider());
         window.triggerLogout = () => signOut(App.auth).then(() => window.location.reload());
         
         window.openEditor = () => {
-            // Pre-fill form with current profile
-            State.form = JSON.parse(JSON.stringify(State.profile)); // Deep copy
+            // DEEP COPY & DATA NORMALIZATION (Fixes the crash)
+            const raw = JSON.parse(JSON.stringify(State.profile));
+            
+            // Check for legacy string data (e.g., "t10") and convert to object
+            const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
+            
+            State.form = {
+                ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid,
+                privacy: raw.privacy || {hideName: false, hideStats: false},
+                troops: {
+                    inf: normalize(raw.troops?.inf),
+                    cav: normalize(raw.troops?.cav),
+                    arc: normalize(raw.troops?.arc)
+                }
+            };
             State.current = 'editor';
             App.render();
         };
 
-        window.cancelEdit = () => {
-            State.current = 'dashboard';
-            App.render();
-        };
-
+        window.cancelEdit = () => { State.current = 'dashboard'; App.render(); };
         window.saveProfile = () => App.actions.saveProfile();
+        window.triggerRegister = () => App.actions.saveProfile(); // Reuse same logic
 
         window.setTroop = (type, prop, val, updateState = true) => {
             if (updateState) State.form.troops[type][prop] = val;
-            
-            // Visual Toggle (No Re-render)
             const cards = document.querySelectorAll(`[data-group="${type}-${prop}"]`);
             cards.forEach(c => {
                 const isSelected = parseInt(c.dataset.val) === val;
                 c.classList.toggle(prop === 'tier' ? 'selected-tier' : 'selected-tg', isSelected);
             });
-            
-            // Update Summary Text
             const t = State.form.troops[type];
             const summary = document.getElementById(`display-${type}`);
             if(summary) summary.innerText = `T${t.tier} ${t.tg > 0 ? '+TG'+t.tg : ''}`;
@@ -373,5 +254,6 @@
 
         document.addEventListener('DOMContentLoaded', App.init);
     </script>
+   
 </body>
 </html>
