@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,17 +17,28 @@
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .input-field, select { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 8px; border-radius: 0.375rem; width: 100%; }
-        .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; }
+        /* Dropdown Fix */
+        select.input-field {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+        .stat-delta { font-size: 0.7rem; margin-left: 4px; font-weight: bold; cursor: pointer; }
+        .add-btn { background-color: #374151; border: 1px solid #4b5563; color: #9ca3af; padding: 4px 8px; margin-left: 4px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; height: 42px; width: 42px; display: flex; align-items: center; justify-content: center; }
         .view-section { display: none; } 
         .view-section.active { display: flex; flex-direction: column; }
     </style>
 </head>
+
 <body class="flex flex-col min-h-screen p-4 md:p-6 space-y-4">
 
     <div id="view-login" class="view-section fixed inset-0 z-50 items-center justify-center bg-gray-900 p-4 active">
         <div class="bg-gray-800 p-8 rounded-lg shadow-2xl border border-gray-700 max-w-md w-full text-center">
-            <h1 class="text-3xl font-extrabold text-white mb-2"><i class="fas fa-globe-americas text-blue-500"></i> Alliance Federation</h1>
-            <p class="text-gray-400 mb-8">Secure Data Command</p>
+            <h1 class="text-3xl font-extrabold text-white mb-2"><i class="fas fa-shield-alt text-blue-500"></i> Alliance CMD</h1>
+            <p class="text-gray-400 mb-8">Secure Access Required.</p>
             <button onclick="window.signInWithGoogle()" class="w-full bg-[#4285F4] hover:bg-[#357ae8] text-white font-bold py-3 px-4 rounded-md btn flex items-center justify-center transition-all">
                 <i class="fab fa-google mr-3 text-xl"></i> <span>Sign in with Google</span>
             </button>
@@ -56,16 +68,18 @@
             
             <div class="flex flex-wrap gap-2 justify-center items-center">
                 <div id="freelancer-actions" class="hidden flex gap-2">
-                    <button onclick="window.openJoinModal()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-sign-in-alt mr-1"></i> Join Alliance</button>
-                    <button onclick="window.openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-plus-circle mr-1"></i> Create Alliance</button>
+                    <button onclick="window.openJoinModal()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-sign-in-alt mr-1"></i> Join</button>
+                    <button onclick="window.openCreateModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-plus-circle mr-1"></i> Create</button>
                 </div>
                 <button id="admin-btn" onclick="window.openAdminPanel()" class="hidden bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"><i class="fas fa-cogs mr-1"></i> Manage</button>
                 
-                <div class="h-6 w-px bg-gray-600 mx-2"></div> <div class="text-right leading-tight">
+                <div class="h-6 w-px bg-gray-600 mx-2"></div>
+                
+                <div class="text-right leading-tight">
                     <div id="user-display-name" class="text-sm font-bold text-white">Guest</div>
                     <div id="user-display-id" class="text-[10px] text-gray-500 font-mono">ID: ...</div>
                 </div>
-                <button onclick="window.openEditProfile()" class="text-blue-400 hover:text-white" title="Edit Profile"><i class="fas fa-user-edit text-lg"></i></button>
+                <button onclick="window.openProfileModal()" class="text-blue-400 hover:text-white ml-2" title="Edit Profile"><i class="fas fa-user-edit text-lg"></i></button>
                 <button onclick="window.logout()" class="text-gray-400 hover:text-red-400 ml-2"><i class="fas fa-power-off text-lg"></i></button>
             </div>
         </header>
@@ -87,6 +101,7 @@
         <div class="card p-4 rounded-lg shadow-lg flex-grow flex flex-col overflow-hidden h-[60vh]">
             <div class="flex justify-between items-center mb-3">
                 <div class="flex items-center space-x-2">
+                    <select id="filter-kingdom" class="input-field w-32 text-sm hidden"><option value="all">All Kingdoms</option></select>
                     <select id="filter-alliance" class="input-field w-40 text-sm" onchange="window.applyFilters()"><option value="all">All Alliances</option></select>
                     <span id="lockdown-indicator" class="hidden text-red-500 font-bold text-xs animate-pulse"><i class="fas fa-lock"></i> LOCKED</span>
                 </div>
@@ -139,11 +154,18 @@
                     <label class="text-xs text-gray-400 uppercase">Current Alliance</label>
                     <div class="flex gap-2">
                         <input type="text" id="edit-alliance" class="input-field bg-gray-900 text-gray-500" readonly>
-                        <button type="button" onclick="window.closeEditProfile(); window.openJoinModal();" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-2 rounded btn whitespace-nowrap">Switch</button>
+                        <button type="button" onclick="document.getElementById('edit-profile-modal').classList.add('hidden'); window.openJoinModal();" class="bg-yellow-600 hover:bg-yellow-700 text-white text-xs px-2 rounded btn whitespace-nowrap">Switch</button>
+                    </div>
+                </div>
+                <div class="mb-4 border-t border-gray-700 pt-3">
+                    <label class="text-xs text-yellow-400 uppercase">Claim Role (Code)</label>
+                    <div class="flex gap-2">
+                        <input type="password" id="role-claim-code" class="input-field" placeholder="Promo Code">
+                        <button type="button" onclick="window.claimRole()" class="bg-green-600 text-white text-xs px-3 rounded btn">Claim</button>
                     </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mb-2">Save Changes</button>
-                <button type="button" onclick="getEl('edit-profile-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
+                <button type="button" onclick="document.getElementById('edit-profile-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
             </form>
         </div>
     </div>
@@ -155,7 +177,7 @@
             <select id="join-alliance-select" class="input-field mb-3"></select>
             <input type="password" id="join-code" class="input-field mb-4 text-center" placeholder="Alliance Access Code">
             <button onclick="window.submitJoinRequest()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded mb-2">Submit Request</button>
-            <button onclick="getEl('join-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
+            <button onclick="document.getElementById('join-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
         </div>
     </div>
 
@@ -166,7 +188,7 @@
             <input type="text" id="create-tag" class="input-field mb-2" placeholder="Alliance Tag (e.g. KVK)">
             <input type="text" id="create-name" class="input-field mb-4" placeholder="Full Name">
             <button onclick="window.submitCreationRequest()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded mb-2">Send Request</button>
-            <button onclick="getEl('create-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
+            <button onclick="document.getElementById('create-modal').classList.add('hidden')" class="w-full text-gray-400 text-sm">Cancel</button>
         </div>
     </div>
 
@@ -174,11 +196,22 @@
         <div class="bg-gray-800 rounded-lg p-6 w-full max-w-5xl border border-gray-700 h-5/6 flex flex-col">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-2xl font-bold text-white">Management Console</h2>
-                <button onclick="getEl('admin-modal').classList.add('hidden')" class="text-gray-400 text-xl">&times;</button>
+                <button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="text-gray-400 text-xl">&times;</button>
             </div>
 
             <div id="owner-section" class="hidden mb-6 border-b border-gray-700 pb-4">
-                <h3 class="text-yellow-400 font-bold mb-2">Owner: Alliance Creation Requests</h3>
+                <h3 class="text-yellow-400 font-bold mb-2">Owner Controls</h3>
+                
+                <div class="card p-3 mb-2 border border-yellow-600">
+                     <h4 class="text-sm font-bold">Force Create Alliance (You become Leader)</h4>
+                     <div class="flex gap-2 mt-1">
+                         <input type="text" id="force-tag" class="input-field w-24 text-xs" placeholder="TAG">
+                         <input type="text" id="force-king" class="input-field w-24 text-xs" placeholder="Kingdom">
+                         <button onclick="window.forceCreateAlliance()" class="bg-yellow-600 text-white px-3 rounded text-xs">Create & Claim</button>
+                     </div>
+                </div>
+
+                <h4 class="text-sm font-bold text-gray-400 mt-2">Creation Requests</h4>
                 <div class="overflow-y-auto max-h-40 border border-gray-700 rounded p-2">
                     <table class="w-full text-xs text-left text-gray-300">
                         <thead><tr><th>User</th><th>Tag</th><th>Action</th></tr></thead>
@@ -200,14 +233,25 @@
                 </div>
                 
                 <div class="flex-grow overflow-hidden flex flex-col">
-                    <h3 class="font-bold text-white mb-2">Member Approvals</h3>
+                    <h3 class="font-bold text-white mb-2">Members</h3>
                     <div class="overflow-y-auto border border-gray-700 rounded flex-grow">
                         <table class="w-full text-left text-xs">
-                            <thead class="bg-gray-900 text-gray-400 sticky top-0"><tr><th class="p-2">Name</th><th class="p-2">Status</th><th class="p-2">Action</th></tr></thead>
-                            <tbody id="member-approvals-body"></tbody>
+                            <thead class="bg-gray-900 text-gray-400 sticky top-0"><tr><th class="p-2">Name</th><th class="p-2">Role</th><th class="p-2">Action</th></tr></thead>
+                            <tbody id="member-list-body"></tbody>
                         </table>
                     </div>
                 </div>
+
+                <div class="h-32 overflow-hidden flex flex-col">
+                    <h3 class="font-bold text-white mb-2">Pending Requests</h3>
+                    <div class="overflow-y-auto border border-gray-700 rounded flex-grow">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-gray-900 text-gray-400 sticky top-0"><tr><th class="p-2">Name</th><th class="p-2">Action</th></tr></thead>
+                            <tbody id="pending-requests-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -220,7 +264,7 @@
         import { getFirestore, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteDoc, query, where, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // --- CONFIG ---
-        const USER_FIREBASE_CONFIG = {
+        const CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
             authDomain: "alliance-stats-96973.firebaseapp.com",
             projectId: "alliance-stats-96973",
@@ -255,13 +299,19 @@
             if(!ign || !kingdom) return alert("Required");
             try {
                 await setDoc(doc(db, 'users', userId), {
-                    email: currentUser.email, displayName: ign, kingdom: kingdom, alliance: null, role: 'freelancer', status: 'active', playerID: `${kingdom}_freelancer_${ign.toLowerCase()}`
+                    email: currentUser.email,
+                    displayName: ign,
+                    kingdom: kingdom,
+                    alliance: null,
+                    role: 'freelancer',
+                    status: 'active',
+                    playerID: `${kingdom}_freelancer_${ign.toLowerCase()}`
                 });
                 window.location.reload();
             } catch(e) { console.error(e); alert("Setup failed"); }
         };
 
-        // 2. Join/Switch Alliance
+        // 2. Join Alliance Logic
         window.openJoinModal = () => {
             getEl('join-modal').classList.remove('hidden');
             const sel = getEl('join-alliance-select'); sel.innerHTML = '';
@@ -280,16 +330,13 @@
             alert("Request Sent!"); window.location.reload();
         };
 
-        // 3. Edit Profile
+        // 3. Edit Profile & Claim Role
         window.openEditProfile = () => {
-            getEl('profile-modal').classList.add('hidden'); // Hide simple modal if open
-            getEl('edit-profile-modal').classList.remove('hidden'); // Show editor
             getEl('edit-ign').value = userProfile.displayName;
             getEl('edit-kingdom').value = userProfile.kingdom;
             getEl('edit-alliance').value = userProfile.alliance || 'Freelancer';
+            getEl('edit-profile-modal').classList.remove('hidden');
         };
-
-        window.closeEditProfile = () => { getEl('edit-profile-modal').classList.add('hidden'); };
 
         window.submitProfileEdit = async () => {
              const newName = getEl('edit-ign').value.trim();
@@ -298,8 +345,20 @@
              await updateDoc(doc(db, 'users', userId), { displayName: newName, kingdom: newKingdom });
              alert("Profile Updated"); window.location.reload();
         };
+        
+        window.claimRole = async () => {
+            const code = getEl('role-claim-code').value.trim();
+            if (!code) return;
+            if (userProfile.promotionCode === code && userProfile.pendingRole) {
+                await updateDoc(doc(db, 'users', userId), { role: userProfile.pendingRole, promotionCode: null, pendingRole: null });
+                alert(`Role updated to ${userProfile.pendingRole}! Reloading.`);
+                window.location.reload();
+            } else {
+                alert("Invalid Code");
+            }
+        };
 
-        // 3. Create Alliance Logic
+        // 4. Create Alliance
         window.openCreateModal = () => getEl('create-modal').classList.remove('hidden');
         window.submitCreationRequest = async () => {
             const tag = getEl('create-tag').value.trim().toUpperCase();
@@ -309,21 +368,26 @@
             alert("Request sent to Owner."); getEl('create-modal').classList.add('hidden');
         };
 
-        // 4. Save Stats
+        // 5. Save Stats
         window.handleSaveStat = async () => {
             if(!userProfile) return;
             const v = (id) => parseFloat(getEl(id).value) || 0;
             const statDoc = {
                 uid: userId, playerName: userProfile.displayName, kingdom: userProfile.kingdom, alliance: userProfile.alliance || 'Freelancer', playerID: userProfile.playerID || userId, date: serverTimestamp(),
-                infAttack: v('infAtt'), infDefense: v('infDef'), infLethality: v('infLet'), infHp: v('infHP'),
+                infAttack: v('infAttack'), infDefense: v('infDefense'), infLethality: v('infLethality'), infHp: v('infHp'),
                 cavAttack: v('cavAtt'), cavDefense: v('cavDef'), cavLethality: v('cavLet'), cavHp: v('cavHP'),
-                arcAttack: v('arcAtt'), arcDefense: v('arcDef'), arcLethality: v('arcLet'), arcHp: v('arcHP')
+                arcAttack: v('arcAtt'), arcDefense: v('arcDef'), arcLethality: v('arcLethality'), arcHp: v('arcHP')
             };
-            try { await setDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, userProfile.playerID || userId), statDoc); showToast("Stats Updated"); } catch(e) { console.error(e); }
+            try {
+                await setDoc(doc(db, `artifacts/${CONFIG.projectId}/public/data/game_stats`, userProfile.playerID || userId), statDoc);
+                showToast("Stats Updated");
+            } catch(e) { console.error(e); }
         };
 
-        // 5. Admin Actions
+        // 6. Admin Actions
         window.openAdminPanel = () => { getEl('admin-modal').classList.remove('hidden'); loadAdminData(); };
+
+        // Owner: Approve Creation
         window.approveCreation = async (reqId, tag, kingdom) => {
             const code = Math.floor(10000 + Math.random() * 90000).toString();
             const allianceID = `${kingdom}_${tag.toLowerCase()}`;
@@ -332,9 +396,35 @@
             await deleteDoc(doc(db, 'sys_requests', reqId));
             alert(`Alliance ${tag} Created! Code: ${code}`);
         };
-        window.approveMember = async (targetUid) => { await updateDoc(doc(db, 'users', targetUid), { status: 'active', role: 'member' }); loadAdminData(); };
+        
+        // Owner: Force Create
+        window.forceCreateAlliance = async () => {
+            const tag = getEl('force-tag').value.trim().toUpperCase();
+            const kingdom = getEl('force-king').value.trim();
+            if(!tag || !kingdom) return;
+            const code = Math.floor(10000 + Math.random() * 90000).toString();
+            const allianceID = `${kingdom}_${tag.toLowerCase()}`;
+            await setDoc(doc(db, 'alliances', allianceID), { name: tag, kingdom: kingdom, joinCode: code, isLocked: false, leaders: [userId] });
+            await updateDoc(doc(db, 'users', userId), { alliance: tag, allianceID: allianceID, role: 'leader', status: 'active' });
+            alert(`Alliance Created! You are Leader. Code: ${code}`);
+            window.location.reload();
+        };
+
+        // Leader: Approve/Promote
+        window.approveMember = async (targetUid) => {
+            await updateDoc(doc(db, 'users', targetUid), { status: 'active', role: 'member' });
+            loadAdminData(); 
+        };
+        
+        window.promoteMember = async (targetUid, newRole) => {
+            const code = Math.floor(1000 + Math.random() * 9000).toString();
+            await updateDoc(doc(db, 'users', targetUid), { promotionCode: code, pendingRole: newRole });
+            prompt(`Give this code to the user to accept ${newRole} role:`, code);
+        };
+
         window.rotateCode = async () => { if(!allianceData) return; const newCode = Math.floor(10000 + Math.random() * 90000).toString(); await updateDoc(doc(db, 'alliances', allianceData.id), { joinCode: newCode }); getEl('admin-code-display').value = newCode; };
         window.toggleLockdown = async () => { if(!allianceData) return; await updateDoc(doc(db, 'alliances', allianceData.id), { isLocked: !allianceData.isLocked }); };
+        
         window.exportToCSV = () => {
             if(latestStats.length===0) return alert("No data");
             let csv = "Rank,Player,Alliance,Score\n";
@@ -350,79 +440,159 @@
 
         // --- INTERNAL LOGIC ---
         function loadAdminData() {
+            // Owner Logic
             if(userProfile.role === 'owner') {
                 getEl('owner-section').classList.remove('hidden');
                 onSnapshot(collection(db, 'sys_requests'), snap => {
-                    getEl('creation-requests-body').innerHTML = snap.docs.map(d => { const r = d.data(); return `<tr><td>${r.ign}</td><td>${r.tag}</td><td><button onclick="window.approveCreation('${d.id}','${r.tag}','${r.kingdom}')" class="text-green-400">Approve</button></td></tr>`; }).join('');
+                    getEl('creation-requests-body').innerHTML = snap.docs.map(d => {
+                        const r = d.data();
+                        return `<tr><td>${r.ign}</td><td>${r.tag}</td><td><button onclick="window.approveCreation('${d.id}','${r.tag}','${r.kingdom}')" class="text-green-400">Approve</button></td></tr>`;
+                    }).join('');
                 });
             }
-            if(userProfile.role === 'leader' || userProfile.role === 'r4') {
+
+            // Leader Logic
+            if(['leader', 'owner', 'r4'].includes(userProfile.role)) {
                 getEl('leader-section').classList.remove('hidden');
+                
                 if(userProfile.allianceID) {
+                    // Settings
                     onSnapshot(doc(db, 'alliances', userProfile.allianceID), snap => {
                         allianceData = { id: snap.id, ...snap.data() };
                         getEl('admin-code-display').value = allianceData.joinCode;
                         getEl('lockdown-btn').innerText = allianceData.isLocked ? "UNLOCK" : "LOCKDOWN";
                         getEl('lockdown-btn').className = allianceData.isLocked ? "w-full py-2 rounded font-bold bg-red-600" : "w-full py-2 rounded font-bold bg-gray-700";
                     });
-                    const q = query(collection(db, 'users'), where("allianceID", "==", userProfile.allianceID), where("status", "==", "pending"));
-                    onSnapshot(q, snap => {
-                        getEl('member-approvals-body').innerHTML = snap.docs.map(d => `<tr><td>${d.data().displayName}</td><td>Pending</td><td><button onclick="window.approveMember('${d.id}')" class="text-green-400">Accept</button></td></tr>`).join('');
+
+                    // Pending
+                    const qPending = query(collection(db, 'users'), where("allianceID", "==", userProfile.allianceID), where("status", "==", "pending"));
+                    onSnapshot(qPending, snap => {
+                        getEl('pending-requests-body').innerHTML = snap.docs.map(d => 
+                            `<tr><td>${d.data().displayName}</td><td><button onclick="window.approveMember('${d.id}')" class="text-green-400">Accept</button></td></tr>`
+                        ).join('');
+                    });
+
+                    // Members (for Promotion)
+                    const qMembers = query(collection(db, 'users'), where("allianceID", "==", userProfile.allianceID), where("status", "==", "active"));
+                    onSnapshot(qMembers, snap => {
+                        getEl('member-list-body').innerHTML = snap.docs.map(d => {
+                            const u = d.data();
+                            if (d.id === userId) return ''; // Don't show self
+                            return `<tr><td>${u.displayName}</td><td>${u.role}</td><td>
+                                <button onclick="window.promoteMember('${d.id}', 'r4')" class="text-xs text-blue-400 mr-1">R4</button>
+                                ${userProfile.role === 'owner' ? `<button onclick="window.promoteMember('${d.id}', 'leader')" class="text-xs text-yellow-400">Ldr</button>` : ''}
+                            </td></tr>`;
+                        }).join('');
                     });
                 }
             }
         }
+
         function processStats() {
              const groups = {};
              filteredStats.forEach(s => { (groups[s.playerName] = groups[s.playerName] || []).push(s); });
              latestStats = Object.values(groups).map(g => g.sort((a,b)=>b.date-a.date)[0]);
-             latestStats.sort((a,b) => { const vA = a[currentSort.col], vB = b[currentSort.col]; return currentSort.dir === 'asc' ? (vA>vB?1:-1) : (vA<vB?1:-1); });
+             latestStats.sort((a,b) => {
+                 const vA = a[currentSort.col], vB = b[currentSort.col];
+                 return currentSort.dir === 'asc' ? (vA>vB?1:-1) : (vA<vB?1:-1);
+             });
              renderTable();
         }
+
         function renderTable() {
             const tbody = getEl('stats-body'); tbody.innerHTML = '';
+            
+            if(allianceData && allianceData.isLocked && userProfile.role === 'member' && filteredStats.length > 0 && filteredStats[0].alliance === allianceData.name) {
+                 tbody.innerHTML = '<tr><td colspan="9" class="text-center p-8 text-red-500 font-bold">LOCKDOWN ACTIVE</td></tr>'; return;
+            }
+            
             latestStats.forEach((s, i) => {
-                tbody.innerHTML += `<tr class="border-b border-gray-700 hover:bg-gray-800"><td class="p-2 text-gray-500">${i+1}</td><td class="p-2 font-bold text-white">${s.playerName}</td><td class="p-2 text-xs text-gray-400">${s.alliance}</td><td class="p-2 text-blue-400 text-xs">${s.infAttack}/${s.infDefense}/${s.infLethality}/${s.infHp}</td><td class="p-2 text-green-400 text-xs">${s.cavAttack}/${s.cavDefense}/${s.cavLethality}/${s.cavHp}</td><td class="p-2 text-red-400 text-xs">${s.arcAttack}/${s.arcDefense}/${s.arcLethality}/${s.arcHp}</td><td class="p-2 text-yellow-400 font-bold">${s.trueScore.toLocaleString()}</td><td class="p-2 text-gray-500 text-xs">${s.date ? s.date.toLocaleDateString() : '-'}</td></tr>`;
+                const ts = calculateTrueScore(s); s.trueScore = ts;
+                tbody.innerHTML += `
+                <tr class="border-b border-gray-700 hover:bg-gray-800">
+                    <td class="p-2 text-gray-500">${i+1}</td>
+                    <td class="p-2 font-bold text-white">${s.playerName}</td>
+                    <td class="p-2 text-xs text-gray-400">${s.alliance}</td>
+                    <td class="p-2 text-blue-400 text-xs">${s.infAttack}/${s.infDefense}/${s.infLethality}/${s.infHp}</td>
+                    <td class="p-2 text-green-400 text-xs">${s.cavAttack}/${s.cavDefense}/${s.cavLethality}/${s.cavHp}</td>
+                    <td class="p-2 text-red-400 text-xs">${s.arcAttack}/${s.arcDefense}/${s.arcLethality}/${s.arcHp}</td>
+                    <td class="p-2 text-yellow-400 font-bold">${ts.toLocaleString()}</td>
+                    <td class="p-2 text-gray-500 text-xs">${s.date ? s.date.toLocaleDateString() : '-'}</td>
+                </tr>`;
             });
         }
+
         const init = async () => {
-            initializeApp(USER_FIREBASE_CONFIG);
+            initializeApp(CONFIG);
             db = getFirestore();
             auth = getAuth();
             showView('view-login');
+
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    userId = user.uid; currentUser = user;
-                    const userRef = doc(db, 'users', userId);
-                    const userSnap = await getDoc(userRef);
-                    if(user.email === OWNER_EMAIL && !userSnap.exists()) { await setDoc(userRef, { email: user.email, displayName: "Owner", role: 'owner', kingdom:'0', alliance:'ADM', playerID:'owner', status:'active' }); window.location.reload(); return; }
-                    if (!userSnap.exists()) { showView('view-setup'); } 
-                    else {
+                    userId = user.uid;
+                    currentUser = user;
+                    
+                    // --- OWNER GOD MODE CHECK ---
+                    if (user.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) {
+                         const userRef = doc(db, 'users', userId);
+                         // Force update existing OR create new owner profile
+                         await setDoc(userRef, { 
+                             email: user.email, 
+                             displayName: "Owner", 
+                             role: 'owner', 
+                             status: 'active',
+                             playerID: 'owner_0_adm',
+                             kingdom: '0', 
+                             alliance: 'ADM',
+                             allianceID: '0_adm'
+                         }, { merge: true });
+                         // Ensure Owner Alliance exists
+                         await setDoc(doc(db, 'alliances', '0_adm'), { name:'ADM', kingdom:'0', joinCode:'ADMIN', isLocked:false, leaders:[userId] }, {merge:true});
+                    }
+                    
+                    // Normal Flow
+                    const userSnap = await getDoc(doc(db, 'users', userId));
+                    if (!userSnap.exists()) {
+                        showView('view-setup');
+                    } else {
                         userProfile = userSnap.data();
-                        if (userProfile.status === 'pending') { showView('view-pending'); getEl('pending-alliance-name').innerText = userProfile.alliance || 'Unknown'; } 
-                        else {
+                        if (userProfile.status === 'pending') {
+                            showView('view-pending');
+                            getEl('pending-alliance-name').innerText = userProfile.alliance || 'Unknown';
+                        } else {
+                            // Active
                             showView('view-dashboard');
                             getEl('user-display-name').innerText = userProfile.displayName;
-                            getEl('user-display-id').innerText = `ID: ${userProfile.playerID || '?'}`;
+                            getEl('user-display-id').innerText = `ID: ${userProfile.playerID}`;
                             const role = userProfile.role.toUpperCase();
                             getEl('status-badge').innerText = role;
+                            getEl('status-badge').className = `px-3 py-1 rounded text-xs font-bold border ${role === 'FREELANCER' ? 'bg-gray-700 border-gray-500 text-gray-300' : 'bg-blue-900 border-blue-500 text-blue-200'}`;
+
                             if (role === 'FREELANCER') getEl('freelancer-actions').classList.remove('hidden');
-                            if (['LEADER', 'OWNER', 'R4'].includes(role)) getEl('admin-btn').classList.remove('hidden');
+                            if (['LEADER', 'OWNER', 'R4'].includes(userProfile.role)) getEl('admin-btn').classList.remove('hidden');
+
+                            // Load Alliances for Dropdowns
                             onSnapshot(collection(db, 'alliances'), snap => {
                                 allAlliances = snap.docs.map(d => ({id: d.id, ...d.data()}));
                                 const filterSel = getEl('filter-alliance');
                                 filterSel.innerHTML = '<option value="all">All Alliances</option>';
                                 allAlliances.forEach(a => filterSel.innerHTML += `<option value="${a.name}">${a.name}</option>`);
                             });
-                            onSnapshot(collection(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`), snap => {
+
+                            // Load Stats
+                            onSnapshot(collection(db, `artifacts/${CONFIG.projectId}/public/data/game_stats`), snap => {
                                 allStats = snap.docs.map(d => ({id: d.id, ...d.data(), date: d.data().date?.toDate(), trueScore: calculateTrueScore(d.data())}));
                                 window.applyFilters();
                             });
                         }
                     }
-                } else { showView('view-login'); }
+                } else {
+                    showView('view-login');
+                }
             });
         };
+
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
