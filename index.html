@@ -9,9 +9,10 @@
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .input-field { background: #334155; border: 1px solid #475569; color: white; padding: 0.8rem; border-radius: 0.5rem; width: 100%; margin-bottom: 0.5rem; }
-        .checkbox-card { cursor: pointer; border: 2px solid #334155; padding: 10px; border-radius: 6px; text-align: center; transition: all 0.2s; }
-        .checkbox-card:hover { border-color: #64748b; }
-        .checkbox-card.selected { border-color: #eab308; background-color: #422006; }
+        /* Scrollbar styling for the table container */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -40,7 +41,12 @@
             dbUser: null,  // Firestore User Doc (Role)
             profile: null, // Public Profile
             leaderboard: [],
-            survey: { inf: 't10', cav: 't10', arc: 't10' } // Default values
+            // UPDATED: Nested structure for Tier + True Gold
+            survey: { 
+                inf: { tier: 10, tg: 0 }, 
+                cav: { tier: 10, tg: 0 }, 
+                arc: { tier: 10, tg: 0 } 
+            }
         };
 
         // --- APP ENGINE ---
@@ -179,9 +185,13 @@
                                     </div>
                                     <div class="bg-slate-800 p-4 rounded border-l-4 border-purple-500">
                                         <div class="text-xs text-slate-400 uppercase">Troop Focus</div>
-                                        <div class="text-white text-sm mt-1">
-                                            <span class="bg-blue-900 text-blue-200 px-2 py-1 rounded text-xs mr-1">INF: ${State.profile?.troops?.inf.toUpperCase()}</span>
-                                            <span class="bg-green-900 text-green-200 px-2 py-1 rounded text-xs">CAV: ${State.profile?.troops?.cav.toUpperCase()}</span>
+                                        
+
+[Image of troops formation]
+
+                                        <div class="text-white text-sm mt-1 flex flex-col gap-1">
+                                            <span class="bg-blue-900 text-blue-200 px-2 py-1 rounded text-xs w-full text-center">INF: T${State.profile?.troops?.inf.tier} ${State.profile?.troops?.inf.tg > 0 ? '+TG'+State.profile?.troops?.inf.tg : ''}</span>
+                                            <span class="bg-green-900 text-green-200 px-2 py-1 rounded text-xs w-full text-center">CAV: T${State.profile?.troops?.cav.tier} ${State.profile?.troops?.cav.tg > 0 ? '+TG'+State.profile?.troops?.cav.tg : ''}</span>
                                         </div>
                                     </div>
                                     <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex items-center justify-between">
@@ -189,7 +199,7 @@
                                             <div class="text-xs text-slate-400 uppercase">Role</div>
                                             <div class="font-bold text-yellow-400">${State.dbUser?.role.toUpperCase()}</div>
                                         </div>
-                                        ${State.dbUser?.role === 'owner' ? `<button onclick="alert('Owner Console Placeholder')" class="bg-red-600 text-white text-xs px-3 py-1 rounded">ADMIN</button>` : ''}
+                                        ${State.dbUser?.role === 'owner' ? `<button class="bg-red-600 text-white text-xs px-3 py-1 rounded opacity-50 cursor-not-allowed">ADMIN (WIP)</button>` : ''}
                                     </div>
                                 </div>
 
@@ -204,7 +214,7 @@
                                                 <tr>
                                                     <th class="p-3">Player</th>
                                                     <th class="p-3">Kingdom</th>
-                                                    <th class="p-3">Tiers (I/C/A)</th>
+                                                    <th class="p-3">Troop Tech</th>
                                                     <th class="p-3">Status</th>
                                                 </tr>
                                             </thead>
@@ -219,11 +229,6 @@
                 };
 
                 document.getElementById('app-root').innerHTML = views[State.current];
-                
-                // Re-attach survey listeners if rendering register view
-                if(State.current === 'register') {
-                    App.ui.highlightTiers();
-                }
             },
 
             // --- UI HELPERS ---
@@ -236,41 +241,65 @@
                     setTimeout(() => el.remove(), 3000);
                 },
 
+                // NEW: Generates the Tier + TG selectors
                 tierSelect: (type) => `
-                    <div class="flex gap-1 justify-center mt-1">
-                        <div class="checkbox-card text-[10px] w-full" onclick="window.setTier('${type}', 't10')">T10</div>
-                        <div class="checkbox-card text-[10px] w-full" onclick="window.setTier('${type}', 't11')">T11</div>
-                        <div class="checkbox-card text-[10px] w-full" onclick="window.setTier('${type}', 'tg')">TG</div>
+                    <div class="flex gap-2 mt-1">
+                        <div class="w-1/2">
+                            <label class="text-[10px] text-slate-500 uppercase font-bold block mb-1">Tier</label>
+                            <select onchange="window.setTroopData('${type}', 'tier', this.value)" 
+                                    class="w-full bg-slate-800 border border-slate-600 text-white text-xs rounded p-2 outline-none focus:border-blue-500">
+                                <option value="11">T11</option>
+                                <option value="10" selected>T10</option>
+                                <option value="9">T9</option>
+                                <option value="8">T8</option>
+                            </select>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-[10px] text-yellow-500 uppercase font-bold block mb-1">True Gold</label>
+                            <select onchange="window.setTroopData('${type}', 'tg', this.value)" 
+                                    class="w-full bg-slate-800 border border-slate-600 text-yellow-400 text-xs rounded p-2 outline-none focus:border-yellow-500">
+                                <option value="0" selected>None</option>
+                                <option value="1">TG 1</option>
+                                <option value="2">TG 2</option>
+                                <option value="3">TG 3</option>
+                                <option value="4">TG 4</option>
+                                <option value="5">TG 5</option>
+                            </select>
+                        </div>
                     </div>
                 `,
 
-                highlightTiers: () => {
-                    ['inf', 'cav', 'arc'].forEach(type => {
-                        const val = State.survey[type];
-                        // Logic to find the element containing the click handler with correct value would be complex in string templates
-                        // Simpler: Just rely on the click updating state and re-rendering, or simple DOM manipulation
-                        // For MVP: Re-render handles it, but we need to visually mark selected
-                        const cards = document.querySelectorAll(`.checkbox-card`);
-                        cards.forEach(card => {
-                            if(card.getAttribute('onclick').includes(`'${type}', '${val}'`)) card.classList.add('selected');
-                        });
-                    });
-                },
-
                 renderRows: () => {
                     if (State.leaderboard.length === 0) return `<tr><td colspan="4" class="p-4 text-center text-slate-500">No Data Found</td></tr>`;
-                    return State.leaderboard.map(p => `
-                        <tr class="hover:bg-slate-700 transition">
-                            <td class="p-3 font-bold text-white">${p.ign} <span class="text-slate-500 text-xs font-mono ml-1">#${p.pid}</span></td>
-                            <td class="p-3 text-slate-300">${p.kingdom}</td>
-                            <td class="p-3 text-xs">
-                                <span class="text-blue-400">${p.troops.inf.toUpperCase()}</span> / 
-                                <span class="text-green-400">${p.troops.cav.toUpperCase()}</span> / 
-                                <span class="text-red-400">${p.troops.arc.toUpperCase()}</span>
+                    return State.leaderboard.map(p => {
+                        // Safe check in case old data exists
+                        const t = p.troops || { inf: {tier:10, tg:0}, cav: {tier:10, tg:0}, arc: {tier:10, tg:0} };
+                        return `
+                        <tr class="hover:bg-slate-700 transition border-b border-slate-700 last:border-0">
+                            <td class="p-3">
+                                <div class="font-bold text-white text-sm">${p.ign}</div>
+                                <div class="text-[10px] text-slate-500 font-mono">ID: ${p.pid}</div>
+                            </td>
+                            <td class="p-3 text-slate-300 text-sm">${p.kingdom}</td>
+                            <td class="p-3">
+                                <div class="grid grid-cols-1 gap-1">
+                                    <div class="flex justify-between text-xs bg-slate-900/50 p-1 rounded border border-slate-700">
+                                        <span class="text-blue-400 font-bold">INF</span>
+                                        <span>T${t.inf.tier} <span class="text-yellow-500 text-[10px]">${t.inf.tg > 0 ? 'TG'+t.inf.tg : ''}</span></span>
+                                    </div>
+                                    <div class="flex justify-between text-xs bg-slate-900/50 p-1 rounded border border-slate-700">
+                                        <span class="text-green-400 font-bold">CAV</span>
+                                        <span>T${t.cav.tier} <span class="text-yellow-500 text-[10px]">${t.cav.tg > 0 ? 'TG'+t.cav.tg : ''}</span></span>
+                                    </div>
+                                    <div class="flex justify-between text-xs bg-slate-900/50 p-1 rounded border border-slate-700">
+                                        <span class="text-red-400 font-bold">ARC</span>
+                                        <span>T${t.arc.tier} <span class="text-yellow-500 text-[10px]">${t.arc.tg > 0 ? 'TG'+t.arc.tg : ''}</span></span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="p-3"><span class="bg-green-900 text-green-300 px-2 py-1 rounded text-[10px] font-bold">ACTIVE</span></td>
                         </tr>
-                    `).join('');
+                    `}).join('');
                 }
             },
 
@@ -278,7 +307,8 @@
             actions: {
                 loadLeaderboard: async () => {
                     try {
-                        const q = query(collection(App.db, 'profiles'), limit(20)); // Simple query
+                        // Added sorting by Kingdom to group neighbors together
+                        const q = query(collection(App.db, 'profiles'), orderBy('kingdom', 'asc'), limit(50)); 
                         const snap = await getDocs(q);
                         State.leaderboard = snap.docs.map(d => d.data());
                     } catch (e) { console.error("Leaderboard Error", e); }
@@ -313,7 +343,14 @@
         // --- GLOBAL EXPORTS (For HTML Events) ---
         window.triggerLogin = () => signInWithPopup(App.auth, new GoogleAuthProvider());
         window.triggerLogout = () => signOut(App.auth).then(() => window.location.reload());
-        window.setTier = (type, val) => { State.survey[type] = val; App.render(); };
+        
+        // NEW DATA HANDLER
+        window.setTroopData = (type, field, val) => {
+            // type = 'inf', field = 'tier' or 'tg', val = '10'
+            State.survey[type][field] = parseInt(val);
+            // No render needed, native select handles visual state
+        };
+
         window.triggerRegister = () => {
             const ign = document.getElementById('reg-ign').value;
             const kingdom = document.getElementById('reg-kingdom').value;
