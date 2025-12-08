@@ -17,6 +17,7 @@
         .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
         .btn:disabled { cursor: not-allowed; opacity: 0.5; }
         .input-field, select { background-color: #374151; border: 1px solid #4b5563; color: #e5e7eb; padding: 8px; border-radius: 0.375rem; width: 100%; }
+        /* Dropdown Fix */
         select.input-field {
             appearance: none;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
@@ -108,8 +109,10 @@
         <div id="manual-entry" class="card p-4 rounded-lg shadow-lg flex-shrink-0">
             <form onsubmit="event.preventDefault(); window.handleSaveOrUpdate();">
                 <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-lg font-semibold text-white">Update Stats</h2>
-                    <p class="text-xs text-gray-400 italic">Identity locked to your profile.</p>
+                    <h2 id="entry-title" class="text-lg font-semibold text-white">Update Stats</h2>
+                    <div class="flex space-x-2">
+                        <button type="button" id="cancel-edit-btn" onclick="window.resetForm()" class="hidden text-xs bg-gray-600 px-2 py-1 rounded text-white">Cancel Edit</button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-3">
                     <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-300 mb-1">Player</label><input type="text" id="playerName" class="input-field bg-gray-900 cursor-not-allowed text-gray-500" readonly></div>
@@ -121,7 +124,7 @@
                     <div class="space-y-2"><h3 class="font-bold text-md text-center text-green-400 flex items-center justify-center"><i class="fas fa-horse mr-2"></i>Cavalry</h3><div class="grid grid-cols-4 gap-2"><input type="number" step="0.1" id="cavAttack" placeholder="Att" required class="input-field text-center"><input type="number" step="0.1" id="cavDefense" placeholder="Def" required class="input-field text-center"><input type="number" step="0.1" id="cavLethality" placeholder="Let" required class="input-field text-center"><input type="number" step="0.1" id="cavHp" placeholder="HP" required class="input-field text-center"></div></div>
                     <div class="space-y-2"><h3 class="font-bold text-md text-center text-red-400 flex items-center justify-center"><i class="fas fa-bullseye mr-2"></i>Archer</h3><div class="grid grid-cols-4 gap-2"><input type="number" step="0.1" id="arcAttack" placeholder="Att" required class="input-field text-center"><input type="number" step="0.1" id="arcDefense" placeholder="Def" required class="input-field text-center"><input type="number" step="0.1" id="arcLethality" placeholder="Let" required class="input-field text-center"><input type="number" step="0.1" id="arcHp" placeholder="HP" required class="input-field text-center"></div></div>
                 </div>
-                <div class="flex justify-end"><button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md btn"><i class="fas fa-save mr-2"></i>Update My Stats</button></div>
+                <div class="flex justify-end"><button type="submit" id="submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-md btn"><i class="fas fa-save mr-2"></i>Update Stats</button></div>
             </form>
         </div>
 
@@ -132,7 +135,7 @@
                     <div class="flex items-end"><div><label class="block text-sm font-medium text-gray-300 mb-1">Alliance</label><select id="alliance-select" class="input-field w-48"></select></div><button id="add-alliance-btn" class="add-btn" title="Add New"><i class="fas fa-plus"></i></button></div>
                 </div>
                 <div class="flex space-x-2">
-                     <button onclick="window.renderTeamBuilder(); getEl('team-builder-modal').classList.remove('hidden');" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-users-cog mr-2 text-lg"></i>Team Builder</button>
+                     <button onclick="window.renderTeamBuilder(); document.getElementById('team-builder-modal').classList.remove('hidden');" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-users-cog mr-2 text-lg"></i>Team Builder</button>
                     <button onclick="window.showAnalytics()" class="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-trophy mr-2 text-lg"></i>Analytics</button>
                     <button onclick="window.exportToCSV()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-md btn"><i class="fas fa-file-download mr-2 text-lg"></i>Export</button>
                 </div>
@@ -160,7 +163,7 @@
         
         <footer class="flex justify-between items-center text-xs text-gray-500 flex-shrink-0">
             <p id="db-status" class="text-sm">Connecting...</p>
-            <button onclick="getEl('changelog-modal').classList.remove('hidden')" class="hover:text-gray-400">Change Log</button>
+            <button onclick="document.getElementById('changelog-modal').classList.remove('hidden')" class="hover:text-gray-400">Change Log</button>
         </footer>
     </div>
 
@@ -173,18 +176,18 @@
                 <div><label class="text-xs text-gray-400">Alliance</label><input type="text" id="edit-alliance" class="input-field"></div>
                 <button onclick="window.saveProfileChanges()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded">Save Changes</button>
             </div>
-            <button onclick="getEl('profile-modal').classList.add('hidden')" class="mt-4 text-sm text-gray-400 w-full text-center hover:text-white">Cancel</button>
+            <button onclick="document.getElementById('profile-modal').classList.add('hidden')" class="mt-4 text-sm text-gray-400 w-full text-center hover:text-white">Cancel</button>
         </div>
     </div>
 
-    <div id="admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 h-5/6 flex flex-col"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Leadership Console</h2><button onclick="getEl('admin-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"><div class="card p-4"><h3 class="font-bold text-lg mb-2">Join Code</h3><div class="flex space-x-2"><input type="text" id="admin-join-code" class="input-field text-center font-mono font-bold text-xl" readonly><button onclick="window.rotateJoinCode()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 rounded btn">Rotate</button></div></div><div class="card p-4"><h3 class="font-bold text-lg mb-2 text-red-500">Lockdown</h3><button id="panic-btn" onclick="window.toggleLockdown()" class="w-full bg-gray-700 hover:bg-red-600 text-white font-bold py-2 rounded transition-colors">OFF</button></div></div><div class="flex-grow overflow-hidden flex flex-col"><h3 class="font-bold text-lg mb-2">Pending Requests <span id="pending-count" class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span></h3><div class="overflow-y-auto flex-grow border border-gray-700 rounded"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-400"><tr><th class="p-2">Name</th><th class="p-2">Details</th><th class="p-2">Actions</th></tr></thead><tbody id="pending-list-body"></tbody></table></div></div></div></div>
-    <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Help</h3><button onclick="getEl('help-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
-    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="getEl('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 5.6 (Profile & Admin Fixes)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>New:</strong> Edit Profile button added to dashboard.</li><li><strong>Fixed:</strong> Admin panel crashes due to missing alliance data.</li><li><strong>Fixed:</strong> Owner account auto-creates '0_ADM' alliance for management.</li></ul></div></div></div></div>
-    <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">History</h3><button onclick="getEl('history-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="history-modal-body" class="overflow-y-auto flex-grow"></div><div class="mt-4"><canvas id="history-chart-canvas"></canvas></div></div></div>
-    <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stats</h3><button onclick="getEl('chart-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
-    <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Analytics</h3><button onclick="getEl('analytics-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
-    <div id="team-builder-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-7xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Team Builder</h3><button onclick="getEl('team-builder-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden"><div class="flex flex-col overflow-hidden card p-4"><h4>Available</h4><div id="available-players-list" class="overflow-y-auto"></div></div><div class="flex flex-col overflow-hidden card p-4"><div class="flex justify-between mb-3"><h4>Teams</h4><button onclick="window.createNewTeam()" class="bg-green-600 px-3 rounded btn">+ New</button></div><div id="teams-container" class="overflow-y-auto"></div></div></div></div></div>
-    <div id="player-details-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 id="player-details-title" class="text-lg font-bold text-white">Details</h3><button onclick="getEl('player-details-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="player-details-body" class="space-y-2 text-gray-300"></div></div></div>
+    <div id="admin-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-90 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 h-5/6 flex flex-col"><div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Leadership Console</h2><button onclick="document.getElementById('admin-modal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">&times;</button></div><div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"><div class="card p-4"><h3 class="font-bold text-lg mb-2">Join Code</h3><div class="flex space-x-2"><input type="text" id="admin-join-code" class="input-field text-center font-mono font-bold text-xl" readonly><button onclick="window.rotateJoinCode()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 rounded btn">Rotate</button></div></div><div class="card p-4"><h3 class="font-bold text-lg mb-2 text-red-500">Lockdown</h3><button id="panic-btn" onclick="window.toggleLockdown()" class="w-full bg-gray-700 hover:bg-red-600 text-white font-bold py-2 rounded transition-colors">OFF</button></div></div><div class="flex-grow overflow-hidden flex flex-col"><h3 class="font-bold text-lg mb-2">Pending Requests <span id="pending-count" class="bg-red-600 text-white text-xs px-2 py-0.5 rounded-full">0</span></h3><div class="overflow-y-auto flex-grow border border-gray-700 rounded"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-400"><tr><th class="p-2">Name</th><th class="p-2">Details</th><th class="p-2">Actions</th></tr></thead><tbody id="pending-list-body"></tbody></table></div></div></div></div>
+    <div id="help-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-3xl border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Help</h3><button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><ul id="help-list" class="list-disc list-inside space-y-3 text-gray-300"></ul></div></div>
+    <div id="changelog-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl border border-gray-700 h-3/4 flex flex-col"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Change Log</h3><button onclick="document.getElementById('changelog-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="overflow-y-auto space-y-4 text-gray-300"><div><h4 class="font-bold text-yellow-400">Version 6.0 (Owner Control)</h4><ul class="list-disc list-inside text-sm mt-1"><li><strong>Edit Others:</strong> Owner can now click the 'Pencil' icon on any row to edit that player's stats.</li><li><strong>Fixed:</strong> Modal close buttons.</li></ul></div></div></div></div>
+    <div id="history-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-4xl border border-gray-700 flex flex-col h-3/4"><div class="flex justify-between items-center mb-4"><h3 id="history-modal-title" class="text-lg font-bold text-white">History</h3><button onclick="document.getElementById('history-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="history-modal-body" class="overflow-y-auto flex-grow"></div><div class="mt-4"><canvas id="history-chart-canvas"></canvas></div></div></div>
+    <div id="chart-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-5/6"><div class="flex justify-between items-center mb-4"><h3 id="chart-modal-title" class="text-lg font-bold text-white">Stats</h3><button onclick="document.getElementById('chart-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow relative"><canvas id="comparison-chart-canvas"></canvas></div></div></div>
+    <div id="analytics-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-6xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Analytics</h3><button onclick="document.getElementById('analytics-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="analytics-modal-body" class="overflow-y-auto space-y-6"></div></div></div>
+    <div id="team-builder-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-7xl border border-gray-700 flex flex-col h-[90%]"><div class="flex justify-between items-center mb-4"><h3 class="text-lg font-bold text-white">Team Builder</h3><button onclick="document.getElementById('team-builder-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 overflow-hidden"><div class="flex flex-col overflow-hidden card p-4"><h4>Available</h4><div id="available-players-list" class="overflow-y-auto"></div></div><div class="flex flex-col overflow-hidden card p-4"><div class="flex justify-between mb-3"><h4>Teams</h4><button onclick="window.createNewTeam()" class="bg-green-600 px-3 rounded btn">+ New</button></div><div id="teams-container" class="overflow-y-auto"></div></div></div></div></div>
+    <div id="player-details-modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden z-50"><div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-lg border border-gray-700"><div class="flex justify-between items-center mb-4"><h3 id="player-details-title" class="text-lg font-bold text-white">Details</h3><button onclick="document.getElementById('player-details-modal').classList.add('hidden')" class="text-gray-400">&times;</button></div><div id="player-details-body" class="space-y-2 text-gray-300"></div></div></div>
     <div id="toast" class="fixed top-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50"></div>
 
     <script type="module">
@@ -208,6 +211,7 @@
         let currentUser = null, userProfile = null, allianceData = null;
         let allStats = [], filteredStats = [], latestStats = [], selectedForComparison = []; 
         let currentSort = { column: 'trueScore', direction: 'desc' };
+        let currentEditId = null;
         let comparisonChart, analyticsChart, historyChart, teamAnalyticsChart = null;
         let teams = [];
         let uniqueKingdoms = [], uniqueAlliances = [], selectedKingdom = 'all', selectedAlliance = 'all';
@@ -258,7 +262,7 @@
                 if (!snap.exists()) {
                     await setDoc(metaRef, { accessCode: code });
                     await setDoc(doc(db, 'users', userId), { isApproved: true, email: currentUser.email, role: 'admin', displayName: 'Admin' }); 
-                    alert("Code Created! You are Admin.");
+                    alert("Code Created! You are now the admin.");
                     window.location.reload();
                 } else {
                     if (snap.data().accessCode === code) {
@@ -268,12 +272,11 @@
             } catch(e) { console.error(e); alert("Verification Error"); }
         };
 
-        // NEW: Profile Editor Logic
         window.openProfileModal = () => {
             getEl('edit-ign').value = userProfile.displayName;
             getEl('edit-kingdom').value = userProfile.kingdom;
             getEl('edit-alliance').value = userProfile.alliance;
-            getEl('profile-modal').classList.remove('hidden');
+            document.getElementById('profile-modal').classList.remove('hidden');
         };
 
         window.saveProfileChanges = async () => {
@@ -281,33 +284,113 @@
             const newKingdom = getEl('edit-kingdom').value.trim().toLowerCase();
             const newAlliance = getEl('edit-alliance').value.trim().toLowerCase();
             const newPlayerID = `${newKingdom}_${newAlliance}_${newIgn.toLowerCase()}`;
-            
             try {
-                await updateDoc(doc(db, 'users', userId), {
-                    displayName: newIgn,
-                    kingdom: newKingdom,
-                    alliance: newAlliance,
-                    playerID: newPlayerID
-                });
-                alert("Profile updated! Reloading...");
-                window.location.reload();
+                await updateDoc(doc(db, 'users', userId), { displayName: newIgn, kingdom: newKingdom, alliance: newAlliance, playerID: newPlayerID });
+                alert("Profile updated! Reloading..."); window.location.reload();
             } catch(e) { console.error(e); alert("Update Failed"); }
         };
 
         window.handleSaveOrUpdate = async function() {
-            if(!userProfile) return;
+            // Determine Document ID: Use currentEditId if set (Admin Edit), otherwise use logged-in user's ID
+            let targetDocId = currentEditId; 
+            
+            // If NOT in edit mode (Update My Stats), ensure user has profile
+            if (!targetDocId) {
+                if(!userProfile) return;
+                targetDocId = userProfile.playerID; 
+            }
+
             const v = (id) => parseFloat(getEl(id).value) || 0;
+            // Get inputs directly from form (allows Admin to change Name/Kingdom/Alliance for other users)
+            const pName = getEl('playerName').value.trim();
+            const pKing = getEl('kingdomName').value.trim();
+            const pAlli = getEl('allianceName').value.trim();
+
+            if (!pName || !pKing || !pAlli) return alert("Name, Kingdom, Alliance required");
+
             const statDoc = {
-                uid: userId, playerName: userProfile.displayName, playerID: userProfile.playerID, 
-                kingdom: userProfile.kingdom, alliance: userProfile.alliance, date: serverTimestamp(),
+                uid: userId, // Keeps the logged-in user as the "updater"
+                playerName: pName, 
+                // Reconstruct PlayerID from form data to ensure consistency if names change
+                playerID: `${pKing}_${pAlli}_${pName.toLowerCase()}`, 
+                kingdom: pKing.toLowerCase(), 
+                alliance: pAlli.toLowerCase(), 
+                date: serverTimestamp(),
                 infAttack: v('infAttack'), infDefense: v('infDefense'), infLethality: v('infLethality'), infHp: v('infHp'),
                 cavAttack: v('cavAttack'), cavDefense: v('cavDefense'), cavLethality: v('cavLethality'), cavHp: v('cavHp'),
                 arcAttack: v('arcAttack'), arcDefense: v('arcDefense'), arcLethality: v('arcLethality'), arcHp: v('arcHp')
             };
             try {
-                await setDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, userProfile.playerID), statDoc);
+                // If editing someone else, we might be creating a NEW doc ID if name changed. 
+                // For simplicity, we write to the ID derived from the form data.
+                await setDoc(doc(db, `artifacts/${USER_FIREBASE_CONFIG.projectId}/public/data/game_stats`, statDoc.playerID), statDoc);
+                
+                // If we were editing an old ID and the ID changed (name changed), we ideally delete the old one.
+                // But simplified for now: just write the new data.
+                
+                window.resetForm();
                 showToast("Stats Saved!");
-            } catch(e) { console.error(e); alert("Save Failed"); }
+            } catch(e) { console.error(e); alert("Save Failed: " + e.message); }
+        };
+
+        // NEW: Load data into form for editing
+        window.enterEditMode = (docId) => {
+            const stat = allStats.find(s => s.id === docId); 
+            if (!stat) return;
+            
+            currentEditId = docId; // Set GLOBAL edit ID
+            
+            // Populate Form
+            getEl('playerName').value = stat.playerName;
+            getEl('kingdomName').value = stat.kingdom;
+            getEl('allianceName').value = stat.alliance;
+            
+            ['infAttack','infDefense','infLethality','infHp','cavAttack','cavDefense','cavLethality','cavHp','arcAttack','arcDefense','arcLethality','arcHp'].forEach(id => getEl(id).value = stat[id]);
+            
+            // If Owner, Unlock Identity Fields
+            if (userProfile.role === 'owner' || userProfile.role === 'leader') {
+                 getEl('playerName').readOnly = false;
+                 getEl('kingdomName').readOnly = false;
+                 getEl('allianceName').readOnly = false;
+                 getEl('playerName').classList.remove('bg-gray-900', 'cursor-not-allowed');
+                 getEl('kingdomName').classList.remove('bg-gray-900', 'cursor-not-allowed');
+                 getEl('allianceName').classList.remove('bg-gray-900', 'cursor-not-allowed');
+            }
+
+            // Change Button Text
+            const btn = getEl('manual-entry').querySelector('button[type="submit"]');
+            btn.innerHTML = `<i class="fas fa-save mr-2"></i>Update Player Stats`;
+            getEl('entry-title').innerText = "Editing Player: " + stat.playerName;
+            getEl('cancel-edit-btn').classList.remove('hidden');
+            
+            window.scrollTo(0, 0); // Scroll to form
+        };
+
+        window.resetForm = () => {
+             // Reset Form Values
+             document.querySelector('#manual-entry form').reset();
+             currentEditId = null;
+             
+             // Reset UI to "My Stats" mode
+             getEl('entry-title').innerText = "Update Stats";
+             const btn = getEl('manual-entry').querySelector('button[type="submit"]');
+             btn.innerHTML = `<i class="fas fa-save mr-2"></i>Update My Stats`;
+             getEl('cancel-edit-btn').classList.add('hidden');
+
+             // Restore Default Profile Values
+             if (userProfile) {
+                 getEl('playerName').value = userProfile.displayName;
+                 getEl('kingdomName').value = userProfile.kingdom;
+                 getEl('allianceName').value = userProfile.alliance;
+             }
+
+             // Re-lock fields
+             getEl('playerName').readOnly = true;
+             getEl('kingdomName').readOnly = true;
+             getEl('allianceName').readOnly = true;
+             getEl('playerName').classList.add('bg-gray-900', 'cursor-not-allowed');
+             getEl('kingdomName').classList.add('bg-gray-900', 'cursor-not-allowed');
+             getEl('allianceName').classList.add('bg-gray-900', 'cursor-not-allowed');
         };
 
         window.sortStats = function(col) {
@@ -370,7 +453,6 @@
             const tbody = getEl('stats-table-body');
             tbody.innerHTML = ''; 
             
-            // Check Lockdown if member
             if(allianceData && allianceData.isLocked && userProfile.role === 'member' && selectedAlliance === userProfile.alliance) {
                 tbody.innerHTML = '<tr><td colspan="9" class="text-center p-8 text-red-500 font-bold">ALLIANCE LOCKDOWN ACTIVE</td></tr>'; return;
             }
@@ -388,7 +470,10 @@
                     <td class="p-2 text-red-400 text-xs">${s.arcAttack}/${s.arcDefense}/${s.arcLethality}/${s.arcHp}</td>
                     <td class="p-2 text-yellow-400 font-bold">${s.trueScore.toLocaleString()}</td>
                     <td class="p-2 text-gray-500 text-xs">${s.date ? s.date.toLocaleDateString() : '-'}</td>
-                    <td class="p-2"><button onclick="event.stopPropagation(); window.deleteStat('${s.id}', '${s.playerName}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button></td>
+                    <td class="p-2 flex space-x-2">
+                        <button onclick="event.stopPropagation(); window.enterEditMode('${s.id}')" class="text-blue-400 hover:text-white"><i class="fas fa-pencil-alt"></i></button>
+                        <button onclick="event.stopPropagation(); window.deleteStat('${s.id}', '${s.playerName}')" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -396,12 +481,7 @@
         // --- ADMIN & SETUP ---
         window.openAdminPanel = () => { getEl('admin-modal').classList.remove('hidden'); loadAdminData(); };
         const loadAdminData = () => {
-            // Check if profile exists and has required fields before querying
-            if (!userProfile || !userProfile.alliance) {
-                console.warn("User profile or alliance missing. Cannot load admin data.");
-                return; 
-            }
-
+            if (!userProfile || !userProfile.alliance) { console.warn("User profile or alliance missing."); return; }
             const q = query(collection(db, 'users'), where("alliance", "==", userProfile.alliance), where("isApproved", "==", false));
             onSnapshot(q, (snap) => {
                 getEl('pending-count').innerText = snap.size;
@@ -417,12 +497,10 @@
         };
         window.procReq = async (uid, approve) => { if(approve) await updateDoc(doc(db, 'users', uid), { isApproved: true }); else await deleteDoc(doc(db, 'users', uid)); };
         window.rotateJoinCode = async () => { 
-            // Safety Check
             if (!userProfile || !userProfile.kingdom || !userProfile.alliance) return;
             await updateDoc(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), { joinCode: Math.floor(Math.random()*90000+10000).toString() }); 
         };
         window.toggleLockdown = async () => { 
-            // Safety Check
             if (!userProfile || !userProfile.kingdom || !userProfile.alliance || !allianceData) return;
             await updateDoc(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), { isLocked: !allianceData.isLocked }); 
         };
@@ -472,11 +550,11 @@
             
             // Listen to Alliance Data if applicable
             if (userProfile && userProfile.alliance !== 'ADM') {
-                onSnapshot(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), (snap) => allianceData = snap.data());
+                if (userProfile.kingdom && userProfile.alliance) {
+                     onSnapshot(doc(db, 'alliances', `${userProfile.kingdom}_${userProfile.alliance}`), (snap) => allianceData = snap.data());
+                }
             } else if (userProfile && userProfile.alliance === 'ADM') {
-                 // Create dummy data for Admin so they don't crash
                  allianceData = { joinCode: "ADMIN", isLocked: false };
-                 // Also ensure the 0_ADM doc exists for the system to read
                  const adminAllianceRef = doc(db, 'alliances', '0_adm');
                  getDoc(adminAllianceRef).then(snap => {
                      if (!snap.exists()) setDoc(adminAllianceRef, { name: 'ADM', kingdom: '0', joinCode: 'ADMIN', isLocked: false, leaders: [user.uid] });
@@ -494,7 +572,6 @@
                 else { showView('view-login'); }
             });
             
-            // Setup simple close buttons
             document.querySelectorAll('[id$="-close-btn"]').forEach(b => b.onclick = () => b.closest('.fixed').classList.add('hidden'));
             getEl('help-btn').onclick = () => getEl('help-modal').classList.remove('hidden');
             getEl('add-kingdom-btn').onclick = () => window.addManually('kingdom');
@@ -510,7 +587,6 @@
                  const userRef = doc(db, 'users', user.uid);
                  const userSnap = await getDoc(userRef);
 
-                 // Check for SUPER ADMIN override
                  if (!userSnap.exists() && user.email === OWNER_EMAIL) {
                       await setDoc(userRef, { email: user.email, displayName: "Owner", role: 'owner', isApproved: true, kingdom:'0', alliance:'ADM', playerID:'owner' });
                       window.location.reload();
