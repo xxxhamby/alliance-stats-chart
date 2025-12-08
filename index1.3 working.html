@@ -16,10 +16,8 @@
         /* Interactive Cards */
         .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 6px 2px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
-        
-        /* Selection States */
-        .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; } /* Blue for Tier */
-        .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; } /* Gold for TG */
+        .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
+        .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
         
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -31,10 +29,11 @@
 
     <div id="app-root" class="min-h-screen flex flex-col"></div>
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2"></div>
-<script type="module">
+
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, serverTimestamp, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDoc, getDocs, setDoc, updateDoc, serverTimestamp, query, orderBy, limit, where, startAt, endAt, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const CONFIG = {
             apiKey: "AIzaSyCmFXqV1rp1G3xbfCE368R9rw5G7ZPjPeQ",
@@ -48,6 +47,8 @@
         const State = {
             current: 'loading',
             user: null, dbUser: null, profile: null, leaderboard: [],
+            stats: { totalUsers: 0 },
+            filters: { ign: '', kingdom: '' },
             form: {
                 ign: '', kingdom: '', pid: '',
                 privacy: { hideName: false, hideStats: false },
@@ -82,7 +83,6 @@
                         const profileSnap = await getDoc(doc(App.db, 'profiles', user.uid));
                         if (!profileSnap.exists()) {
                             State.current = 'register';
-                            // Reset form with clean structure
                             State.form = { ign: '', kingdom: '', pid: '', privacy: {hideName: false, hideStats: false}, troops: { inf: {tier:10, tg:0}, cav: {tier:10, tg:0}, arc: {tier:10, tg:0} } };
                         } else {
                             State.profile = profileSnap.data();
@@ -103,10 +103,59 @@
                     
                     editor: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-white">Update Profile</h2><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button></div>${App.ui.editorForm('Save Changes')}</div></div>`,
 
-                    dashboard: `<div class="min-h-screen bg-slate-900 text-slate-200"><nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-md"><div class="max-w-6xl mx-auto flex justify-between items-center"><div class="flex items-center gap-3"><img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600"><div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div></div><div class="flex gap-3"><button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button><button onclick="window.triggerLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-power-off"></i></button></div></div></nav><div class="p-4 max-w-6xl mx-auto"><div class="bg-slate-800 rounded shadow overflow-hidden border border-slate-700"><div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800"><h3 class="font-bold text-white"><i class="fas fa-globe-americas text-slate-500 mr-2"></i>Global Roster</h3><button onclick="App.actions.loadLeaderboard()" class="text-xs text-blue-400 hover:text-white"><i class="fas fa-sync"></i> Refresh</button></div><div class="overflow-x-auto"><table class="w-full text-left text-sm whitespace-nowrap"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">Troop Tech (I/C/A)</th></tr></thead><tbody class="divide-y divide-slate-700">${App.ui.renderRows()}</tbody></table></div></div></div></div>`
+                    owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Gate Security</h3><div class="bg-slate-900 p-4 rounded mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Global Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">...</div></div><div class="flex space-x-2"><input type="text" id="new-global-code" class="input-field" placeholder="New Code"><button onclick="App.actions.rotateCode()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 rounded">Rotate</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Stats</h3><div class="text-4xl font-bold text-white">${State.stats.totalUsers}</div><div class="text-sm text-slate-400">Total Profiles</div></div></div></div>`,
+
+                    dashboard: `
+                        <div class="min-h-screen bg-slate-900 text-slate-200">
+                            <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-md">
+                                <div class="max-w-6xl mx-auto flex justify-between items-center">
+                                    <div class="flex items-center gap-3">
+                                        <img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600">
+                                        <div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div>
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button>
+                                        <button onclick="window.triggerLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-power-off"></i></button>
+                                    </div>
+                                </div>
+                            </nav>
+
+                            <div class="p-4 max-w-6xl mx-auto">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                    <div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500"><div class="text-xs text-slate-400 uppercase">Your Kingdom</div><div class="text-2xl font-bold text-white">#${State.profile?.kingdom}</div></div>
+                                    <div class="bg-slate-800 p-4 rounded border-l-4 border-purple-500"><div class="text-xs text-slate-400 uppercase">Troop Focus</div><div class="text-white text-sm mt-1 flex flex-col gap-1"><span class="bg-blue-900 text-blue-200 px-2 py-1 rounded text-xs w-full text-center">INF: T${State.profile?.troops?.inf.tier} ${State.profile?.troops?.inf.tg > 0 ? '+TG'+State.profile?.troops?.inf.tg : ''}</span><span class="bg-green-900 text-green-200 px-2 py-1 rounded text-xs w-full text-center">CAV: T${State.profile?.troops?.cav.tier} ${State.profile?.troops?.cav.tg > 0 ? '+TG'+State.profile?.troops?.cav.tg : ''}</span></div></div>
+                                    <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex items-center justify-between"><div><div class="text-xs text-slate-400 uppercase">Role</div><div class="font-bold text-yellow-400">${State.dbUser?.role.toUpperCase()}</div></div>
+                                    ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-2 rounded animate-pulse">ADMIN PANEL</button>` : ''}
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-800 rounded shadow overflow-hidden border border-slate-700">
+                                    <div class="p-4 border-b border-slate-700 bg-slate-900 flex flex-col md:flex-row gap-4">
+                                        <div class="flex-grow">
+                                            <div class="relative">
+                                                <i class="fas fa-search absolute left-3 top-3 text-slate-500"></i>
+                                                <input type="text" oninput="window.handleSearch(this.value)" placeholder="Search Commander Name..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full pl-10 p-2.5 focus:border-blue-500 outline-none">
+                                            </div>
+                                        </div>
+                                        <div class="flex-shrink-0 w-full md:w-48">
+                                             <input type="number" oninput="window.handleKingdom(this.value)" placeholder="Filter Kingdom #" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 focus:border-blue-500 outline-none">
+                                        </div>
+                                        <button onclick="App.actions.loadLeaderboard()" class="text-xs text-blue-400 hover:text-white self-center whitespace-nowrap"><i class="fas fa-sync mr-1"></i> Refresh</button>
+                                    </div>
+
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full text-left text-sm whitespace-nowrap">
+                                            <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] tracking-wider"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">Troop Tech (I/C/A)</th></tr></thead>
+                                            <tbody class="divide-y divide-slate-700">${App.ui.renderRows()}</tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`
                 };
                 document.getElementById('app-root').innerHTML = views[State.current];
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
+                if (State.current === 'owner') App.actions.initOwnerView();
             },
 
             ui: {
@@ -122,7 +171,7 @@
                         <div class="grid grid-cols-2 gap-3 mb-4">
                             <div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" class="input-field" required value="${State.form.ign}"></div>
                             <div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" class="input-field" required value="${State.form.kingdom}"></div>
-                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID</label><input type="number" id="frm-pid" class="input-field" required value="${State.form.pid}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" class="input-field" required value="${State.form.pid}"></div>
                         </div>
                         <div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4">
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
@@ -146,11 +195,8 @@
                         const isStatsHidden = p.privacy?.hideStats && !isMe;
                         const displayName = isNameHidden ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
                         const displayPid = isNameHidden ? `***` : p.pid;
-                        
-                        // SAFE DATA ACCESS (Prevents crashes on old data)
                         let t = p.troops;
                         if (!t || typeof t.inf === 'string') { t = { inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0} }; }
-
                         const renderStat = (t, type) => {
                             if (isStatsHidden) return `<span class="text-slate-600">???</span>`;
                             const tgStr = t.tg > 0 ? `<span class="text-yellow-500 text-[10px]">+TG${t.tg}</span>` : '';
@@ -164,13 +210,26 @@
             actions: {
                 loadLeaderboard: async () => {
                     try {
-                        const q = query(collection(App.db, 'profiles'), orderBy('kingdom', 'asc'), limit(50));
+                        let q = collection(App.db, 'profiles');
+                        
+                        // FILTER LOGIC
+                        if (State.filters.ign) {
+                            // Search by Name (StartAt)
+                            q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
+                        } else if (State.filters.kingdom) {
+                            // Filter by Kingdom (Exact)
+                            q = query(q, where('kingdom', '==', State.filters.kingdom), limit(50));
+                        } else {
+                            // Default: Order by Kingdom
+                            q = query(q, orderBy('kingdom', 'asc'), limit(50));
+                        }
+
                         const snap = await getDocs(q);
                         State.leaderboard = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        App.render(); // Re-render table
                     } catch (e) { console.error("Load Error", e); }
                 },
 
-                // NEW: Uniqueness Check + Saving
                 saveProfile: async () => {
                     const ign = document.getElementById('frm-ign').value.trim();
                     const kingdom = document.getElementById('frm-kingdom').value.trim();
@@ -178,37 +237,57 @@
                     const hideName = document.getElementById('frm-hideName').checked;
                     const hideStats = document.getElementById('frm-hideStats').checked;
 
+                    // NEW VALIDATION: 9 Chars
                     if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
+                    if(pid.length > 9) return App.ui.toast("Player ID must be 9 digits or less", "error");
 
-                    // 1. UNIQUE CHECK
-                    // Check PID
                     const qPid = query(collection(App.db, 'profiles'), where('pid', '==', pid));
                     const snapPid = await getDocs(qPid);
                     const pidTaken = snapPid.docs.find(d => d.id !== State.user.uid);
                     if(pidTaken) return App.ui.toast("Player ID already registered!", "error");
 
-                    // Check IGN within Kingdom
                     const qIgn = query(collection(App.db, 'profiles'), where('kingdom', '==', kingdom), where('ign', '==', ign));
                     const snapIgn = await getDocs(qIgn);
                     const ignTaken = snapIgn.docs.find(d => d.id !== State.user.uid);
                     if(ignTaken) return App.ui.toast(`Name "${ign}" already exists in Kingdom ${kingdom}`, "error");
 
-                    // 2. SAVE
-                    const profileData = {
-                        ign, kingdom, pid,
-                        privacy: { hideName, hideStats },
-                        troops: State.form.troops,
-                        updatedAt: serverTimestamp()
-                    };
+                    const profileData = { ign, kingdom, pid, privacy: { hideName, hideStats }, troops: State.form.troops, updatedAt: serverTimestamp() };
 
                     try {
                         await setDoc(doc(App.db, 'profiles', State.user.uid), profileData, { merge: true });
                         State.profile = profileData;
+                        // Reset filters so user sees themselves
+                        State.filters = { ign: '', kingdom: '' }; 
                         await App.actions.loadLeaderboard();
                         State.current = 'dashboard';
                         App.render();
                         App.ui.toast("Profile Saved");
                     } catch (e) { App.ui.toast("Save Failed: " + e.message, "error"); }
+                },
+
+                initOwnerView: async () => {
+                    // Listen to Code
+                    const unsubCode = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
+                        if(snap.exists() && document.getElementById('owner-global-code')) {
+                            document.getElementById('owner-global-code').innerText = snap.data().accessCode;
+                        }
+                    });
+                    
+                    // Count Users
+                    try {
+                        const coll = collection(App.db, "users");
+                        const snapshot = await getCountFromServer(coll);
+                        State.stats.totalUsers = snapshot.data().count;
+                        App.render(); // Re-render to show count
+                    } catch(e) { console.error(e); }
+                },
+
+                rotateCode: async () => {
+                    const newCode = document.getElementById('new-global-code').value;
+                    if(!newCode) return;
+                    await setDoc(doc(App.db, 'metadata', 'security'), { accessCode: newCode }, { merge: true });
+                    document.getElementById('new-global-code').value = '';
+                    App.ui.toast("Gate Code Rotated");
                 }
             }
         };
@@ -217,43 +296,44 @@
         window.triggerLogout = () => signOut(App.auth).then(() => window.location.reload());
         
         window.openEditor = () => {
-            // DEEP COPY & DATA NORMALIZATION (Fixes the crash)
             const raw = JSON.parse(JSON.stringify(State.profile));
-            
-            // Check for legacy string data (e.g., "t10") and convert to object
             const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
-            
-            State.form = {
-                ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid,
-                privacy: raw.privacy || {hideName: false, hideStats: false},
-                troops: {
-                    inf: normalize(raw.troops?.inf),
-                    cav: normalize(raw.troops?.cav),
-                    arc: normalize(raw.troops?.arc)
-                }
-            };
+            State.form = { ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, privacy: raw.privacy || {hideName: false, hideStats: false}, troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) } };
             State.current = 'editor';
             App.render();
         };
 
+        window.openOwner = () => { State.current = 'owner'; App.render(); };
         window.cancelEdit = () => { State.current = 'dashboard'; App.render(); };
         window.saveProfile = () => App.actions.saveProfile();
-        window.triggerRegister = () => App.actions.saveProfile(); // Reuse same logic
+        window.triggerRegister = () => App.actions.saveProfile();
 
         window.setTroop = (type, prop, val, updateState = true) => {
             if (updateState) State.form.troops[type][prop] = val;
             const cards = document.querySelectorAll(`[data-group="${type}-${prop}"]`);
-            cards.forEach(c => {
-                const isSelected = parseInt(c.dataset.val) === val;
-                c.classList.toggle(prop === 'tier' ? 'selected-tier' : 'selected-tg', isSelected);
-            });
+            cards.forEach(c => { c.classList.toggle(prop === 'tier' ? 'selected-tier' : 'selected-tg', parseInt(c.dataset.val) === val); });
             const t = State.form.troops[type];
             const summary = document.getElementById(`display-${type}`);
             if(summary) summary.innerText = `T${t.tier} ${t.tg > 0 ? '+TG'+t.tg : ''}`;
         };
 
+        // SEARCH HANDLERS
+        let debounceTimer;
+        window.handleSearch = (val) => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                State.filters.ign = val.trim();
+                State.filters.kingdom = ''; // Clear kingdom if searching name
+                App.actions.loadLeaderboard();
+            }, 500); // 500ms delay to prevent database spam
+        };
+        window.handleKingdom = (val) => {
+            State.filters.kingdom = val.trim();
+            State.filters.ign = ''; // Clear name if searching kingdom
+            App.actions.loadLeaderboard();
+        };
+
         document.addEventListener('DOMContentLoaded', App.init);
     </script>
-   
 </body>
 </html>
