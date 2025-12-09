@@ -11,22 +11,25 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.5rem; border-radius: 0.3rem; width: 100%; font-size: 0.875rem; transition: border-color 0.2s; }
         .input-field:focus { border-color: #3b82f6; outline: none; }
+        
         .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 4px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
-        .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; cursor: pointer; }
-        .tab-btn:hover { color: white; }
-        .tab-btn.active { border-color: #eab308; color: #eab308; }
+        
         .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
         .nav-link:hover { color: white; background: #1e293b; }
         .nav-link.active { color: white; background: #3b82f6; }
+        
         .stat-delta { font-size: 0.65rem; margin-left: 2px; font-weight: bold; }
+        
         .stat-table th { white-space: nowrap; padding: 8px; background: #1e293b; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #334155; }
         .stat-table td { white-space: nowrap; padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; text-align: center; }
         .stat-table tr:hover { background-color: #1e293b; }
+        
         .modal-enter { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -62,7 +65,6 @@
             lastView: null,
             previousView: null,
             viewMode: 'alliance',
-            managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
             config: { lockdown: false, accessCode: '' },
@@ -148,6 +150,13 @@
                     ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE - EDITS DISABLED</div>` 
                     : '';
 
+                const footer = `
+                    <footer class="p-4 text-center text-xs text-slate-500 mt-auto border-t border-slate-800">
+                        <a href="https://ko-fi.com/logoutgg" target="_blank" class="hover:text-yellow-400 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-coffee"></i> Support the project on Ko-fi
+                        </a>
+                    </footer>`;
+
                 const navBar = `
                     ${lockdownBanner}
                     <nav class="bg-slate-800 border-b border-slate-700 p-3 sticky top-0 z-20 shadow-md">
@@ -199,7 +208,57 @@
                     
                     owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
                     
-                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button><button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button><button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button></div><div id="manager-content">${State.managerTab === 'roster' ? App.ui.managerRoster() : (State.managerTab === 'audit' ? App.ui.managerAudit() : App.ui.managerSettings())}</div></div>`,
+                    // UNIFIED MANAGER VIEW
+                    allianceManager: `
+                        <div class="min-h-screen bg-slate-900 p-6">
+                            <header class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1>
+                                    <p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
+                                    <button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button>
+                                </div>
+                            </header>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div class="space-y-6">
+                                    <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
+                                        <h3 class="font-bold text-white mb-4">Settings</h3>
+                                        <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div>
+                                        <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Description</label><textarea id="set-desc" class="input-field h-24" placeholder="MOTD...">${State.alliance.description || ''}</textarea></div>
+                                        <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
+                                    </div>
+                                    <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
+                                        <h3 class="font-bold text-white mb-2">Access Control</h3>
+                                        <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div>
+                                        <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
+                                    </div>
+                                    <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600">
+                                        <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
+                                        <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="lg:col-span-2 bg-slate-800 rounded shadow overflow-hidden h-fit">
+                                    <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
+                                        <h3 class="font-bold text-white">Roster (${State.data.roster.length})</h3>
+                                    </div>
+                                    <div class="overflow-x-auto h-[600px] overflow-y-auto">
+                                        <table class="w-full text-left text-sm">
+                                            <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                                                <tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3 text-right">Actions</th></tr>
+                                            </thead>
+                                            <tbody id="roster-body" class="divide-y divide-slate-700">
+                                                ${App.ui.generateManagerRosterRows(State.data.roster)}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            ${footer}
+                        </div>`,
 
                     view_global: `
                         <div class="min-h-screen bg-slate-900 text-slate-200">
@@ -214,7 +273,9 @@
                                     </div>
                                     <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.global)}</tbody></table></div>
                                 </div>
+                                ${growthChart}
                             </div>
+                            ${footer}
                         </div>`,
 
                     view_alliance: `
@@ -234,7 +295,9 @@
                                     </div>
                                     <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
                                 </div>` : ''}
+                                ${growthChart}
                             </div>
+                            ${footer}
                         </div>`
                 };
                 document.getElementById('app-root').innerHTML = views[State.current];
@@ -243,6 +306,7 @@
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
                 if (State.current === 'editor' && !State.editorTarget) App.ui.renderGrowthChart();
                 if (State.current === 'owner') App.actions.initOwnerView();
+                if (State.current === 'allianceManager') App.actions.loadRoster(); // Unified load
             },
 
             renderTableOnly: () => {
@@ -253,13 +317,8 @@
                     const tbody = document.getElementById('alliance-body');
                     if(tbody) tbody.innerHTML = App.ui.renderRows(State.data.roster);
                 } else if (State.current === 'allianceManager') {
-                    if (State.managerTab === 'roster') {
-                        const tbody = document.getElementById('roster-body');
-                        if(tbody) tbody.innerHTML = App.ui.generateManagerRosterRows(State.data.roster);
-                    } else if (State.managerTab === 'audit') {
-                        const tbody = document.getElementById('audit-body');
-                        if(tbody) tbody.innerHTML = App.ui.generateAuditRows(State.data.logs);
-                    }
+                    const tbody = document.getElementById('roster-body');
+                    if(tbody) tbody.innerHTML = App.ui.generateManagerRosterRows(State.data.roster);
                 }
             },
 
@@ -275,10 +334,16 @@
                 generateManagerRosterRows: (rosterData) => {
                     return rosterData.map(m => {
                         const isLeader = m.id === State.user.uid;
+                        const role = State.dbUser?.role;
+                        const isManager = role === 'manager' || role === 'owner' || role === 'leader';
                         const escapedIgn = m.ign.replace(/'/g, "\\'");
-                        const actionBtn = isLeader 
-                            ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' 
-                            : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`;
+                        
+                        let actionBtn = '';
+                        if (isLeader) actionBtn = '<span class="text-xs text-green-500 font-bold">LEADER</span>';
+                        else if (isManager) actionBtn = `
+                            <button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>
+                            <button onclick="event.stopPropagation(); window.promoteMember('${m.id}', 'manager')" class="text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-900 bg-blue-900/20 px-2 py-1 rounded ml-1">PROMOTE</button>
+                        `;
                         
                         return `
                         <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
@@ -290,91 +355,7 @@
                     }).join('');
                 },
 
-                generateAuditRows: (logsData) => {
-                    if (logsData.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
-                    return logsData.map(l => `
-                        <tr class="border-b border-slate-700 hover:bg-slate-800">
-                            <td class="p-3 text-slate-400 text-xs">${new Date(l.timestamp?.toDate()).toLocaleString()}</td>
-                            <td class="p-3 text-white font-bold text-sm">${l.action}</td>
-                            <td class="p-3 text-slate-300 text-xs">${l.details}</td>
-                        </tr>`).join('');
-                },
-
-                managerRoster: () => {
-                    return `
-                    <div class="bg-slate-800 rounded shadow overflow-hidden">
-                        <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
-                            <h3 class="font-bold text-white">Active Roster (${State.data.roster.length})</h3>
-                            <div class="flex gap-2">
-                                <span class="text-xs text-slate-500 mt-1">Limit: 100</span>
-                                <button onclick="window.exportRosterCSV()" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded"><i class="fas fa-file-csv mr-1"></i> Export CSV</button>
-                            </div>
-                        </div>
-                        <div class="overflow-x-auto h-96 overflow-y-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
-                                    <tr>
-                                        <th class="p-3">Commander</th>
-                                        <th class="p-3">Kingdom</th>
-                                        <th class="p-3">True Score</th>
-                                        <th class="p-3 text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="roster-body" class="divide-y divide-slate-700">
-                                    ${App.ui.generateManagerRosterRows(State.data.roster)}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                },
-
-                managerAudit: () => {
-                    return `
-                    <div class="bg-slate-800 rounded shadow overflow-hidden">
-                        <div class="p-4 border-b border-slate-700 bg-slate-900">
-                            <h3 class="font-bold text-white">Audit Log</h3>
-                            <p class="text-xs text-slate-400">History of alliance actions.</p>
-                        </div>
-                        <div class="overflow-x-auto h-96 overflow-y-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
-                                    <tr>
-                                        <th class="p-3">Time</th>
-                                        <th class="p-3">Action</th>
-                                        <th class="p-3">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="audit-body" class="divide-y divide-slate-700">
-                                    ${App.ui.generateAuditRows(State.data.logs)}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
-                },
-
-                managerSettings: () => {
-                    return `
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
-                            <h3 class="font-bold text-white mb-4">General Settings</h3>
-                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" name="alliance-name" id="set-name" class="input-field" value="${State.alliance.name}"></div>
-                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div>
-                            <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
-                        </div>
-                        <div class="space-y-6">
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
-                                <h3 class="font-bold text-white mb-2">Access Control</h3>
-                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div>
-                                <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
-                            </div>
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition">
-                                <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
-                                <p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p>
-                                <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
-                            </div>
-                        </div>
-                    </div>`;
-                },
+                // (Removed generateRecruitRows and managerRecruit as they are deleted)
 
                 editorForm: (btnText) => {
                     return `
@@ -557,10 +538,11 @@
                 showAnalytics: () => {
                     const modal = document.getElementById('modal-root');
                     
-                    // --- 1. Top 5 Most Improved (Calculated from Delta)
+                    const filterSameKingdom = State.data.roster.filter(p => p.kingdom === State.alliance.kingdom);
+                    
                     let improvedHtml = '<div class="text-slate-500 text-xs italic">Not enough historical data.</div>';
-                    if (State.data.roster.length > 0) {
-                        const improved = State.data.roster
+                    if (filterSameKingdom.length > 0) {
+                        const improved = filterSameKingdom
                             .filter(p => p.previousStats)
                             .map(p => {
                                 const ps = p.previousStats;
@@ -577,7 +559,6 @@
                         }
                     }
 
-                    // --- 2. Recently Updated
                     const recent = [...State.data.roster]
                         .sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
                         .slice(0, 5)
@@ -608,7 +589,7 @@
                     modal.classList.remove('hidden');
                     
                     const techCounts = {};
-                    State.data.roster.forEach(m => {
+                    filterSameKingdom.forEach(m => {
                         const t = m.troops || {inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0}};
                         ['inf','cav','arc'].forEach(type => {
                             const key = `T${t[type].tier}${t[type].tg > 0 ? '+TG'+t[type].tg : ''}`;
@@ -751,7 +732,7 @@
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
                             q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
                         } else {
-                            // GLOBAL LOAD
+                            // GLOBAL LOAD: Fallback to updatedAt for people with 0 score
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
