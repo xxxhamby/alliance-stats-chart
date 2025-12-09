@@ -10,30 +10,22 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.8rem; border-radius: 0.5rem; width: 100%; transition: border-color 0.2s; }
         .input-field:focus { border-color: #3b82f6; outline: none; }
-        
-        /* Tier Cards */
         .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 6px 2px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
-        
-        /* Navigation & Tabs */
-        .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
-        .nav-link:hover { color: white; background: #1e293b; }
-        .nav-link.active { color: white; background: #3b82f6; }
         .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; }
         .tab-btn:hover { color: white; }
         .tab-btn.active { border-color: #eab308; color: #eab308; }
-        
-        /* Table */
+        .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
+        .nav-link:hover { color: white; background: #1e293b; }
+        .nav-link.active { color: white; background: #3b82f6; }
+        .modal-enter { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        /* TABLE STYLES */
         .stat-table th { white-space: nowrap; padding: 8px; background: #1e293b; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #334155; }
         .stat-table td { white-space: nowrap; padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; text-align: center; }
         .stat-table tr:hover { background-color: #1e293b; }
-        
-        /* Modal Animation */
-        .modal-enter { animation: fadeIn 0.2s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -110,8 +102,10 @@
                                 const allySnap = await getDoc(doc(App.db, 'alliances', State.profile.allianceID));
                                 if (allySnap.exists()) State.alliance = { id: allySnap.id, ...allySnap.data() };
                             }
-                            // Routing Logic
-                            if (State.profile.allianceID) {
+                            State.viewMode = State.profile.allianceID ? 'alliance' : 'global';
+                            
+                            // Route based on alliance status
+                            if(State.profile.allianceID) {
                                 State.current = 'view_alliance';
                                 await App.actions.loadRoster();
                             } else {
@@ -160,7 +154,29 @@
                     
                     owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
                     
-                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button><button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button><button onclick="window.switchManagerTab('recruit')" class="tab-btn ${State.managerTab === 'recruit' ? 'active' : ''}">Recruit</button></div><div id="manager-content">${State.managerTab === 'roster' ? App.ui.managerRoster() : (State.managerTab === 'settings' ? App.ui.managerSettings() : App.ui.managerRecruit())}</div></div>`,
+                    allianceManager: `
+                        <div class="min-h-screen bg-slate-900 p-6">
+                            <header class="flex justify-between items-center mb-6">
+                                <div>
+                                    <h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1>
+                                    <p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
+                                    <button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button>
+                                </div>
+                            </header>
+                            
+                            <div class="flex border-b border-slate-700 mb-6">
+                                <button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button>
+                                <button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button>
+                                <button onclick="window.switchManagerTab('recruit')" class="tab-btn ${State.managerTab === 'recruit' ? 'active' : ''}">Recruit</button>
+                            </div>
+
+                            <div id="manager-content">
+                                ${State.managerTab === 'roster' ? App.ui.managerRoster() : (State.managerTab === 'settings' ? App.ui.managerSettings() : App.ui.managerRecruit())}
+                            </div>
+                        </div>`,
 
                     view_global: `
                         <div class="min-h-screen bg-slate-900 text-slate-200">
@@ -262,13 +278,152 @@
                 allianceCard: () => {
                     if (State.alliance) {
                         const isLeader = State.alliance.leader === State.user.uid;
-                        return `<div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center mb-6"><div class="w-full"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div><div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}</div></div>${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}</div></div>`;
+                        return `
+                            <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center mb-6">
+                                <div class="w-full">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div class="text-xs text-slate-400 uppercase">Current Alliance</div>
+                                            <div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div>
+                                            <div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div>
+                                        </div>
+                                        <div class="text-right flex flex-col gap-2 items-end">
+                                            ${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}
+                                        </div>
+                                    </div>
+                                    ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
+                                </div>
+                            </div>
+                        `;
                     }
-                    return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Join Alliance</h3><div class="flex gap-2"><input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1"><input type="text" id="join-code" placeholder="Code" class="input-field py-1"><button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button></div></div><div class="bg-slate-800 p-4 rounded border-l-4 border-green-500"><h3 class="font-bold text-white mb-2">Create Alliance</h3><div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div></div></div>`;
+                    return `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500">
+                                <h3 class="font-bold text-white mb-2">Join Alliance</h3>
+                                <div class="flex gap-2">
+                                    <input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1">
+                                    <input type="text" id="join-code" placeholder="Code" class="input-field py-1">
+                                    <button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button>
+                                </div>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded border-l-4 border-green-500">
+                                <h3 class="font-bold text-white mb-2">Create Alliance</h3>
+                                <div class="flex gap-2">
+                                    <input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20">
+                                    <input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow">
+                                    <button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
                 },
-                managerRoster: () => `<div class="bg-slate-800 rounded shadow overflow-hidden"><div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center"><h3 class="font-bold text-white">Active Roster (${State.roster.length})</h3><span class="text-xs text-slate-500">Limit: 100</span></div><div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3 text-right">Actions</th></tr></thead><tbody id="roster-body" class="divide-y divide-slate-700">${State.roster.map(m => `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-right">${m.id === State.user.uid ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`}</td></tr>`).join('')}</tbody></table></div></div>`,
-                managerSettings: () => `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500"><h3 class="font-bold text-white mb-4">General Settings</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div><button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button></div><div class="space-y-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Access Control</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div><button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button></div><div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition"><h3 class="font-bold text-red-500 mb-2">Danger Zone</h3><p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p><button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button></div></div></div>`,
-                managerRecruit: () => `<div class="bg-slate-800 rounded shadow overflow-hidden"><div class="p-4 border-b border-slate-700 bg-slate-900"><h3 class="font-bold text-white">Scout Freelancers (Kingdom ${State.alliance.kingdom})</h3><p class="text-xs text-slate-400">Players currently without an alliance. Message them in-game to recruit.</p></div><div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3">Stats</th></tr></thead><tbody id="recruit-body" class="divide-y divide-slate-700">${State.freelancers.length === 0 ? '<tr><td colspan="4" class="p-4 text-center text-slate-500">No freelancers found.</td></tr>' : State.freelancers.map(m => { const t = m.troops; return `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-xs"><span class="text-blue-400">I:T${t?.inf?.tier}</span> <span class="text-green-400">C:T${t?.cav?.tier}</span></td></tr>` }).join('')}</tbody></table></div></div>`,
+
+                // FIXED: Expanded to multi-line to prevent syntax error
+                managerRoster: () => `
+                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
+                            <h3 class="font-bold text-white">Active Roster (${State.roster.length})</h3>
+                            <span class="text-xs text-slate-500">Limit: 100</span>
+                        </div>
+                        <div class="overflow-x-auto h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="p-3">Commander</th>
+                                        <th class="p-3">Kingdom</th>
+                                        <th class="p-3">True Score</th>
+                                        <th class="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roster-body" class="divide-y divide-slate-700">
+                                    ${State.roster.map(m => `
+                                        <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
+                                            <td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td>
+                                            <td class="p-3 text-slate-300">${m.kingdom}</td>
+                                            <td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td>
+                                            <td class="p-3 text-right">
+                                                ${m.id === State.user.uid ? 
+                                                    '<span class="text-xs text-green-500 font-bold">LEADER</span>' : 
+                                                    `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`
+                                                }
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `,
+
+                managerSettings: () => `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
+                            <h3 class="font-bold text-white mb-4">General Settings</h3>
+                            <div class="mb-4">
+                                <label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label>
+                                <input type="text" id="set-name" class="input-field" value="${State.alliance.name}">
+                            </div>
+                            <div class="mb-4">
+                                <label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label>
+                                <textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea>
+                            </div>
+                            <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
+                                <h3 class="font-bold text-white mb-2">Access Control</h3>
+                                <div class="mb-4">
+                                    <label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label>
+                                    <div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div>
+                                </div>
+                                <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
+                            </div>
+                            <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition">
+                                <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
+                                <p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p>
+                                <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
+                            </div>
+                        </div>
+                    </div>
+                `,
+
+                // FIXED: Expanded to multi-line to prevent syntax error
+                managerRecruit: () => `
+                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-900">
+                            <h3 class="font-bold text-white">Scout Freelancers (Kingdom ${State.alliance.kingdom})</h3>
+                            <p class="text-xs text-slate-400">Players currently without an alliance. Message them in-game to recruit.</p>
+                        </div>
+                        <div class="overflow-x-auto h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="p-3">Commander</th>
+                                        <th class="p-3">Kingdom</th>
+                                        <th class="p-3">True Score</th>
+                                        <th class="p-3">Stats</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recruit-body" class="divide-y divide-slate-700">
+                                    ${State.freelancers.length === 0 ? 
+                                        '<tr><td colspan="4" class="p-4 text-center text-slate-500">No freelancers found.</td></tr>' : 
+                                        State.freelancers.map(m => { 
+                                            const t = m.troops; 
+                                            return `
+                                            <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
+                                                <td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td>
+                                                <td class="p-3 text-slate-300">${m.kingdom}</td>
+                                                <td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td>
+                                                <td class="p-3 text-xs"><span class="text-blue-400">I:T${t?.inf?.tier}</span> <span class="text-green-400">C:T${t?.cav?.tier}</span></td>
+                                            </tr>` 
+                                        }).join('')
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `,
+
                 editorForm: (btnText) => `
                     <form onsubmit="event.preventDefault(); window.saveProfile()">
                         <div class="grid grid-cols-2 gap-3 mb-4">
@@ -280,11 +435,23 @@
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
                         </div>
-                        <div class="grid grid-cols-3 gap-2 mb-4">${App.ui.statBlock('inf','Infantry','text-blue-400')}${App.ui.statBlock('cav','Cavalry','text-green-400')}${App.ui.statBlock('arc','Archer','text-red-400')}</div>
+                        <div class="grid grid-cols-3 gap-2 mb-4">
+                            ${App.ui.statBlock('inf','Infantry','text-blue-400')}
+                            ${App.ui.statBlock('cav','Cavalry','text-green-400')}
+                            ${App.ui.statBlock('arc','Archer','text-red-400')}
+                        </div>
                         <div class="space-y-3 mb-6">${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}${App.ui.troopRow('arc', 'Archer', 'text-red-400')}</div>
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button>
                     </form>`,
-                statBlock: (type, label, color) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${color} mb-1 text-center">${label}</div><div class="space-y-1"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','att',this.value)" placeholder="ATT%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].att||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','def',this.value)" placeholder="DEF%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].def||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','let',this.value)" placeholder="LET%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].let||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','hp',this.value)" placeholder="HP%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].hp||''}"></div></div>`,
+
+                statBlock: (type, label, color) => `
+                    <div class="bg-slate-900 p-2 rounded border border-slate-700">
+                        <div class="text-[10px] uppercase font-bold ${color} mb-1 text-center">${label}</div>
+                        <div class="space-y-1">
+                            <input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','att',this.value)" placeholder="ATT%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].att||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','def',this.value)" placeholder="DEF%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].def||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','let',this.value)" placeholder="LET%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].let||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','hp',this.value)" placeholder="HP%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].hp||''}">
+                        </div>
+                    </div>
+                `,
                 troopRow: (type, label, colorClass) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label} Tier</span><span id="display-${type}" class="text-white">T10</span></div><div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div><div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div></div>`,
                 initEditor: () => { ['inf', 'cav', 'arc'].forEach(t => { window.setTroop(t, 'tier', State.form.troops[t].tier, false); window.setTroop(t, 'tg', State.form.troops[t].tg, false); }); },
                 
@@ -331,7 +498,7 @@
                     try {
                         let q = collection(App.db, 'profiles');
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
-                            q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); // Sort by Score
+                            q = query(q, where('allianceID', '==', State.profile.allianceID), limit(100)); 
                         } else {
                             // GLOBAL LOAD
                             if (State.filters.ign) {
@@ -339,7 +506,7 @@
                             } else if (State.filters.kingdom) {
                                 q = query(q, where('kingdom', '==', State.filters.kingdom), orderBy('trueScore', 'desc'), limit(50));
                             } else {
-                                q = query(q, orderBy('trueScore', 'desc'), limit(50)); 
+                                q = query(q, orderBy('trueScore', 'desc'), limit(100));
                             }
                         }
                         const snap = await getDocs(q);
@@ -471,11 +638,6 @@
                     const hideStats = document.getElementById('frm-hideStats').checked;
                     if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
                     if(pid.length > 9) return App.ui.toast("Player ID must be 9 digits or less", "error");
-                    
-                    const qPid = query(collection(App.db, 'profiles'), where('pid', '==', pid));
-                    const snapPid = await getDocs(qPid);
-                    const pidTaken = snapPid.docs.find(d => d.id !== State.user.uid);
-                    if(pidTaken) return App.ui.toast("Player ID already registered!", "error");
                     
                     const s = State.form.stats;
                     const sum = (p) => parseFloat(s.inf[p]||0) + parseFloat(s.cav[p]||0) + parseFloat(s.arc[p]||0);
