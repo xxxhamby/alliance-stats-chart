@@ -11,29 +11,22 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.5rem; border-radius: 0.3rem; width: 100%; font-size: 0.875rem; transition: border-color 0.2s; }
         .input-field:focus { border-color: #3b82f6; outline: none; }
-        
-        .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 2px 0; text-align: center; border-radius: 3px; font-size: 9px; font-weight: bold; transition: all 0.1s; user-select: none; }
+        .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 4px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
-        
         .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; cursor: pointer; }
         .tab-btn:hover { color: white; }
         .tab-btn.active { border-color: #eab308; color: #eab308; }
-        
         .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
         .nav-link:hover { color: white; background: #1e293b; }
         .nav-link.active { color: white; background: #3b82f6; }
-        
         .stat-delta { font-size: 0.65rem; margin-left: 2px; font-weight: bold; }
-        
         .stat-table th { white-space: nowrap; padding: 8px; background: #1e293b; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #334155; }
         .stat-table td { white-space: nowrap; padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; text-align: center; }
         .stat-table tr:hover { background-color: #1e293b; }
-        
         .modal-enter { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -67,7 +60,8 @@
             selection: new Set(),
             current: 'loading',
             lastView: null,
-            previousView: 'view_global', // NEW: For navigation memory
+            previousView: null,
+            viewMode: 'alliance',
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
@@ -366,11 +360,13 @@
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
                         </div>
+                        
                         <div class="space-y-4 mb-6">
                             ${App.ui.statRow('inf', 'Infantry', 'text-blue-400')}
                             ${App.ui.statRow('cav', 'Cavalry', 'text-green-400')}
                             ${App.ui.statRow('arc', 'Archer', 'text-red-400')}
                         </div>
+
                         <div class="space-y-3 mb-6">
                             ${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}
                             ${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}
@@ -480,7 +476,7 @@
                             <td onclick="event.stopPropagation()" class="pl-2"><input type="checkbox" class="ml-2 accent-blue-500" ${isSelected} onchange="window.toggleSelection('${p.id}')"></td>
                             <td class="text-white font-bold text-left pl-3 py-2 text-xs">${displayName}</td>
                             ${cell('kingdom', p.kingdom)}
-                            ${cell('allianceID', p.allianceID ? 'Yes' : '-')}
+                            ${State.currentTab === 'global' ? cell('allianceID', p.allianceID ? 'Yes' : '-') : ''}
                             ${cell('inf.att', s.inf.att)} ${cell('inf.def', s.inf.def)} ${cell('inf.let', s.inf.let)} ${cell('inf.hp', s.inf.hp)}
                             ${cell('cav.att', s.cav.att)} ${cell('cav.def', s.cav.def)} ${cell('cav.let', s.cav.let)} ${cell('cav.hp', s.cav.hp)}
                             ${cell('arc.att', s.arc.att)} ${cell('arc.def', s.arc.def)} ${cell('arc.let', s.arc.let)} ${cell('arc.hp', s.arc.hp)}
@@ -518,17 +514,18 @@
                         </div>`;
                     };
 
-                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom} • Score: <span class="text-yellow-400 font-bold">${Math.round(data.trueScore||0).toLocaleString()}</span></p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div><button onclick="window.compareVsAverage('${data.id}')" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-sm mb-2"><i class="fas fa-chart-bar mr-2"></i>COMPARE VS AVG</button>${isRecruitable && canInvite ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm"><i class="fas fa-envelope mr-2"></i>INVITE</button>` : ''}</div>`;
+                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom} • Score: <span class="text-yellow-400 font-bold">${Math.round(data.trueScore||0).toLocaleString()}</span></p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div><button onclick="window.compareVsAverage('${data.id}')" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-sm mb-2"><i class="fas fa-chart-bar mr-2"></i>COMPARE VS AVG</button>${isRecruitable && canInvite ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm"><i class="fas fa-envelope mr-2"></i>INVITE TO ALLIANCE</button>` : ''}</div>`;
                     modal.classList.remove('hidden');
                 },
 
                 showAnalytics: () => {
                     const modal = document.getElementById('modal-root');
                     
-                    // --- 1. Top 5 Most Improved (Calculated from Delta)
+                    const filterSameKingdom = State.data.roster.filter(p => p.kingdom === State.alliance.kingdom);
+                    
                     let improvedHtml = '<div class="text-slate-500 text-xs italic">Not enough historical data.</div>';
-                    if (State.data.roster.length > 0) {
-                        const improved = State.data.roster
+                    if (filterSameKingdom.length > 0) {
+                        const improved = filterSameKingdom
                             .filter(p => p.previousStats)
                             .map(p => {
                                 const ps = p.previousStats;
@@ -545,8 +542,7 @@
                         }
                     }
 
-                    // --- 2. Recently Updated
-                    const recent = [...State.data.roster]
+                    const recent = [...filterSameKingdom]
                         .sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
                         .slice(0, 5)
                         .map(p => `<div class="flex justify-between text-sm py-1 border-b border-slate-700 last:border-0"><span class="text-white">${p.ign}</span><span class="text-slate-400 text-xs">${p.updatedAt ? new Date(p.updatedAt.toDate()).toLocaleDateString() : '-'}</span></div>`)
@@ -575,10 +571,9 @@
                         </div>`;
                     modal.classList.remove('hidden');
                     
-                    // --- 3. Tech Chart (Tier + TG grouping)
                     const techCounts = {};
-                    State.data.roster.forEach(m => {
-                        const t = m.troops || {inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0}};
+                    filterSameKingdom.forEach(m => {
+                        const t = m.troops || {inf:{tier:10,tg:0}};
                         ['inf','cav','arc'].forEach(type => {
                             const key = `T${t[type].tier}${t[type].tg > 0 ? '+TG'+t[type].tg : ''}`;
                             techCounts[key] = (techCounts[key] || 0) + 1;
@@ -591,7 +586,7 @@
                             labels: Object.keys(techCounts),
                             datasets: [{ label: 'Count', data: Object.values(techCounts), backgroundColor: '#3b82f6' }]
                         },
-                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
                     });
                 },
 
@@ -644,27 +639,31 @@
                             </div>
                         </div>`;
                 },
-
+                
                 showHelp: () => {
                     const modal = document.getElementById('modal-root');
                     modal.innerHTML = `
-                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-2xl w-full border-2 border-slate-600 modal-enter max-h-[80vh] overflow-y-auto">
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-2xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-white"><i class="fas fa-question-circle text-yellow-400 mr-2"></i>Help Center</h2>
                                 <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
                             </div>
-                            <div class="space-y-4 text-slate-300 text-sm">
+                            <div class="space-y-4 text-slate-300 text-sm overflow-y-auto">
                                 <div class="bg-slate-900 p-3 rounded">
                                     <h3 class="font-bold text-white mb-1"><i class="fas fa-user-edit text-blue-400 mr-2"></i>Profile & Stats</h3>
-                                    <p>Click <span class="text-blue-400 font-bold">Edit Profile</span> to update your Kingdom, Name, and Troops. Your <strong>True Score</strong> is automatically calculated from your stats.</p>
+                                    <p>Click <strong>Edit Profile</strong> to update your Kingdom, Name, and Troops. Your <strong>True Score</strong> is automatically calculated from your stats. View your <strong>Growth History</strong> chart at the bottom of the editor.</p>
                                 </div>
                                 <div class="bg-slate-900 p-3 rounded">
                                     <h3 class="font-bold text-white mb-1"><i class="fas fa-users text-green-400 mr-2"></i>Alliances</h3>
-                                    <p>Join an alliance using a code from your leader, or create your own. Leaders can manage members and see special analytics.</p>
+                                    <p>Join an alliance using a code from your leader, or create your own. Leaders can kick members, rotate invite codes, and set a public description.</p>
                                 </div>
                                 <div class="bg-slate-900 p-3 rounded">
-                                    <h3 class="font-bold text-white mb-1"><i class="fas fa-chart-bar text-purple-400 mr-2"></i>Comparisons</h3>
-                                    <p>Select players using the checkboxes on the left, then click <strong>Compare</strong> to see a chart. You can also compare yourself to the alliance average in your profile view.</p>
+                                    <h3 class="font-bold text-white mb-1"><i class="fas fa-chart-bar text-purple-400 mr-2"></i>Analytics</h3>
+                                    <p>Use checkboxes to select players and click <strong>Compare</strong> to see a bar chart. Click <strong>Analytics</strong> in your alliance view to see troop distribution and growth trends.</p>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded">
+                                    <h3 class="font-bold text-white mb-1"><i class="fas fa-shield-alt text-red-500 mr-2"></i>God Mode (Owner Only)</h3>
+                                    <p>The owner can rotate the global access code, lock down the entire site, and view system health metrics.</p>
                                 </div>
                             </div>
                         </div>`;
@@ -1049,6 +1048,7 @@
         window.ownerToggleLockdown = () => App.actions.toggleLockdown();
         window.saveProfile = () => App.actions.saveProfile();
         window.triggerRegister = () => App.actions.saveProfile();
+        
         window.createAlliance = () => App.actions.createAlliance();
         window.joinAlliance = () => App.actions.joinAlliance();
         window.rotateAllianceCode = () => App.actions.rotateAllianceCode();
@@ -1057,6 +1057,7 @@
         window.deleteAlliance = () => App.actions.deleteAlliance();
         window.leaveAlliance = () => App.actions.leaveAlliance();
         window.submitGate = () => App.actions.submitGate();
+        
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
         window.sendInvite = (uid) => App.actions.sendInvite(uid);
