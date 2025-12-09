@@ -62,7 +62,7 @@
             lastView: null,
             previousView: null,
             viewMode: 'global',
-            managerTab: 'main', // 'main' (Settings+Roster) or 'audit'
+            managerTab: 'main', // Default to Command View
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
             config: { lockdown: false, accessCode: '' },
@@ -98,7 +98,6 @@
 
                         const profileSnap = await getDoc(doc(App.db, 'profiles', user.uid));
                         
-                        // LISTENERS
                         if (!State.listeners.security) {
                             State.listeners.security = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
                                 if(snap.exists()) { State.config = snap.data(); App.render(); }
@@ -178,7 +177,7 @@
                         </div>
                     </nav>`;
 
-                // DEFINE GROWTH CHART HERE TO PREVENT SCOPE ERROR
+                // DEFINE GROWTH CHART HERE
                 const growthChart = `
                     <div class="bg-slate-900 rounded border border-slate-700 mt-6 p-4">
                         <div class="flex justify-between items-center mb-4">
@@ -281,7 +280,6 @@
 
                 // SAFE RENDER
                 if (!State.alliance && State.current === 'allianceManager') {
-                    // Fallback if data not ready
                     document.getElementById('app-root').innerHTML = views['loading'];
                 } else {
                     document.getElementById('app-root').innerHTML = views[State.current];
@@ -347,16 +345,15 @@
                 },
 
                 generateAuditRows: (logsData) => {
-                    if (logsData.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
+                    if (!logsData || logsData.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
                     return logsData.map(l => `
                         <tr class="border-b border-slate-700 hover:bg-slate-800">
-                            <td class="p-3 text-slate-400 text-xs">${new Date(l.timestamp?.toDate()).toLocaleString()}</td>
+                            <td class="p-3 text-slate-400 text-xs">${l.timestamp ? new Date(l.timestamp.toDate()).toLocaleString() : '-'}</td>
                             <td class="p-3 text-white font-bold text-sm">${l.action}</td>
                             <td class="p-3 text-slate-300 text-xs">${l.details}</td>
                         </tr>`).join('');
                 },
 
-                // MERGED MANAGER VIEW
                 managerMain: () => {
                     return `
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -364,7 +361,7 @@
                             <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
                                 <h3 class="font-bold text-white mb-4">Settings</h3>
                                 <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" name="alliance-name" id="set-name" class="input-field" value="${State.alliance?.name}"></div>
-                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance?.description || ''}</textarea></div>
+                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Description</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="MOTD...">${State.alliance?.description || ''}</textarea></div>
                                 <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
                             </div>
                             <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
@@ -436,11 +433,13 @@
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" name="hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" name="hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
                         </div>
+                        
                         <div class="space-y-4 mb-6">
                             ${App.ui.statRow('inf', 'Infantry', 'text-blue-400')}
                             ${App.ui.statRow('cav', 'Cavalry', 'text-green-400')}
                             ${App.ui.statRow('arc', 'Archer', 'text-red-400')}
                         </div>
+
                         <div class="space-y-3 mb-6">
                             ${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}
                             ${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}
@@ -549,7 +548,6 @@
                         const hasEditAuth = isMe || isAdmin || (State.dbUser?.role === 'manager' && sameAlliance);
                         const editBtn = hasEditAuth ? `<button onclick="event.stopPropagation(); window.editPlayer('${p.id}')" class="text-blue-500 hover:text-white ml-2" title="Edit"><i class="fas fa-pencil-alt text-xs"></i></button>` : '';
 
-                        // CONDITIONAL ALLIANCE COLUMN
                         const allianceCol = State.current === 'view_global' 
                             ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
                             : '';
@@ -756,6 +754,16 @@
 
             // --- ACTIONS ---
             actions: {
+                loadAuditLogs: async () => {
+                    if (!State.alliance) return;
+                    try {
+                        const q = query(collection(App.db, 'alliances', State.alliance.id, 'logs'), orderBy('timestamp', 'desc'), limit(50));
+                        const snap = await getDocs(q);
+                        State.data.logs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        App.renderTableOnly();
+                    } catch(e) { console.error(e); }
+                },
+
                 loadPersonalHistory: async () => {
                     try {
                         const q = query(collection(doc(App.db, 'profiles', State.user.uid), 'history'), orderBy('date', 'desc'), limit(10));
@@ -770,7 +778,7 @@
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
                             q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
                         } else {
-                            // GLOBAL LOAD: Fallback to updatedAt for people with 0 score
+                            // GLOBAL LOAD
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
@@ -860,6 +868,14 @@
                     if (!name) return App.ui.toast("Name required", "error");
                     try {
                         await updateDoc(doc(App.db, 'alliances', State.alliance.id), { name, description: desc });
+                        
+                        // AUDIT LOG
+                        await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
+                            action: 'SETTINGS_UPDATE',
+                            details: `Updated name/desc by ${State.profile.ign}`,
+                            timestamp: serverTimestamp()
+                        });
+
                         State.alliance.name = name;
                         State.alliance.description = desc;
                         App.ui.toast("Settings Saved");
@@ -884,6 +900,14 @@
                     if (!State.alliance) return;
                     const newCode = Math.floor(Math.random() * 90000 + 10000).toString();
                     await updateDoc(doc(App.db, 'alliances', State.alliance.id), { accessCode: newCode });
+                    
+                    // AUDIT LOG
+                    await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
+                        action: 'CODE_ROTATE',
+                        details: `Code rotated by ${State.profile.ign}`,
+                        timestamp: serverTimestamp()
+                    });
+
                     State.alliance.accessCode = newCode;
                     App.render();
                     App.ui.toast("Invite Code Updated");
@@ -893,6 +917,14 @@
                     if (!confirm(`Kick ${name} from alliance?`)) return;
                     try {
                         await updateDoc(doc(App.db, 'profiles', uid), { allianceID: null });
+                        
+                        // AUDIT LOG
+                        await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
+                            action: 'MEMBER_KICK',
+                            details: `${name} kicked by ${State.profile.ign}`,
+                            timestamp: serverTimestamp()
+                        });
+
                         State.data.roster = State.data.roster.filter(m => m.id !== uid);
                         App.renderTableOnly();
                         App.ui.toast(`${name} removed`);
@@ -1110,31 +1142,6 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
-                
-                // NEW: Open Editor for specific user (Admin/Manager)
-                editPlayer: async (uid) => {
-                    try {
-                        const snap = await getDoc(doc(App.db, 'profiles', uid));
-                        if(!snap.exists()) return;
-                        
-                        const raw = snap.data();
-                        const blankStats = { att:0, def:0, let:0, hp:0 };
-                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
-                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
-                        
-                        State.editorTarget = uid; // Set Target
-                        State.form = { 
-                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
-                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
-                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
-                            stats: s 
-                        };
-                        
-                        State.current = 'editor';
-                        App.render();
-                    } catch(e) { App.ui.toast("Error loading player", "error"); }
-                },
-
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
@@ -1149,45 +1156,6 @@
                         App.ui.toast("Invite Sent");
                         document.getElementById('modal-root').classList.add('hidden');
                     } catch(e) { App.ui.toast("Invite Failed", "error"); }
-                },
-                acceptInvite: async (inviteID, allianceID) => {
-                    try {
-                        // 1. Update Profile
-                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allianceID });
-                        // 2. Delete Invite
-                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
-                        // 3. Reload
-                        window.location.reload();
-                    } catch(e) { App.ui.toast("Error accepting invite", "error"); }
-                },
-                declineInvite: async (inviteID) => {
-                    try {
-                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
-                        App.ui.toast("Invite Declined");
-                    } catch(e) { App.ui.toast("Error declining invite", "error"); }
-                },
-                exportRosterCSV: () => {
-                    if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
-                    
-                    const headers = ["IGN", "PID", "Kingdom", "True Score", "Inf Tier", "Cav Tier", "Arc Tier"];
-                    const rows = State.data.roster.map(p => {
-                        const t = p.troops || {inf:{tier:10},cav:{tier:10},arc:{tier:10}};
-                        return [
-                            `"${p.ign}"`, p.pid, p.kingdom, p.trueScore,
-                            `T${t.inf.tier}${t.inf.tg ? '+TG'+t.inf.tg : ''}`,
-                            `T${t.cav.tier}${t.cav.tg ? '+TG'+t.cav.tg : ''}`,
-                            `T${t.arc.tier}${t.arc.tg ? '+TG'+t.arc.tg : ''}`
-                        ].join(",");
-                    });
-                    
-                    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", `alliance_roster_${new Date().toISOString().split('T')[0]}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
                 }
             }
         };
@@ -1219,9 +1187,20 @@
             if(view === 'view_alliance') App.actions.loadRoster(); 
         };
         window.openOwner = () => { State.current = 'owner'; App.render(); };
-        window.openAllianceManager = () => { State.current = 'allianceManager'; State.managerTab = 'roster'; document.getElementById('app-root').innerHTML = ''; App.render(); App.actions.loadRoster(); };
+        window.openAllianceManager = () => { State.current = 'allianceManager'; State.managerTab = 'main'; document.getElementById('app-root').innerHTML = ''; App.render(); App.actions.loadRoster(); };
         window.cancelEdit = () => { State.current = State.previousView || 'view_global'; App.render(); };
-        window.switchManagerTab = (tab) => { State.managerTab = tab; document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.toggle('active', btn.innerText.toLowerCase() === tab); }); document.getElementById('manager-content').innerHTML = '<div class="p-8 text-center text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>'; if (tab === 'roster') App.actions.loadRoster(); if (tab === 'recruit') App.actions.loadFreelancers(); if (tab === 'settings') document.getElementById('manager-content').innerHTML = App.ui.managerSettings(); if(tab === 'audit') App.actions.loadAuditLogs(); };
+        window.switchManagerTab = (tab) => { 
+            State.managerTab = tab; 
+            document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.toggle('active', btn.innerText.toLowerCase() === tab); }); 
+            const container = document.getElementById('manager-content');
+            if (tab === 'main') {
+                container.innerHTML = App.ui.managerMain();
+                App.actions.loadRoster();
+            } else if (tab === 'audit') {
+                container.innerHTML = App.ui.managerAudit();
+                App.actions.loadAuditLogs();
+            }
+        };
         window.refreshData = () => { if(State.current === 'view_global') App.actions.loadLeaderboard(); if(State.current === 'view_alliance') App.actions.loadRoster(); };
         window.ownerRotateCode = () => App.actions.rotateCode();
         window.ownerToggleLockdown = () => App.actions.toggleLockdown();
