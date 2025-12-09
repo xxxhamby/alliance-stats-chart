@@ -8,21 +8,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
-        .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.5rem; border-radius: 0.3rem; width: 100%; font-size: 0.875rem; }
+        .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.8rem; border-radius: 0.5rem; width: 100%; transition: border-color 0.2s; }
         .input-field:focus { border-color: #3b82f6; outline: none; }
-        .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 4px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
+        .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 6px 2px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
         .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; }
         .tab-btn:hover { color: white; }
         .tab-btn.active { border-color: #eab308; color: #eab308; }
-        
-        /* TABLE STYLES */
-        .stat-table th { white-space: nowrap; padding: 8px; background: #1e293b; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #334155; }
-        .stat-table td { white-space: nowrap; padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; text-align: center; }
-        .stat-table tr:hover { background-color: #1e293b; }
-        
+        .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
+        .nav-link:hover { color: white; background: #1e293b; }
+        .nav-link.active { color: white; background: #3b82f6; }
+        .modal-enter { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -55,7 +54,6 @@
             stats: { totalProfiles: 0 },
             current: 'loading',
             lastView: null,
-            viewMode: 'alliance',
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
@@ -99,9 +97,12 @@
                                 const allySnap = await getDoc(doc(App.db, 'alliances', State.profile.allianceID));
                                 if (allySnap.exists()) State.alliance = { id: allySnap.id, ...allySnap.data() };
                             }
-                            State.viewMode = State.profile.allianceID ? 'alliance' : 'global';
-                            await App.actions.loadLeaderboard();
-                            State.current = 'dashboard';
+                            // ROUTING LOGIC: If has alliance, go to Alliance Base. Else Global.
+                            State.current = State.profile.allianceID ? 'view_alliance' : 'view_global';
+                            
+                            // Load initial data based on view
+                            if(State.current === 'view_global') await App.actions.loadLeaderboard();
+                            if(State.current === 'view_alliance') await App.actions.loadRoster();
                         }
                     } catch (e) { console.error("Boot Error", e); }
                 }
@@ -111,6 +112,25 @@
             render: () => {
                 if (State.current === State.lastView) return;
 
+                // NAV COMPONENT
+                const navBar = `
+                    <nav class="bg-slate-800 border-b border-slate-700 p-3 sticky top-0 z-20 shadow-md">
+                        <div class="max-w-6xl mx-auto flex justify-between items-center">
+                            <div class="flex gap-2">
+                                <button onclick="window.navTo('view_global')" class="nav-link ${State.current === 'view_global' ? 'active' : ''}"><i class="fas fa-globe mr-2"></i>Global</button>
+                                ${State.profile?.allianceID ? `<button onclick="window.navTo('view_alliance')" class="nav-link ${State.current === 'view_alliance' ? 'active' : ''}"><i class="fas fa-users mr-2"></i>Alliance</button>` : ''}
+                            </div>
+                            <div class="flex gap-3 items-center">
+                                ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="text-red-500 hover:text-white" title="God Mode"><i class="fas fa-shield-alt"></i></button>` : ''}
+                                <div class="flex items-center gap-2 border-l border-slate-600 pl-3">
+                                    <img src="${State.user?.photoURL || ''}" class="w-6 h-6 rounded-full border border-slate-500">
+                                    <span class="text-sm font-bold text-white hidden md:block">${State.profile?.ign}</span>
+                                </div>
+                                <button onclick="window.openEditor()" class="text-blue-400 hover:text-white" title="Edit Profile"><i class="fas fa-cog"></i></button>
+                            </div>
+                        </div>
+                    </nav>`;
+
                 const views = {
                     loading: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><h2 class="font-bold tracking-widest">LOADING...</h2></div>`,
                     gate: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6"><div class="bg-slate-800 p-8 rounded-lg border-t-4 border-red-500 max-w-md w-full text-center shadow-2xl"><i class="fas fa-dungeon text-5xl text-red-500 mb-4"></i><h1 class="text-2xl font-bold text-white mb-2">Restricted Access</h1><form onsubmit="event.preventDefault(); window.submitGate()"><input type="password" id="gate-input" class="input-field text-center text-xl tracking-[0.5em] font-mono mb-4" placeholder="•••••"><button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow-lg">AUTHORIZE</button></form></div></div>`,
@@ -119,55 +139,36 @@
                     editor: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-white">Update Profile</h2><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button></div>${App.ui.editorForm('Save Changes')}</div></div>`,
                     owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
                     
-                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Dashboard</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button><button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button><button onclick="window.switchManagerTab('recruit')" class="tab-btn ${State.managerTab === 'recruit' ? 'active' : ''}">Recruit</button></div><div id="manager-content">${State.managerTab === 'roster' ? App.ui.managerRoster() : (State.managerTab === 'settings' ? App.ui.managerSettings() : App.ui.managerRecruit())}</div></div>`,
+                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button><button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button><button onclick="window.switchManagerTab('recruit')" class="tab-btn ${State.managerTab === 'recruit' ? 'active' : ''}">Recruit</button></div><div id="manager-content">${State.managerTab === 'roster' ? App.ui.managerRoster() : (State.managerTab === 'settings' ? App.ui.managerSettings() : App.ui.managerRecruit())}</div></div>`,
 
-                    dashboard: `
+                    // 1. GLOBAL DASHBOARD VIEW
+                    view_global: `
                         <div class="min-h-screen bg-slate-900 text-slate-200">
-                            <nav class="bg-slate-800 border-b border-slate-700 p-4 sticky top-0 z-20 shadow-md">
-                                <div class="max-w-6xl mx-auto flex justify-between items-center">
-                                    <div class="flex items-center gap-3"><img src="${State.user?.photoURL || ''}" class="w-8 h-8 rounded-full border border-slate-600"><div><div class="font-bold text-white leading-tight">${State.profile?.ign}</div><div class="text-[10px] text-slate-400 uppercase">K${State.profile?.kingdom}</div></div></div>
-                                    <div class="flex gap-3 items-center">
-                                        ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white p-2 rounded shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
-                                        <button onclick="window.openEditor()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-pencil-alt mr-1"></i> Edit</button>
-                                        <button onclick="window.triggerLogout()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-power-off"></i></button>
-                                    </div>
-                                </div>
-                            </nav>
+                            ${navBar}
                             <div class="p-4 max-w-6xl mx-auto">
-                                ${App.ui.allianceCard()}
-                                <div class="bg-slate-800 rounded shadow border border-slate-700 mt-6">
+                                <div class="bg-slate-800 rounded shadow border border-slate-700">
                                     <div class="p-4 border-b border-slate-700 bg-slate-900 flex flex-col md:flex-row gap-4 items-center">
-                                        <div class="flex gap-2">
-                                            ${State.profile?.allianceID ? `<button onclick="window.switchView('alliance')" class="px-4 py-2 rounded text-sm font-bold ${State.viewMode === 'alliance' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}">My Alliance</button><button onclick="window.switchView('global')" class="px-4 py-2 rounded text-sm font-bold ${State.viewMode === 'global' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-400'}">Global</button>` : `<span class="text-white font-bold">Global Leaderboard</span>`}
-                                        </div>
+                                        <div class="text-white font-bold text-lg"><i class="fas fa-globe-americas text-blue-500 mr-2"></i>Global Rankings</div>
                                         <div class="flex-grow w-full md:w-auto relative"><i class="fas fa-search absolute left-3 top-3 text-slate-500"></i><input type="text" oninput="window.handleSearch(this.value)" placeholder="Search Commander..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full pl-10 p-2.5 outline-none focus:border-blue-500"></div>
                                         <div class="flex gap-2 w-full md:w-auto"><div class="relative w-24"><input type="text" id="filter-kingdom" oninput="window.handleKingdom(this.value)" placeholder="K#" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 outline-none focus:border-blue-500 text-center"><button onclick="window.clearKingdom()" class="absolute right-2 top-2 text-slate-500 hover:text-white">&times;</button></div><button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button></div>
                                     </div>
-                                    
-                                    <div class="overflow-x-auto">
-                                        <table class="w-full stat-table">
-                                            <thead class="bg-slate-900 text-slate-400">
-                                                <tr>
-                                                    <th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th>
-                                                    <th onclick="window.setSort('kingdom')">K#</th>
-                                                    <th onclick="window.setSort('allianceID')">Alli</th>
-                                                    <th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th>
-                                                    <th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th>
-                                                    <th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th>
-                                                    <th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th>
-                                                    <th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th>
-                                                    <th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th>
-                                                    <th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th>
-                                                    <th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th>
-                                                    <th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th>
-                                                    <th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="leaderboard-body" class="divide-y divide-slate-800">
-                                                ${App.ui.renderRows()}
-                                            </tbody>
-                                        </table>
+                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.leaderboard)}</tbody></table></div>
+                                </div>
+                            </div>
+                        </div>`,
+
+                    // 2. ALLIANCE DASHBOARD VIEW
+                    view_alliance: `
+                        <div class="min-h-screen bg-slate-900 text-slate-200">
+                            ${navBar}
+                            <div class="p-4 max-w-6xl mx-auto">
+                                ${App.ui.allianceCard()}
+                                <div class="bg-slate-800 rounded shadow border border-slate-700 mt-6">
+                                    <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
+                                        <div class="text-white font-bold text-lg"><i class="fas fa-users text-yellow-500 mr-2"></i>Alliance Roster</div>
+                                        <button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button>
                                     </div>
+                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.roster)}</tbody></table></div>
                                 </div>
                             </div>
                         </div>`
@@ -179,23 +180,23 @@
                 if (State.current === 'owner') App.actions.initOwnerView();
             },
 
+            // --- PARTIAL UPDATER ---
             renderTableOnly: () => {
-                let html = '';
-                let container = null;
-
-                if (State.current === 'dashboard') {
-                    container = document.getElementById('leaderboard-body');
-                    html = App.ui.renderRows();
+                if (State.current === 'view_global') {
+                    const tbody = document.getElementById('global-body');
+                    if(tbody) tbody.innerHTML = App.ui.renderRows(State.leaderboard);
+                } else if (State.current === 'view_alliance') {
+                    const tbody = document.getElementById('alliance-body');
+                    if(tbody) tbody.innerHTML = App.ui.renderRows(State.roster);
                 } else if (State.current === 'allianceManager') {
                     if (State.managerTab === 'roster') {
-                        container = document.getElementById('roster-body');
-                        html = State.roster.map(m => `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-right">${m.id === State.user.uid ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`}</td></tr>`).join('');
+                        const tbody = document.getElementById('roster-body');
+                        if(tbody) tbody.innerHTML = State.roster.map(m => `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-right">${m.id === State.user.uid ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`}</td></tr>`).join('');
                     } else if (State.managerTab === 'recruit') {
-                        container = document.getElementById('recruit-body');
-                        html = State.freelancers.length === 0 ? '<tr><td colspan="4" class="p-4 text-center text-slate-500">No freelancers found.</td></tr>' : State.freelancers.map(m => `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign}</td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-xs text-slate-400">Freelancer</td></tr>`).join('');
+                        const tbody = document.getElementById('recruit-body');
+                        if(tbody) tbody.innerHTML = State.freelancers.length === 0 ? '<tr><td colspan="4" class="p-4 text-center text-slate-500">No freelancers found.</td></tr>' : State.freelancers.map(m => `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-xs text-slate-400">Freelancer</td></tr>`).join('');
                     }
                 }
-                if (container) container.innerHTML = html;
             },
 
             ui: {
@@ -235,16 +236,28 @@
                         </div>`;
                     };
 
-                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom}</p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div>${isRecruitable && canInvite ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded"><i class="fas fa-envelope mr-2"></i>INVITE TO ALLIANCE</button>` : ''}</div>`;
+                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom} • Score: <span class="text-yellow-400 font-bold">${Math.round(data.trueScore||0).toLocaleString()}</span></p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div>${isRecruitable && canInvite ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 rounded"><i class="fas fa-envelope mr-2"></i>INVITE TO ALLIANCE</button>` : ''}</div>`;
                     modal.classList.remove('hidden');
                 },
 
                 allianceCard: () => {
                     if (State.alliance) {
                         const isLeader = State.alliance.leader === State.user.uid;
-                        return `<div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center"><div class="w-full"><div class="flex justify-between items-start"><div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div><div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : ''}</div></div>${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}</div></div>`;
+                        // NEW: Leave Button for non-leaders
+                        return `
+                        <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center mb-6">
+                            <div class="w-full">
+                                <div class="flex justify-between items-start">
+                                    <div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div>
+                                    <div class="text-right flex flex-col gap-2 items-end">
+                                        ${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}
+                                    </div>
+                                </div>
+                                ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
+                            </div>
+                        </div>`;
                     }
-                    return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4"><div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Join Alliance</h3><div class="flex gap-2"><input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1"><input type="text" id="join-code" placeholder="Code" class="input-field py-1"><button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button></div></div><div class="bg-slate-800 p-4 rounded border-l-4 border-green-500"><h3 class="font-bold text-white mb-2">Create Alliance</h3><div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div></div></div>`;
+                    return `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Join Alliance</h3><div class="flex gap-2"><input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1"><input type="text" id="join-code" placeholder="Code" class="input-field py-1"><button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button></div></div><div class="bg-slate-800 p-4 rounded border-l-4 border-green-500"><h3 class="font-bold text-white mb-2">Create Alliance</h3><div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div></div></div>`;
                 },
                 managerRoster: () => `<div class="bg-slate-800 rounded shadow overflow-hidden"><div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center"><h3 class="font-bold text-white">Active Roster (${State.roster.length})</h3><span class="text-xs text-slate-500">Limit: 100</span></div><div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3 text-right">Actions</th></tr></thead><tbody id="roster-body" class="divide-y divide-slate-700">${State.roster.map(m => `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-right">${m.id === State.user.uid ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${m.ign}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`}</td></tr>`).join('')}</tbody></table></div></div>`,
                 managerSettings: () => `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500"><h3 class="font-bold text-white mb-4">General Settings</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div><button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button></div><div class="space-y-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Access Control</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div><button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button></div><div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition"><h3 class="font-bold text-red-500 mb-2">Danger Zone</h3><p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p><button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button></div></div></div>`,
@@ -264,15 +277,15 @@
                         <div class="space-y-3 mb-6">${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}${App.ui.troopRow('arc', 'Archer', 'text-red-400')}</div>
                         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button>
                     </form>`,
-                statBlock: (type, label, color) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${color} mb-1 text-center">${label}</div><div class="space-y-1"><input type="number" step="0.1" placeholder="ATT%" class="input-field text-xs p-1 text-center" onchange="window.setStat('${type}','att',this.value)" value="${State.form.stats[type].att||''}"><input type="number" step="0.1" placeholder="DEF%" class="input-field text-xs p-1 text-center" onchange="window.setStat('${type}','def',this.value)" value="${State.form.stats[type].def||''}"><input type="number" step="0.1" placeholder="LET%" class="input-field text-xs p-1 text-center" onchange="window.setStat('${type}','let',this.value)" value="${State.form.stats[type].let||''}"><input type="number" step="0.1" placeholder="HP%" class="input-field text-xs p-1 text-center" onchange="window.setStat('${type}','hp',this.value)" value="${State.form.stats[type].hp||''}"></div></div>`,
+                statBlock: (type, label, color) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${color} mb-1 text-center">${label}</div><div class="space-y-1"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','att',this.value)" placeholder="ATT%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].att||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','def',this.value)" placeholder="DEF%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].def||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','let',this.value)" placeholder="LET%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].let||''}"><input type="number" step="0.1" min="0" onchange="if(this.value<0)this.value=0; window.setStat('${type}','hp',this.value)" placeholder="HP%" class="input-field text-xs p-1 text-center" value="${State.form.stats[type].hp||''}"></div></div>`,
                 troopRow: (type, label, colorClass) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[10px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label} Tier</span><span id="display-${type}" class="text-white">T10</span></div><div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div><div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div></div>`,
                 initEditor: () => { ['inf', 'cav', 'arc'].forEach(t => { window.setTroop(t, 'tier', State.form.troops[t].tier, false); window.setTroop(t, 'tg', State.form.troops[t].tg, false); }); },
                 
-                renderRows: () => {
-                    if (State.leaderboard.length === 0) return `<tr><td colspan="13" class="p-4 text-center text-slate-500">No Commanders Found</td></tr>`;
+                renderRows: (dataset) => {
+                    if (!dataset || dataset.length === 0) return `<tr><td colspan="13" class="p-4 text-center text-slate-500">No Commanders Found</td></tr>`;
                     
                     // CLIENT SIDE SORTING
-                    const sorted = [...State.leaderboard].sort((a,b) => {
+                    const sorted = [...dataset].sort((a,b) => {
                         const valA = getValue(a, State.sort.field) || 0;
                         const valB = getValue(b, State.sort.field) || 0;
                         return State.sort.dir === 'asc' ? valA - valB : valB - valA;
@@ -307,19 +320,19 @@
             },
 
             actions: {
+                // FIXED: Now we pass different datasets for Global vs Alliance view
                 loadLeaderboard: async () => {
                     try {
                         let q = collection(App.db, 'profiles');
-                        if (State.viewMode === 'alliance' && State.profile?.allianceID) {
-                            q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
-                        } else {
-                            // GLOBAL LOAD
+                        // Always fetch Top 100 for Global View
+                        if (State.current === 'view_global') {
+                            // Apply filters if present
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
                                 q = query(q, where('kingdom', '==', State.filters.kingdom), orderBy('trueScore', 'desc'), limit(50));
                             } else {
-                                q = query(q, orderBy('trueScore', 'desc'), limit(50)); 
+                                q = query(q, orderBy('trueScore', 'desc'), limit(100));
                             }
                         }
                         const snap = await getDocs(q);
@@ -328,7 +341,17 @@
                     } catch (e) { console.error("Load Error", e); }
                 },
 
-                // ... (Previous actions: submitGate, createAlliance, joinAlliance, etc. remain unchanged) ...
+                loadRoster: async () => {
+                    if (!State.alliance) return;
+                    try {
+                        const q = query(collection(App.db, 'profiles'), where('allianceID', '==', State.alliance.id), limit(100));
+                        const snap = await getDocs(q);
+                        State.roster = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        App.renderTableOnly();
+                    } catch(e) { console.error(e); }
+                },
+
+                // ... (Auth/Gate Actions) ...
                 submitGate: async () => {
                     const code = document.getElementById('gate-input').value.trim();
                     try {
@@ -340,6 +363,7 @@
                     } catch(e) { App.ui.toast("Error checking code", "error"); }
                 },
 
+                // ... (Create/Join/Update Alliance Actions remain standard) ...
                 createAlliance: async () => {
                     const tag = document.getElementById('create-tag').value.trim().toUpperCase();
                     const name = document.getElementById('create-name').value.trim();
@@ -370,16 +394,15 @@
                     } catch(e) { App.ui.toast("Error: " + e.message, "error"); }
                 },
 
-                loadRoster: async () => {
-                    if (!State.alliance) return;
+                leaveAlliance: async () => {
+                    if (!confirm("Are you sure you want to leave your alliance?")) return;
                     try {
-                        const q = query(collection(App.db, 'profiles'), where('allianceID', '==', State.alliance.id), limit(100));
-                        const snap = await getDocs(q);
-                        State.roster = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                        App.renderTableOnly();
-                    } catch(e) { console.error(e); }
+                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: null });
+                        window.location.reload();
+                    } catch(e) { App.ui.toast("Error leaving alliance", "error"); }
                 },
 
+                // ... (Manager Actions) ...
                 loadFreelancers: async () => {
                     try {
                         const q = query(collection(App.db, 'profiles'), where('kingdom', '==', State.alliance.kingdom), where('allianceID', '==', null), limit(50));
@@ -434,6 +457,7 @@
                     } catch(e) { App.ui.toast("Error kicking member", "error"); }
                 },
 
+                // ... (Profile Actions) ...
                 saveProfile: async () => {
                     const ign = document.getElementById('frm-ign').value.trim();
                     const kingdom = document.getElementById('frm-kingdom').value.trim();
@@ -441,12 +465,13 @@
                     const hideName = document.getElementById('frm-hideName').checked;
                     const hideStats = document.getElementById('frm-hideStats').checked;
                     if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
-                    if(pid.length > 9) return App.ui.toast("Player ID must be 9 digits or less", "error");
+                    
                     const qPid = query(collection(App.db, 'profiles'), where('pid', '==', pid));
                     const snapPid = await getDocs(qPid);
                     const pidTaken = snapPid.docs.find(d => d.id !== State.user.uid);
                     if(pidTaken) return App.ui.toast("Player ID already registered!", "error");
                     
+                    // CALCULATE TRUE SCORE
                     const s = State.form.stats;
                     const sum = (p) => parseFloat(s.inf[p]||0) + parseFloat(s.cav[p]||0) + parseFloat(s.arc[p]||0);
                     const trueScore = (sum('att') + sum('def')) * 1.0 + sum('let') * 1.2 + sum('hp') * 1.1;
@@ -459,14 +484,11 @@
                         trueScore: Math.round(trueScore),
                         updatedAt: serverTimestamp() 
                     };
+                    
                     try {
                         await setDoc(doc(App.db, 'profiles', State.user.uid), profileData, { merge: true });
                         State.profile = profileData;
-                        State.filters = { ign: '', kingdom: '' }; 
-                        await App.actions.loadLeaderboard();
-                        State.current = 'dashboard';
-                        App.render();
-                        App.ui.toast("Profile Saved");
+                        window.location.reload();
                     } catch (e) { App.ui.toast("Save Failed: " + e.message, "error"); }
                 },
 
@@ -536,6 +558,13 @@
             App.render();
         };
 
+        window.navTo = (view) => {
+            State.current = view;
+            App.render(); // Full render for view switch
+            if(view === 'view_global') App.actions.loadLeaderboard();
+            if(view === 'view_alliance') App.actions.loadRoster();
+        };
+
         window.openOwner = () => { State.current = 'owner'; App.render(); };
         window.openAllianceManager = () => {
             State.current = 'allianceManager';
@@ -544,12 +573,7 @@
             App.render();
             App.actions.loadRoster();
         };
-        window.cancelEdit = () => { 
-            State.current = 'dashboard'; 
-            State.lastView = null;
-            App.render(); 
-            App.actions.loadLeaderboard();
-        };
+        window.cancelEdit = () => { window.location.reload(); };
         
         window.switchManagerTab = (tab) => { 
             State.managerTab = tab; 
@@ -565,7 +589,10 @@
             }
         };
         
-        window.refreshData = () => App.actions.loadLeaderboard();
+        window.refreshData = () => {
+            if(State.current === 'view_global') App.actions.loadLeaderboard();
+            if(State.current === 'view_alliance') App.actions.loadRoster();
+        };
         window.ownerRotateCode = () => App.actions.rotateCode();
         window.ownerToggleLockdown = () => App.actions.toggleLockdown();
         window.saveProfile = () => App.actions.saveProfile();
@@ -577,16 +604,9 @@
         window.kickMember = (uid, name) => App.actions.kickMember(uid, name);
         window.updateAlliance = () => App.actions.updateAlliance();
         window.deleteAlliance = () => App.actions.deleteAlliance();
+        window.leaveAlliance = () => App.actions.leaveAlliance();
         window.submitGate = () => App.actions.submitGate();
         
-        // REVISED: Switch View clears leaderboard to avoid stale data flash
-        window.switchView = (mode) => { 
-            State.viewMode = mode; 
-            State.leaderboard = []; // Clear for loading state
-            State.lastView = null;  // Force redraw of header tabs
-            App.render(); 
-            App.actions.loadLeaderboard(); 
-        };
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
         window.sendInvite = (uid) => App.actions.sendInvite(uid);
