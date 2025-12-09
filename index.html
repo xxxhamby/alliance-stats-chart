@@ -11,22 +11,29 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.5rem; border-radius: 0.3rem; width: 100%; font-size: 0.875rem; transition: border-color 0.2s; }
         .input-field:focus { border-color: #3b82f6; outline: none; }
+        
         .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 4px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
+        
         .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; cursor: pointer; }
         .tab-btn:hover { color: white; }
         .tab-btn.active { border-color: #eab308; color: #eab308; }
+        
         .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
         .nav-link:hover { color: white; background: #1e293b; }
         .nav-link.active { color: white; background: #3b82f6; }
+        
         .stat-delta { font-size: 0.65rem; margin-left: 2px; font-weight: bold; }
+        
         .stat-table th { white-space: nowrap; padding: 8px; background: #1e293b; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #334155; }
         .stat-table td { white-space: nowrap; padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; text-align: center; }
         .stat-table tr:hover { background-color: #1e293b; }
+        
         .modal-enter { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -55,19 +62,18 @@
         const State = {
             user: null, dbUser: null,
             profile: null, alliance: null,
-            data: { global: [], alliance: [], roster: [], freelancers: [], history: [] },
+            data: { global: [], alliance: [], roster: [], freelancers: [], history: [], invites: [] },
             stats: { totalProfiles: 0 },
             selection: new Set(),
             current: 'loading',
             lastView: null,
-            previousView: 'view_global',
-            viewMode: 'global',
+            previousView: null,
+            viewMode: 'alliance',
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
             config: { lockdown: false, accessCode: '' },
-            listeners: { security: null },
-            editorTarget: null, // NEW: Who are we editing? (Self or Other)
+            listeners: { security: null, invites: null },
             form: {
                 ign: '', kingdom: '', pid: '',
                 privacy: { hideName: false, hideStats: false },
@@ -98,12 +104,16 @@
 
                         const profileSnap = await getDoc(doc(App.db, 'profiles', user.uid));
                         
+                        // LISTENERS
                         if (!State.listeners.security) {
                             State.listeners.security = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
-                                if(snap.exists()) {
-                                    State.config = snap.data();
-                                    App.render();
-                                }
+                                if(snap.exists()) { State.config = snap.data(); App.render(); }
+                            });
+                        }
+                        if (!State.listeners.invites) {
+                            State.listeners.invites = onSnapshot(collection(doc(App.db, 'profiles', user.uid), 'invites'), (snap) => {
+                                State.data.invites = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                                App.render(); // Redraw to show badge
                             });
                         }
 
@@ -117,6 +127,7 @@
                                 if (allySnap.exists()) State.alliance = { id: allySnap.id, ...allySnap.data() };
                             }
                             
+                            // DEFAULT ROUTE
                             if (State.profile.allianceID) {
                                 State.current = 'view_alliance';
                                 State.viewMode = 'alliance';
@@ -139,7 +150,9 @@
                 if (State.current === State.lastView && !['view_global', 'view_alliance'].includes(State.current)) return;
 
                 const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
+                const inviteBadge = State.data.invites.length > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 rounded-full ml-2 animate-pulse">${State.data.invites.length}</span>` : '';
                 
+                // LOCKDOWN BANNER
                 const lockdownBanner = State.config.lockdown 
                     ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE - EDITS DISABLED</div>` 
                     : '';
@@ -150,7 +163,7 @@
                         <div class="max-w-7xl mx-auto flex justify-between items-center">
                             <div class="flex gap-2">
                                 <button onclick="window.navTo('view_global')" class="nav-link ${State.current === 'view_global' ? 'active' : ''}"><i class="fas fa-globe mr-2"></i>Global</button>
-                                <button onclick="window.navTo('view_alliance')" class="nav-link ${State.current === 'view_alliance' ? 'active' : ''}"><i class="fas fa-users mr-2"></i>${allianceBtnText}</button>
+                                <button onclick="window.navTo('view_alliance')" class="nav-link ${State.current === 'view_alliance' ? 'active' : ''}"><i class="fas fa-users mr-2"></i>${allianceBtnText} ${inviteBadge}</button>
                             </div>
                             <div class="flex gap-3 items-center">
                                 ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="text-red-500 hover:text-white" title="God Mode"><i class="fas fa-shield-alt"></i></button>` : ''}
@@ -178,18 +191,17 @@
                         <div class="min-h-screen bg-slate-900 p-4 flex justify-center">
                             <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500">
                                 <div class="flex justify-between items-center mb-4">
-                                    <h2 class="text-xl font-bold text-white">${State.editorTarget ? 'Admin Edit: ' + State.form.ign : 'Update Profile'}</h2>
+                                    <h2 class="text-xl font-bold text-white">Update Profile</h2>
                                     <button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
                                 </div>
                                 ${App.ui.editorForm('Save Changes')}
-                                ${!State.editorTarget ? `
                                 <div class="mt-4 border-t border-slate-700 pt-4">
                                     <div class="flex justify-between items-center mb-2">
                                         <h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3>
                                         <button onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button>
                                     </div>
                                     <div class="h-40"><canvas id="growth-chart"></canvas></div>
-                                </div>` : ''}
+                                </div>
                             </div>
                         </div>`,
                     
@@ -237,7 +249,7 @@
                 State.lastView = State.current;
 
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
-                if (State.current === 'editor' && !State.editorTarget) App.ui.renderGrowthChart();
+                if (State.current === 'editor') App.ui.renderGrowthChart();
                 if (State.current === 'owner') App.actions.initOwnerView();
             },
 
@@ -271,16 +283,10 @@
                 generateManagerRosterRows: (rosterData) => {
                     return rosterData.map(m => {
                         const isLeader = m.id === State.user.uid;
-                        const role = State.dbUser?.role;
-                        const isManager = role === 'manager' || role === 'owner' || role === 'leader';
                         const escapedIgn = m.ign.replace(/'/g, "\\'");
-                        
-                        let actionBtn = '';
-                        if (isLeader) actionBtn = '<span class="text-xs text-green-500 font-bold">LEADER</span>';
-                        else if (isManager) actionBtn = `
-                            <button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>
-                            <button onclick="event.stopPropagation(); window.promoteMember('${m.id}', 'manager')" class="text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-900 bg-blue-900/20 px-2 py-1 rounded ml-1">PROMOTE</button>
-                        `;
+                        const actionBtn = isLeader 
+                            ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' 
+                            : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`;
                         
                         return `
                         <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
@@ -336,8 +342,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
                             <h3 class="font-bold text-white mb-4">General Settings</h3>
-                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div>
-                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div>
+                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" name="alliance-name" id="set-name" class="input-field" value="${State.alliance.name}"></div>
+                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div>
                             <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
                         </div>
                         <div class="space-y-6">
@@ -389,8 +395,8 @@
                             <div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" name="pid" class="input-field" required value="${State.form.pid}"></div>
                         </div>
                         <div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" name="hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" name="hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
                         </div>
                         
                         <div class="space-y-4 mb-6">
@@ -488,10 +494,9 @@
                     return sorted.map(p => {
                         const isMe = State.user.uid === p.id;
                         const sameAlliance = State.alliance && p.allianceID === State.alliance.id;
-                        const isAdmin = State.dbUser?.role === 'owner';
-                        const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !isMe && !sameAlliance && !isAdmin;
+                        const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !isMe && !sameAlliance;
                         
-                        const displayName = (p.privacy?.hideName && !isMe && !sameAlliance && !isAdmin) ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
+                        const displayName = (p.privacy?.hideName && !isMe && !sameAlliance) ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
                         const s = p.stats || {inf:{att:0,def:0,let:0,hp:0},cav:{att:0,def:0,let:0,hp:0},arc:{att:0,def:0,let:0,hp:0}};
                         const prev = p.previousStats || {};
                         const dateStr = p.updatedAt ? new Date(p.updatedAt.toDate()).toLocaleDateString() : '-';
@@ -503,11 +508,8 @@
                             const oldVal = getValue(prev, path);
                             return `<td class="text-slate-300">${val}${getDelta(val, oldVal)}</td>`;
                         };
-                        
-                        const hasEditAuth = isMe || isAdmin || (State.dbUser?.role === 'manager' && sameAlliance);
-                        const editBtn = hasEditAuth ? `<button onclick="event.stopPropagation(); window.editPlayer('${p.id}')" class="text-blue-500 hover:text-white ml-2" title="Edit"><i class="fas fa-pencil-alt text-xs"></i></button>` : '';
 
-                        // CONDITIONAL ALLIANCE COLUMN
+                        // CONDITIONAL ALLIANCE COLUMN (Only in Global View)
                         const allianceCol = State.current === 'view_global' 
                             ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
                             : '';
@@ -515,7 +517,7 @@
                         return `
                         <tr class="hover:bg-slate-800 transition cursor-pointer border-b border-slate-800" onclick="window.viewProfile('${p.id}')">
                             <td onclick="event.stopPropagation()" class="pl-2"><input type="checkbox" class="ml-2 accent-blue-500" ${isSelected} onchange="window.toggleSelection('${p.id}')"></td>
-                            <td class="text-white font-bold text-left pl-3 py-2 text-xs flex items-center">${displayName} ${editBtn}</td>
+                            <td class="text-white font-bold text-left pl-3 py-2 text-xs">${displayName}</td>
                             <td class="text-slate-300">${p.kingdom}</td>
                             ${allianceCol}
                             ${cell('inf.att', s.inf.att)} ${cell('inf.def', s.inf.def)} ${cell('inf.let', s.inf.let)} ${cell('inf.hp', s.inf.hp)}
@@ -627,7 +629,7 @@
                             labels: Object.keys(techCounts),
                             datasets: [{ label: 'Count', data: Object.values(techCounts), backgroundColor: '#3b82f6' }]
                         },
-                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
+                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
                     });
                 },
 
@@ -724,14 +726,13 @@
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
                             q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
                         } else {
-                            // GLOBAL LOAD
+                            // GLOBAL LOAD: Fallback to updatedAt for people with 0 score
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
-                                // Fallback sort by updated to show everyone including 0 scores
                                 q = query(q, where('kingdom', '==', State.filters.kingdom), orderBy('updatedAt', 'desc'), limit(50));
                             } else {
-                                q = query(q, orderBy('updatedAt', 'desc'), limit(100));
+                                q = query(q, orderBy('updatedAt', 'desc'), limit(500)); // Increased limit
                             }
                         }
                         const snap = await getDocs(q);
@@ -853,17 +854,6 @@
                     } catch(e) { App.ui.toast("Error kicking member", "error"); }
                 },
 
-                // NEW: Promote/Demote
-                promoteMember: async (uid, role) => {
-                    if (!confirm(`Change role to ${role}?`)) return;
-                    try {
-                        await updateDoc(doc(App.db, 'users', uid), { role: role });
-                        App.ui.toast("Role Updated");
-                        // Refresh to see changes
-                        App.actions.loadRoster();
-                    } catch(e) { App.ui.toast("Error updating role", "error"); }
-                },
-
                 openHistory: async () => {
                     try {
                         const q = query(collection(doc(App.db, 'profiles', State.user.uid), 'history'), orderBy('date', 'desc'), limit(10));
@@ -892,7 +882,7 @@
                     const selectedIds = Array.from(State.selection);
                     if(selectedIds.length < 2) return App.ui.toast("Select at least 2 players", "error");
                     
-                    const players = (State.currentTab === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
+                    const players = State.data.global.filter(p => selectedIds.includes(p.id));
                     
                     const modal = document.getElementById('modal-root');
                     modal.innerHTML = `
@@ -1065,31 +1055,6 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
-                
-                // NEW: Open Editor for specific user (Admin/Manager)
-                editPlayer: async (uid) => {
-                    try {
-                        const snap = await getDoc(doc(App.db, 'profiles', uid));
-                        if(!snap.exists()) return;
-                        
-                        const raw = snap.data();
-                        const blankStats = { att:0, def:0, let:0, hp:0 };
-                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
-                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
-                        
-                        State.editorTarget = uid; // Set Target
-                        State.form = { 
-                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
-                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
-                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
-                            stats: s 
-                        };
-                        
-                        State.current = 'editor';
-                        App.render();
-                    } catch(e) { App.ui.toast("Error loading player", "error"); }
-                },
-
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
@@ -1114,7 +1079,6 @@
         window.openEditor = () => {
             // FIX: SAVE CURRENT VIEW TO RETURN TO IT
             State.previousView = State.current;
-            State.editorTarget = null; // Clear target (edit self)
             const raw = JSON.parse(JSON.stringify(State.profile));
             const blankStats = { att:0, def:0, let:0, hp:0 };
             const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
@@ -1124,16 +1088,7 @@
             App.render();
         };
 
-        window.navTo = (view) => { 
-            State.current = view; 
-            // FIX: Sync ViewMode
-            if (view === 'view_global') State.viewMode = 'global';
-            if (view === 'view_alliance') State.viewMode = 'alliance';
-            
-            App.render(); 
-            if(view === 'view_global') App.actions.loadLeaderboard(); 
-            if(view === 'view_alliance') App.actions.loadRoster(); 
-        };
+        window.navTo = (view) => { State.current = view; App.render(); if(view === 'view_global') App.actions.loadLeaderboard(); if(view === 'view_alliance') App.actions.loadRoster(); };
         window.openOwner = () => { State.current = 'owner'; App.render(); };
         window.openAllianceManager = () => { State.current = 'allianceManager'; State.managerTab = 'roster'; document.getElementById('app-root').innerHTML = ''; App.render(); App.actions.loadRoster(); };
         window.cancelEdit = () => { State.current = State.previousView || 'view_global'; App.render(); };
@@ -1148,7 +1103,6 @@
         window.joinAlliance = () => App.actions.joinAlliance();
         window.rotateAllianceCode = () => App.actions.rotateAllianceCode();
         window.kickMember = (uid, name) => App.actions.kickMember(uid, name);
-        window.promoteMember = (uid, role) => App.actions.promoteMember(uid, role);
         window.updateAlliance = () => App.actions.updateAlliance();
         window.deleteAlliance = () => App.actions.deleteAlliance();
         window.leaveAlliance = () => App.actions.leaveAlliance();
@@ -1156,7 +1110,6 @@
         
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
-        window.editPlayer = (uid) => App.actions.editPlayer(uid);
         window.sendInvite = (uid) => App.actions.sendInvite(uid);
         
         window.openHistory = () => App.actions.openHistory();
