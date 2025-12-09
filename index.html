@@ -15,9 +15,6 @@
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
-        .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; cursor: pointer; }
-        .tab-btn:hover { color: white; }
-        .tab-btn.active { border-color: #eab308; color: #eab308; }
         .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
         .nav-link:hover { color: white; background: #1e293b; }
         .nav-link.active { color: white; background: #3b82f6; }
@@ -62,7 +59,6 @@
             lastView: null,
             previousView: null,
             viewMode: 'global',
-            managerTab: 'main', 
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
             config: { lockdown: false, accessCode: '' },
@@ -176,7 +172,6 @@
                         </div>
                     </nav>`;
 
-                // DEFINE GROWTH CHART HERE
                 const growthChart = `
                     <div class="bg-slate-900 rounded border border-slate-700 mt-6 p-4">
                         <div class="flex justify-between items-center mb-4">
@@ -228,13 +223,47 @@
                                 </div>
                             </header>
                             
-                            <div class="flex border-b border-slate-700 mb-6">
-                                <button onclick="window.switchManagerTab('main')" class="tab-btn ${State.managerTab === 'main' ? 'active' : ''}">Command</button>
-                                <button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button>
-                            </div>
-
-                            <div id="manager-content">
-                                ${State.managerTab === 'main' ? App.ui.managerMain() : App.ui.managerAudit()}
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                <div class="space-y-6">
+                                    <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
+                                        <h3 class="font-bold text-white mb-4">Settings</h3>
+                                        <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" name="alliance-name" id="set-name" class="input-field" value="${State.alliance?.name}"></div>
+                                        <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Description</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="MOTD...">${State.alliance?.description || ''}</textarea></div>
+                                        <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
+                                    </div>
+                                    <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
+                                        <h3 class="font-bold text-white mb-2">Access Control</h3>
+                                        <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance?.accessCode}</div></div>
+                                        <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
+                                    </div>
+                                    <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600">
+                                        <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
+                                        <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
+                                    </div>
+                                </div>
+                                <div class="lg:col-span-2 space-y-6">
+                                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                                        <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
+                                            <h3 class="font-bold text-white">Roster (${State.data.roster.length})</h3>
+                                            <button onclick="window.exportRosterCSV()" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded"><i class="fas fa-file-csv mr-1"></i> Export CSV</button>
+                                        </div>
+                                        <div class="overflow-x-auto h-96 overflow-y-auto">
+                                            <table class="w-full text-left text-sm">
+                                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3 text-right">Actions</th></tr></thead>
+                                                <tbody class="divide-y divide-slate-700">${App.ui.generateManagerRosterRows(State.data.roster)}</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                                        <div class="p-4 border-b border-slate-700 bg-slate-900"><h3 class="font-bold text-white">Audit Log</h3></div>
+                                        <div class="overflow-x-auto h-48 overflow-y-auto">
+                                            <table class="w-full text-left text-sm">
+                                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Time</th><th class="p-3">Action</th><th class="p-3">Details</th></tr></thead>
+                                                <tbody class="divide-y divide-slate-700">${App.ui.generateAuditRows(State.data.logs)}</tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>`,
 
@@ -277,7 +306,6 @@
                         </div>`
                 };
 
-                // SAFE RENDER
                 if (!State.alliance && State.current === 'allianceManager') {
                     document.getElementById('app-root').innerHTML = views['loading'];
                 } else {
@@ -289,7 +317,10 @@
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
                 if (State.current === 'editor' && !State.editorTarget) App.ui.renderGrowthChart();
                 if (State.current === 'owner') App.actions.initOwnerView();
-                if (State.current === 'allianceManager') App.actions.loadRoster();
+                if (State.current === 'allianceManager') {
+                    App.actions.loadRoster();
+                    App.actions.loadAuditLogs();
+                }
             },
 
             renderTableOnly: () => {
@@ -300,13 +331,11 @@
                     const tbody = document.getElementById('alliance-body');
                     if(tbody) tbody.innerHTML = App.ui.renderRows(State.data.roster);
                 } else if (State.current === 'allianceManager') {
-                    if (State.managerTab === 'main') {
-                        const tbody = document.getElementById('roster-body');
-                        if(tbody) tbody.innerHTML = App.ui.generateManagerRosterRows(State.data.roster);
-                    } else if (State.managerTab === 'audit') {
-                        const tbody = document.getElementById('audit-body');
-                        if(tbody) tbody.innerHTML = App.ui.generateAuditRows(State.data.logs);
-                    }
+                    const tbodyRoster = document.getElementById('roster-body');
+                    if(tbodyRoster) tbodyRoster.innerHTML = App.ui.generateManagerRosterRows(State.data.roster);
+                    
+                    const tbodyAudit = document.getElementById('audit-body');
+                    if(tbodyAudit) tbodyAudit.innerHTML = App.ui.generateAuditRows(State.data.logs);
                 }
             },
 
@@ -344,80 +373,13 @@
                 },
 
                 generateAuditRows: (logsData) => {
-                    if (!logsData || logsData.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
+                    if (!logsData || logsData.length === 0) return '<tr><td colspan="3" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
                     return logsData.map(l => `
                         <tr class="border-b border-slate-700 hover:bg-slate-800">
                             <td class="p-3 text-slate-400 text-xs">${l.timestamp ? new Date(l.timestamp.toDate()).toLocaleString() : '-'}</td>
                             <td class="p-3 text-white font-bold text-sm">${l.action}</td>
                             <td class="p-3 text-slate-300 text-xs">${l.details}</td>
                         </tr>`).join('');
-                },
-
-                managerMain: () => {
-                    return `
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="space-y-6">
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
-                                <h3 class="font-bold text-white mb-4">Settings</h3>
-                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" name="alliance-name" id="set-name" class="input-field" value="${State.alliance?.name}"></div>
-                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Description</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="MOTD...">${State.alliance?.description || ''}</textarea></div>
-                                <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
-                            </div>
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
-                                <h3 class="font-bold text-white mb-2">Access Control</h3>
-                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance?.accessCode}</div></div>
-                                <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
-                            </div>
-                            <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600">
-                                <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
-                                <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
-                            </div>
-                        </div>
-                        
-                        <div class="lg:col-span-2 bg-slate-800 rounded shadow overflow-hidden h-fit">
-                            <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
-                                <h3 class="font-bold text-white">Roster (${State.data.roster.length})</h3>
-                                <div class="flex gap-2">
-                                    <span class="text-xs text-slate-500 mt-1">Limit: 100</span>
-                                    <button onclick="window.exportRosterCSV()" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded"><i class="fas fa-file-csv mr-1"></i> Export CSV</button>
-                                </div>
-                            </div>
-                            <div class="overflow-x-auto h-[600px] overflow-y-auto">
-                                <table class="w-full text-left text-sm">
-                                    <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
-                                        <tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3 text-right">Actions</th></tr>
-                                    </thead>
-                                    <tbody id="roster-body" class="divide-y divide-slate-700">
-                                        ${App.ui.generateManagerRosterRows(State.data.roster)}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>`;
-                },
-
-                managerAudit: () => {
-                    return `
-                    <div class="bg-slate-800 rounded shadow overflow-hidden">
-                        <div class="p-4 border-b border-slate-700 bg-slate-900">
-                            <h3 class="font-bold text-white">Audit Log</h3>
-                            <p class="text-xs text-slate-400">History of alliance actions.</p>
-                        </div>
-                        <div class="overflow-x-auto h-96 overflow-y-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
-                                    <tr>
-                                        <th class="p-3">Time</th>
-                                        <th class="p-3">Action</th>
-                                        <th class="p-3">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="audit-body" class="divide-y divide-slate-700">
-                                    ${App.ui.generateAuditRows(State.data.logs)}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
                 },
 
                 editorForm: (btnText) => {
@@ -805,7 +767,7 @@
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
                             q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
                         } else {
-                            // GLOBAL LOAD: Fallback to updatedAt for people with 0 score
+                            // GLOBAL LOAD
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
@@ -1169,31 +1131,6 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
-                
-                // NEW: Open Editor for specific user (Admin/Manager)
-                editPlayer: async (uid) => {
-                    try {
-                        const snap = await getDoc(doc(App.db, 'profiles', uid));
-                        if(!snap.exists()) return;
-                        
-                        const raw = snap.data();
-                        const blankStats = { att:0, def:0, let:0, hp:0 };
-                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
-                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
-                        
-                        State.editorTarget = uid; // Set Target
-                        State.form = { 
-                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
-                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
-                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
-                            stats: s 
-                        };
-                        
-                        State.current = 'editor';
-                        App.render();
-                    } catch(e) { App.ui.toast("Error loading player", "error"); }
-                },
-
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
