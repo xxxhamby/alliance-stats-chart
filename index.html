@@ -55,13 +55,13 @@
         const State = {
             user: null, dbUser: null,
             profile: null, alliance: null,
-            data: { global: [], alliance: [], roster: [], history: [], invites: [] },
+            data: { global: [], alliance: [], roster: [], freelancers: [], history: [], invites: [], logs: [] },
             stats: { totalProfiles: 0 },
             selection: new Set(),
             current: 'loading',
             lastView: null,
             previousView: null,
-            viewMode: 'global',
+            viewMode: 'alliance',
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
@@ -120,7 +120,6 @@
                                 if (allySnap.exists()) State.alliance = { id: allySnap.id, ...allySnap.data() };
                             }
                             
-                            // DEFAULT ROUTE
                             if (State.profile.allianceID) {
                                 State.current = 'view_alliance';
                                 State.viewMode = 'alliance';
@@ -172,14 +171,71 @@
 
                 const views = {
                     loading: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><h2 class="font-bold tracking-widest">LOADING...</h2></div>`,
+                    
                     gate: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6"><div class="bg-slate-800 p-8 rounded-lg border-t-4 border-red-500 max-w-md w-full text-center shadow-2xl"><i class="fas fa-dungeon text-5xl text-red-500 mb-4"></i><h1 class="text-2xl font-bold text-white mb-2">Restricted Access</h1><p class="text-slate-400 text-xs mb-4">This system is protected. Enter the global access code.</p><form onsubmit="event.preventDefault(); window.submitGate()"><input type="password" id="gate-input" class="input-field text-center text-xl tracking-[0.5em] font-mono mb-4" placeholder="•••••"><button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow-lg">AUTHORIZE</button></form></div></div>`,
+                    
                     login: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-4"><div class="bg-slate-800 p-8 rounded-lg shadow-xl max-w-sm w-full text-center border-t-4 border-blue-500"><h1 class="text-2xl font-bold text-white mb-2">Alliance Command</h1><button onclick="window.triggerLogin()" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 rounded flex items-center justify-center gap-2 mt-6"><i class="fab fa-google text-red-500"></i> Sign in</button></div></div>`,
+                    
                     register: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-yellow-500"><h2 class="text-xl font-bold text-white mb-4">Initial Setup</h2>${App.ui.editorForm('Register')}</div></div>`,
-                    editor: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-white">${State.editorTarget ? 'Admin Edit: ' + State.form.ign : 'Update Profile'}</h2><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button></div>${App.ui.editorForm('Save Changes')}${!State.editorTarget ? `<div class="mt-4 border-t border-slate-700 pt-4"><div class="flex justify-between items-center mb-2"><h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3><button onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button></div><div class="h-40"><canvas id="growth-chart"></canvas></div></div>` : ''}</div></div>`,
+                    
+                    editor: `
+                        <div class="min-h-screen bg-slate-900 p-4 flex justify-center">
+                            <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h2 class="text-xl font-bold text-white">${State.editorTarget ? 'Admin Edit: ' + State.form.ign : 'Update Profile'}</h2>
+                                    <button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+                                </div>
+                                ${App.ui.editorForm('Save Changes')}
+                                ${!State.editorTarget ? `
+                                <div class="mt-4 border-t border-slate-700 pt-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3>
+                                        <button onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button>
+                                    </div>
+                                    <div class="h-40"><canvas id="growth-chart"></canvas></div>
+                                </div>` : ''}
+                            </div>
+                        </div>`,
+                    
                     owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
-                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button><button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button></div><div id="manager-content">${State.managerTab === 'roster' ? App.ui.managerRoster() : App.ui.managerSettings()}</div></div>`,
-                    view_global: `<div class="min-h-screen bg-slate-900 text-slate-200">${navBar}<div class="p-4 max-w-7xl mx-auto"><div class="bg-slate-800 rounded shadow border border-slate-700"><div class="p-4 border-b border-slate-700 bg-slate-900 flex flex-col md:flex-row gap-4 items-center"><div class="text-white font-bold text-lg"><i class="fas fa-globe-americas text-blue-500 mr-2"></i>Global Rankings</div><div class="flex-grow w-full md:w-auto relative"><i class="fas fa-search absolute left-3 top-3 text-slate-500"></i><input type="text" name="search-ign" oninput="window.handleSearch(this.value)" placeholder="Search Commander..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full pl-10 p-2.5 outline-none focus:border-blue-500"></div><div class="flex gap-2 w-full md:w-auto"><div class="relative w-24"><input type="text" name="search-kingdom" id="filter-kingdom" oninput="window.handleKingdom(this.value)" placeholder="K#" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 outline-none focus:border-blue-500 text-center"><button onclick="window.clearKingdom()" class="absolute right-2 top-2 text-slate-500 hover:text-white">&times;</button></div><button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button></div><button onclick="window.compareSelected()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap"><i class="fas fa-chart-bar mr-1"></i> Compare (<span id="compare-count">0</span>)</button></div><div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.global)}</tbody></table></div></div></div></div>`,
-                    view_alliance: `<div class="min-h-screen bg-slate-900 text-slate-200">${navBar}<div class="p-4 max-w-7xl mx-auto">${App.ui.allianceCard()}${State.profile?.allianceID ? `<div class="bg-slate-800 rounded shadow border border-slate-700 mt-6"><div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center"><div class="text-white font-bold text-lg flex items-center gap-2"><i class="fas fa-users text-yellow-500"></i>Alliance Roster</div><div class="flex gap-2"><button onclick="window.openAllianceAnalytics()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded text-xs font-bold"><i class="fas fa-chart-pie mr-1"></i> Analytics</button><button onclick="window.compareSelected()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap"><i class="fas fa-chart-bar mr-1"></i> Compare (<span id="compare-count">0</span>)</button><button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button></div></div><div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div></div>` : ''}</div></div>`
+                    
+                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag}]</span> ${State.alliance?.name}</p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('roster')" class="tab-btn ${State.managerTab === 'roster' ? 'active' : ''}">Roster</button><button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button><button onclick="window.switchManagerTab('settings')" class="tab-btn ${State.managerTab === 'settings' ? 'active' : ''}">Settings</button></div><div id="manager-content">${State.managerTab === 'roster' ? App.ui.managerRoster() : (State.managerTab === 'audit' ? App.ui.managerAudit() : App.ui.managerSettings())}</div></div>`,
+
+                    view_global: `
+                        <div class="min-h-screen bg-slate-900 text-slate-200">
+                            ${navBar}
+                            <div class="p-4 max-w-7xl mx-auto">
+                                <div class="bg-slate-800 rounded shadow border border-slate-700">
+                                    <div class="p-4 border-b border-slate-700 bg-slate-900 flex flex-col md:flex-row gap-4 items-center">
+                                        <div class="text-white font-bold text-lg"><i class="fas fa-globe-americas text-blue-500 mr-2"></i>Global Rankings</div>
+                                        <div class="flex-grow w-full md:w-auto relative"><i class="fas fa-search absolute left-3 top-3 text-slate-500"></i><input type="text" name="search-ign" oninput="window.handleSearch(this.value)" placeholder="Search Commander..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full pl-10 p-2.5 outline-none focus:border-blue-500"></div>
+                                        <div class="flex gap-2 w-full md:w-auto"><div class="relative w-24"><input type="text" name="search-kingdom" id="filter-kingdom" oninput="window.handleKingdom(this.value)" placeholder="K#" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 outline-none focus:border-blue-500 text-center"><button onclick="window.clearKingdom()" class="absolute right-2 top-2 text-slate-500 hover:text-white">&times;</button></div><button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button></div>
+                                        <button onclick="window.compareSelected()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap"><i class="fas fa-chart-bar mr-1"></i> Compare (<span id="compare-count">0</span>)</button>
+                                    </div>
+                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.global)}</tbody></table></div>
+                                </div>
+                            </div>
+                        </div>`,
+
+                    view_alliance: `
+                        <div class="min-h-screen bg-slate-900 text-slate-200">
+                            ${navBar}
+                            <div class="p-4 max-w-7xl mx-auto">
+                                ${App.ui.allianceCard()}
+                                ${State.profile?.allianceID ? `
+                                <div class="bg-slate-800 rounded shadow border border-slate-700 mt-6">
+                                    <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
+                                        <div class="text-white font-bold text-lg flex items-center gap-2"><i class="fas fa-users text-yellow-500"></i>Alliance Roster</div>
+                                        <div class="flex gap-2">
+                                            <button onclick="window.openAllianceAnalytics()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded text-xs font-bold"><i class="fas fa-chart-pie mr-1"></i> Analytics</button>
+                                            <button onclick="window.compareSelected()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap"><i class="fas fa-chart-bar mr-1"></i> Compare (<span id="compare-count">0</span>)</button>
+                                            <button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
+                                </div>` : ''}
+                            </div>
+                        </div>`
                 };
                 document.getElementById('app-root').innerHTML = views[State.current];
                 State.lastView = State.current;
@@ -200,6 +256,9 @@
                     if (State.managerTab === 'roster') {
                         const tbody = document.getElementById('roster-body');
                         if(tbody) tbody.innerHTML = App.ui.generateManagerRosterRows(State.data.roster);
+                    } else if (State.managerTab === 'audit') {
+                        const tbody = document.getElementById('audit-body');
+                        if(tbody) tbody.innerHTML = App.ui.generateAuditRows(State.data.logs);
                     }
                 }
             },
@@ -216,30 +275,156 @@
                 generateManagerRosterRows: (rosterData) => {
                     return rosterData.map(m => {
                         const isLeader = m.id === State.user.uid;
-                        const role = State.dbUser?.role;
-                        const isManager = role === 'manager' || role === 'owner' || role === 'leader';
                         const escapedIgn = m.ign.replace(/'/g, "\\'");
+                        const actionBtn = isLeader 
+                            ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' 
+                            : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`;
                         
-                        let actionBtn = '';
-                        if (isLeader) actionBtn = '<span class="text-xs text-green-500 font-bold">LEADER</span>';
-                        else if (isManager) actionBtn = `
-                            <button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>
-                            <button onclick="event.stopPropagation(); window.promoteMember('${m.id}', 'manager')" class="text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-900 bg-blue-900/20 px-2 py-1 rounded ml-1">PROMOTE</button>
-                        `;
-                        
-                        return `<tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')"><td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td><td class="p-3 text-slate-300">${m.kingdom}</td><td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td><td class="p-3 text-right">${actionBtn}</td></tr>`;
+                        return `
+                        <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
+                            <td class="p-3 font-bold text-white">${m.ign} <span class="text-slate-500 text-xs font-mono">#${m.pid}</span></td>
+                            <td class="p-3 text-slate-300">${m.kingdom}</td>
+                            <td class="p-3 text-yellow-400 font-bold">${Math.round(m.trueScore||0).toLocaleString()}</td>
+                            <td class="p-3 text-right">${actionBtn}</td>
+                        </tr>`;
                     }).join('');
                 },
 
-                managerRoster: () => `<div class="bg-slate-800 rounded shadow overflow-hidden"><div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center"><h3 class="font-bold text-white">Active Roster (${State.data.roster.length})</h3><span class="text-xs text-slate-500">Limit: 100</span></div><div class="overflow-x-auto h-96 overflow-y-auto"><table class="w-full text-left text-sm"><thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0"><tr><th class="p-3">Commander</th><th class="p-3">Kingdom</th><th class="p-3">True Score</th><th class="p-3 text-right">Actions</th></tr></thead><tbody id="roster-body" class="divide-y divide-slate-700">${App.ui.generateManagerRosterRows(State.data.roster)}</tbody></table></div></div>`,
+                generateAuditRows: (logsData) => {
+                    if (logsData.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-slate-500">No logs found.</td></tr>';
+                    return logsData.map(l => `
+                        <tr class="border-b border-slate-700 hover:bg-slate-800">
+                            <td class="p-3 text-slate-400 text-xs">${new Date(l.timestamp?.toDate()).toLocaleString()}</td>
+                            <td class="p-3 text-white font-bold text-sm">${l.action}</td>
+                            <td class="p-3 text-slate-300 text-xs">${l.details}</td>
+                        </tr>`).join('');
+                },
 
-                managerSettings: () => `<div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500"><h3 class="font-bold text-white mb-4">General Settings</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" id="set-name" class="input-field" value="${State.alliance.name}"></div><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div><button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button></div><div class="space-y-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="font-bold text-white mb-2">Access Control</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div><button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button></div><div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition"><h3 class="font-bold text-red-500 mb-2">Danger Zone</h3><p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p><button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button></div></div></div>`,
+                managerRoster: () => {
+                    return `
+                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-900 flex justify-between items-center">
+                            <h3 class="font-bold text-white">Active Roster (${State.data.roster.length})</h3>
+                            <div class="flex gap-2">
+                                <span class="text-xs text-slate-500 mt-1">Limit: 100</span>
+                                <button onclick="window.exportRosterCSV()" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded"><i class="fas fa-file-csv mr-1"></i> Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="p-3">Commander</th>
+                                        <th class="p-3">Kingdom</th>
+                                        <th class="p-3">True Score</th>
+                                        <th class="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="roster-body" class="divide-y divide-slate-700">
+                                    ${App.ui.generateManagerRosterRows(State.data.roster)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                },
 
-                editorForm: (btnText) => `<form onsubmit="event.preventDefault(); window.saveProfile()"><div class="grid grid-cols-2 gap-3 mb-4"><div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" name="ign" class="input-field" required value="${State.form.ign}"></div><div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" name="kingdom" class="input-field" required value="${State.form.kingdom}"></div><div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" name="pid" class="input-field" required value="${State.form.pid}"></div></div><div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" name="hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" name="hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label></div><div class="space-y-4 mb-6">${App.ui.statRow('inf', 'Infantry', 'text-blue-400')}${App.ui.statRow('cav', 'Cavalry', 'text-green-400')}${App.ui.statRow('arc', 'Archer', 'text-red-400')}</div><div class="space-y-3 mb-6">${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}${App.ui.troopRow('arc', 'Archer', 'text-red-400')}</div><button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button></form>`,
+                managerAudit: () => {
+                    return `
+                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-900">
+                            <h3 class="font-bold text-white">Audit Log</h3>
+                            <p class="text-xs text-slate-400">History of alliance actions.</p>
+                        </div>
+                        <div class="overflow-x-auto h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="p-3">Time</th>
+                                        <th class="p-3">Action</th>
+                                        <th class="p-3">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="audit-body" class="divide-y divide-slate-700">
+                                    ${App.ui.generateAuditRows(State.data.logs)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                },
 
-                statRow: (type, label, color) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="grid grid-cols-5 gap-2 items-center"><div class="text-[10px] font-bold ${color} uppercase text-right pr-2">${label}</div><input type="number" id="${type}_att" name="${type}_att" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','att',this)" placeholder="ATT" class="input-field text-center" value="${State.form.stats[type].att||''}"><input type="number" id="${type}_def" name="${type}_def" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','def',this)" placeholder="DEF" class="input-field text-center" value="${State.form.stats[type].def||''}"><input type="number" id="${type}_let" name="${type}_let" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','let',this)" placeholder="LET" class="input-field text-center" value="${State.form.stats[type].let||''}"><input type="number" id="${type}_hp" name="${type}_hp" step="0.1" min="0" onkeydown="${type==='arc'?'':'window.handleEnter(event)'}" onchange="window.handleStatChange('${type}','hp',this)" placeholder="HP" class="input-field text-center" value="${State.form.stats[type].hp||''}"></div></div>`,
-                
-                troopRow: (type, label, colorClass) => `<div class="bg-slate-900 p-2 rounded border border-slate-700"><div class="text-[9px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label} Tier</span><span id="display-${type}" class="text-white">T10</span></div><div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div><div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div></div>`,
+                managerSettings: () => {
+                    return `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-slate-800 p-6 rounded border-l-4 border-yellow-500">
+                            <h3 class="font-bold text-white mb-4">General Settings</h3>
+                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Alliance Name</label><input type="text" name="alliance-name" id="set-name" class="input-field" value="${State.alliance.name}"></div>
+                            <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Public Description (MOTD)</label><textarea name="alliance-desc" id="set-desc" class="input-field h-24" placeholder="Alliance manifesto, rules, or discord link...">${State.alliance.description || ''}</textarea></div>
+                            <button onclick="window.updateAlliance()" class="bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded w-full">Save Changes</button>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
+                                <h3 class="font-bold text-white mb-2">Access Control</h3>
+                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div>
+                                <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
+                            </div>
+                            <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition">
+                                <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
+                                <p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p>
+                                <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
+                            </div>
+                        </div>
+                    </div>`;
+                },
+
+                editorForm: (btnText) => {
+                    return `
+                    <form onsubmit="event.preventDefault(); window.saveProfile()">
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" name="ign" class="input-field" required value="${State.form.ign}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" name="kingdom" class="input-field" required value="${State.form.kingdom}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" name="pid" class="input-field" required value="${State.form.pid}"></div>
+                        </div>
+                        <div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" name="hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" name="hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
+                        </div>
+                        
+                        <div class="space-y-4 mb-6">
+                            ${App.ui.statRow('inf', 'Infantry', 'text-blue-400')}
+                            ${App.ui.statRow('cav', 'Cavalry', 'text-green-400')}
+                            ${App.ui.statRow('arc', 'Archer', 'text-red-400')}
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            ${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}
+                            ${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}
+                            ${App.ui.troopRow('arc', 'Archer', 'text-red-400')}
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button>
+                    </form>`;
+                },
+
+                statRow: (type, label, color) => {
+                    return `
+                    <div class="bg-slate-900 p-2 rounded border border-slate-700">
+                        <div class="grid grid-cols-5 gap-2 items-center">
+                            <div class="text-[10px] font-bold ${color} uppercase text-right pr-2">${label}</div>
+                            <input type="number" id="${type}_att" name="${type}_att" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','att',this)" placeholder="ATT" class="input-field text-center" value="${State.form.stats[type].att||''}">
+                            <input type="number" id="${type}_def" name="${type}_def" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','def',this)" placeholder="DEF" class="input-field text-center" value="${State.form.stats[type].def||''}">
+                            <input type="number" id="${type}_let" name="${type}_let" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','let',this)" placeholder="LET" class="input-field text-center" value="${State.form.stats[type].let||''}">
+                            <input type="number" id="${type}_hp" name="${type}_hp" step="0.1" min="0" onkeydown="${type==='arc'?'':'window.handleEnter(event)'}" onchange="window.handleStatChange('${type}','hp',this)" placeholder="HP" class="input-field text-center" value="${State.form.stats[type].hp||''}">
+                        </div>
+                    </div>`;
+                },
+
+                troopRow: (type, label, colorClass) => {
+                    return `
+                    <div class="bg-slate-900 p-2 rounded border border-slate-700">
+                        <div class="text-[9px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label} Tier</span><span id="display-${type}" class="text-white">T10</span></div>
+                        <div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div>
+                        <div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div>
+                    </div>`;
+                },
                 
                 initEditor: () => { ['inf', 'cav', 'arc'].forEach(t => { window.setTroop(t, 'tier', State.form.troops[t].tier, false); window.setTroop(t, 'tg', State.form.troops[t].tg, false); }); },
 
@@ -372,11 +557,10 @@
                 showAnalytics: () => {
                     const modal = document.getElementById('modal-root');
                     
-                    const filterSameKingdom = State.data.roster.filter(p => p.kingdom === State.alliance.kingdom);
-                    
+                    // --- 1. Top 5 Most Improved (Calculated from Delta)
                     let improvedHtml = '<div class="text-slate-500 text-xs italic">Not enough historical data.</div>';
-                    if (filterSameKingdom.length > 0) {
-                        const improved = filterSameKingdom
+                    if (State.data.roster.length > 0) {
+                        const improved = State.data.roster
                             .filter(p => p.previousStats)
                             .map(p => {
                                 const ps = p.previousStats;
@@ -393,6 +577,7 @@
                         }
                     }
 
+                    // --- 2. Recently Updated
                     const recent = [...State.data.roster]
                         .sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
                         .slice(0, 5)
@@ -423,7 +608,7 @@
                     modal.classList.remove('hidden');
                     
                     const techCounts = {};
-                    filterSameKingdom.forEach(m => {
+                    State.data.roster.forEach(m => {
                         const t = m.troops || {inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0}};
                         ['inf','cav','arc'].forEach(type => {
                             const key = `T${t[type].tier}${t[type].tg > 0 ? '+TG'+t[type].tg : ''}`;
@@ -566,7 +751,7 @@
                         if (State.viewMode === 'alliance' && State.profile?.allianceID) {
                             q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
                         } else {
-                            // GLOBAL LOAD: Fallback to updatedAt for people with 0 score
+                            // GLOBAL LOAD
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
@@ -961,6 +1146,29 @@
                         await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
                         App.ui.toast("Invite Declined");
                     } catch(e) { App.ui.toast("Error declining invite", "error"); }
+                },
+                exportRosterCSV: () => {
+                    if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
+                    
+                    const headers = ["IGN", "PID", "Kingdom", "True Score", "Inf Tier", "Cav Tier", "Arc Tier"];
+                    const rows = State.data.roster.map(p => {
+                        const t = p.troops || {inf:{tier:10},cav:{tier:10},arc:{tier:10}};
+                        return [
+                            `"${p.ign}"`, p.pid, p.kingdom, p.trueScore,
+                            `T${t.inf.tier}${t.inf.tg ? '+TG'+t.inf.tg : ''}`,
+                            `T${t.cav.tier}${t.cav.tg ? '+TG'+t.cav.tg : ''}`,
+                            `T${t.arc.tier}${t.arc.tg ? '+TG'+t.arc.tg : ''}`
+                        ].join(",");
+                    });
+                    
+                    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `alliance_roster_${new Date().toISOString().split('T')[0]}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 }
             }
         };
@@ -994,7 +1202,7 @@
         window.openOwner = () => { State.current = 'owner'; App.render(); };
         window.openAllianceManager = () => { State.current = 'allianceManager'; State.managerTab = 'roster'; document.getElementById('app-root').innerHTML = ''; App.render(); App.actions.loadRoster(); };
         window.cancelEdit = () => { State.current = State.previousView || 'view_global'; App.render(); };
-        window.switchManagerTab = (tab) => { State.managerTab = tab; document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.toggle('active', btn.innerText.toLowerCase() === tab); }); document.getElementById('manager-content').innerHTML = '<div class="p-8 text-center text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>'; if (tab === 'roster') App.actions.loadRoster(); if (tab === 'recruit') App.actions.loadFreelancers(); if (tab === 'settings') document.getElementById('manager-content').innerHTML = App.ui.managerSettings(); };
+        window.switchManagerTab = (tab) => { State.managerTab = tab; document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.toggle('active', btn.innerText.toLowerCase() === tab); }); document.getElementById('manager-content').innerHTML = '<div class="p-8 text-center text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>'; if (tab === 'roster') App.actions.loadRoster(); if (tab === 'recruit') App.actions.loadFreelancers(); if (tab === 'settings') document.getElementById('manager-content').innerHTML = App.ui.managerSettings(); if(tab === 'audit') App.actions.loadAuditLogs(); };
         window.refreshData = () => { if(State.current === 'view_global') App.actions.loadLeaderboard(); if(State.current === 'view_alliance') App.actions.loadRoster(); };
         window.ownerRotateCode = () => App.actions.rotateCode();
         window.ownerToggleLockdown = () => App.actions.toggleLockdown();
@@ -1017,6 +1225,7 @@
         window.sendInvite = (uid) => App.actions.sendInvite(uid);
         window.acceptInvite = (id, aid) => App.actions.acceptInvite(id, aid);
         window.declineInvite = (id) => App.actions.declineInvite(id);
+        window.exportRosterCSV = () => App.actions.exportRosterCSV();
         
         window.openHistory = () => App.actions.openHistory();
         window.revertHistory = (hid) => App.actions.revertHistory(hid);
