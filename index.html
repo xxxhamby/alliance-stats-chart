@@ -214,28 +214,7 @@
                     
                     owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
                     
-                    allianceManager: `
-                        <div class="min-h-screen bg-slate-900 p-6">
-                            <header class="flex justify-between items-center mb-6">
-                                <div>
-                                    <h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1>
-                                    <p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag || '...'}] ${State.alliance?.name || 'Loading...'}</span></p>
-                                </div>
-                                <div class="flex gap-2">
-                                    ${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}
-                                    <button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button>
-                                </div>
-                            </header>
-                            
-                            <div class="flex border-b border-slate-700 mb-6">
-                                <button onclick="window.switchManagerTab('main')" class="tab-btn ${State.managerTab === 'main' ? 'active' : ''}">Command</button>
-                                <button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button>
-                            </div>
-
-                            <div id="manager-content">
-                                ${State.managerTab === 'main' ? App.ui.managerMain() : App.ui.managerAudit()}
-                            </div>
-                        </div>`,
+                    allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag || '...'}] ${State.alliance?.name || 'Loading...'}</span></p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('main')" class="tab-btn ${State.managerTab === 'main' ? 'active' : ''}">Command</button><button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button></div><div id="manager-content">${State.managerTab === 'main' ? App.ui.managerMain() : App.ui.managerAudit()}</div></div>`,
 
                     view_global: `
                         <div class="min-h-screen bg-slate-900 text-slate-200">
@@ -276,7 +255,6 @@
                         </div>`
                 };
 
-                // SAFE RENDER
                 if (!State.alliance && State.current === 'allianceManager') {
                     document.getElementById('app-root').innerHTML = views['loading'];
                 } else {
@@ -288,7 +266,10 @@
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
                 if (State.current === 'editor' && !State.editorTarget) App.ui.renderGrowthChart();
                 if (State.current === 'owner') App.actions.initOwnerView();
-                if (State.current === 'allianceManager') App.actions.loadRoster();
+                if (State.current === 'allianceManager') {
+                    App.actions.loadRoster(); // Unified Load
+                    App.actions.loadAuditLogs();
+                }
             },
 
             renderTableOnly: () => {
@@ -325,12 +306,26 @@
                         const isManager = role === 'manager' || role === 'owner' || role === 'leader';
                         const escapedIgn = m.ign.replace(/'/g, "\\'");
                         
+                        // NEW LOGIC FOR PROMOTE/DEMOTE
                         let actionBtn = '';
+                        // Identify role of target based on data or default to member
+                        // NOTE: In a real app we'd fetch target user roles, here we rely on context or assume member
+                        // For simplicity in this structure: 
+                        // If I am Leader, I can Kick anyone (except myself) and Promote/Demote
+                        // Ideally we need the target's role. Since we don't have it in 'profiles', we assume 'member' for now unless we fetch 'users'.
+                        // IMPROVEMENT: Fetching roles is expensive. 
+                        // COMPROMISE: Show both buttons for Leader.
+                        
                         if (isLeader) actionBtn = '<span class="text-xs text-green-500 font-bold">LEADER</span>';
-                        else if (isManager) actionBtn = `
-                            <button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>
-                            <button onclick="event.stopPropagation(); window.promoteMember('${m.id}', 'manager')" class="text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-900 bg-blue-900/20 px-2 py-1 rounded ml-1">PROMOTE</button>
-                        `;
+                        else if (isManager) {
+                            actionBtn = `
+                                <button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>
+                                ${role === 'leader' || role === 'owner' ? `
+                                <button onclick="event.stopPropagation(); window.promoteMember('${m.id}', 'manager')" class="text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-900 bg-blue-900/20 px-2 py-1 rounded ml-1">PROMOTE</button>
+                                <button onclick="event.stopPropagation(); window.demoteMember('${m.id}')" class="text-yellow-400 hover:text-yellow-300 text-xs font-bold border border-yellow-900 bg-yellow-900/20 px-2 py-1 rounded ml-1">DEMOTE</button>
+                                ` : ''}
+                            `;
+                        }
                         
                         return `
                         <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
@@ -599,43 +594,71 @@
 
                 showAnalytics: () => {
                     const modal = document.getElementById('modal-root');
+                    
+                    const filterSameKingdom = State.data.roster.filter(p => p.kingdom === State.alliance.kingdom);
+                    
+                    let improvedHtml = '<div class="text-slate-500 text-xs italic">Not enough historical data.</div>';
+                    if (filterSameKingdom.length > 0) {
+                        const improved = filterSameKingdom
+                            .filter(p => p.previousStats)
+                            .map(p => {
+                                const ps = p.previousStats;
+                                const pScore = (parseFloat(ps.inf?.att||0) + parseFloat(ps.inf?.def||0) + (parseFloat(ps.inf?.let||0)*1.2) + (parseFloat(ps.inf?.hp||0)*1.1)) + 
+                                               (parseFloat(ps.cav?.att||0) + parseFloat(ps.cav?.def||0) + (parseFloat(ps.cav?.let||0)*1.2) + (parseFloat(ps.cav?.hp||0)*1.1)) + 
+                                               (parseFloat(ps.arc?.att||0) + parseFloat(ps.arc?.def||0) + (parseFloat(ps.arc?.let||0)*1.2) + (parseFloat(ps.arc?.hp||0)*1.1));
+                                return { ign: p.ign, delta: p.trueScore - pScore };
+                            })
+                            .sort((a,b) => b.delta - a.delta)
+                            .slice(0, 5);
+                        
+                        if(improved.length > 0) {
+                            improvedHtml = improved.map((p, i) => `<div class="flex justify-between text-sm py-1 border-b border-slate-700 last:border-0"><span class="text-white">${i+1}. ${p.ign}</span><span class="text-green-400 font-bold">+${Math.round(p.delta).toLocaleString()}</span></div>`).join('');
+                        }
+                    }
+
+                    const recent = [...State.data.roster]
+                        .sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
+                        .slice(0, 5)
+                        .map(p => `<div class="flex justify-between text-sm py-1 border-b border-slate-700 last:border-0"><span class="text-white">${p.ign}</span><span class="text-slate-400 text-xs">${p.updatedAt ? new Date(p.updatedAt.toDate()).toLocaleDateString() : '-'}</span></div>`)
+                        .join('');
+
                     modal.innerHTML = `
-                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-4xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-5xl w-full border-2 border-slate-600 modal-enter h-[85vh] flex flex-col">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-white"><i class="fas fa-chart-pie text-yellow-500 mr-2"></i>Alliance Analytics</h2>
                                 <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
                             </div>
-                            <div class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto">
-                                <div><h3 class="text-sm font-bold text-slate-400 mb-2">Troop Distribution</h3><canvas id="chart-distribution"></canvas></div>
-                                <div><h3 class="text-sm font-bold text-slate-400 mb-2">Top 10 Power</h3><canvas id="chart-top10"></canvas></div>
+                            <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto">
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-blue-400 mb-2 uppercase">Troop Tech Breakdown</h3>
+                                    <div class="h-48"><canvas id="chart-tech"></canvas></div>
+                                </div>
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-green-400 mb-2 uppercase">Top 5 Most Improved</h3>
+                                    <div>${improvedHtml}</div>
+                                </div>
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-purple-400 mb-2 uppercase">Recently Updated</h3>
+                                    <div>${recent}</div>
+                                </div>
                             </div>
                         </div>`;
                     modal.classList.remove('hidden');
                     
-                    const counts = { inf: 0, cav: 0, arc: 0 };
-                    State.data.roster.forEach(m => {
-                        const s = m.stats || {inf:{att:0}, cav:{att:0}, arc:{att:0}};
-                        const inf = parseFloat(s.inf.att||0), cav = parseFloat(s.cav.att||0), arc = parseFloat(s.arc.att||0);
-                        if(inf > cav && inf > arc) counts.inf++;
-                        else if(cav > inf && cav > arc) counts.cav++;
-                        else counts.arc++;
+                    const techCounts = {};
+                    filterSameKingdom.forEach(m => {
+                        const t = m.troops || {inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0}};
+                        ['inf','cav','arc'].forEach(type => {
+                            const key = `T${t[type].tier}${t[type].tg > 0 ? '+TG'+t[type].tg : ''}`;
+                            techCounts[key] = (techCounts[key] || 0) + 1;
+                        });
                     });
                     
-                    new Chart(document.getElementById('chart-distribution'), {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Infantry', 'Cavalry', 'Archer'],
-                            datasets: [{ data: [counts.inf, counts.cav, counts.arc], backgroundColor: ['#3b82f6', '#22c55e', '#ef4444'] }]
-                        },
-                        options: { plugins: { legend: { labels: { color: 'white' } } } }
-                    });
-                    
-                    const top10 = [...State.data.roster].sort((a,b) => b.trueScore - a.trueScore).slice(0, 10);
-                    new Chart(document.getElementById('chart-top10'), {
+                    new Chart(document.getElementById('chart-tech'), {
                         type: 'bar',
                         data: {
-                            labels: top10.map(m => m.ign),
-                            datasets: [{ label: 'True Score', data: top10.map(m => m.trueScore), backgroundColor: '#eab308' }]
+                            labels: Object.keys(techCounts),
+                            datasets: [{ label: 'Count', data: Object.values(techCounts), backgroundColor: '#3b82f6' }]
                         },
                         options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
                     });
@@ -679,7 +702,9 @@
                             <div class="w-full">
                                 <div class="flex justify-between items-start">
                                     <div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div>
-                                    <div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}</div>
+                                    <div class="text-right flex flex-col gap-2 items-end">
+                                        ${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}
+                                    </div>
                                 </div>
                                 ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
                                 ${inviteSection}
@@ -852,6 +877,14 @@
                         const allyDoc = snap.docs[0];
                         if (allyDoc.data().accessCode !== code) return App.ui.toast("Wrong Access Code", "error");
                         await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allyDoc.id });
+                        
+                        // LOG JOIN
+                        await addDoc(collection(App.db, 'alliances', allyDoc.id, 'logs'), {
+                            action: 'MEMBER_JOIN',
+                            details: `${State.profile.ign} joined via code.`,
+                            timestamp: serverTimestamp()
+                        });
+
                         window.location.reload();
                     } catch(e) { App.ui.toast("Error: " + e.message, "error"); }
                 },
@@ -859,6 +892,14 @@
                 leaveAlliance: async () => {
                     if (!confirm("Are you sure you want to leave your alliance?")) return;
                     try {
+                        // LOG LEAVE BEFORE WIPING ID
+                        if (State.profile.allianceID) {
+                            await addDoc(collection(App.db, 'alliances', State.profile.allianceID, 'logs'), {
+                                action: 'MEMBER_LEAVE',
+                                details: `${State.profile.ign} left the alliance.`,
+                                timestamp: serverTimestamp()
+                            });
+                        }
                         await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: null });
                         window.location.reload();
                     } catch(e) { App.ui.toast("Error leaving alliance", "error"); }
@@ -952,14 +993,41 @@
                     } catch(e) { App.ui.toast("Error kicking member", "error"); }
                 },
 
-                // NEW: Promote/Demote
                 promoteMember: async (uid, role) => {
                     if (!confirm(`Change role to ${role}?`)) return;
                     try {
                         await updateDoc(doc(App.db, 'users', uid), { role: role });
+                        
+                        // AUDIT LOG
+                        const target = State.data.roster.find(m => m.id === uid);
+                        await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
+                            action: 'ROLE_CHANGE',
+                            details: `${target ? target.ign : uid} promoted to ${role} by ${State.profile.ign}`,
+                            timestamp: serverTimestamp()
+                        });
+
                         App.ui.toast("Role Updated");
                         App.actions.loadRoster();
                     } catch(e) { App.ui.toast("Error updating role", "error"); }
+                },
+
+                // NEW: Demote Action
+                demoteMember: async (uid) => {
+                    if (!confirm(`Demote member to regular status?`)) return;
+                    try {
+                        await updateDoc(doc(App.db, 'users', uid), { role: 'member' });
+                        
+                        // AUDIT LOG
+                        const target = State.data.roster.find(m => m.id === uid);
+                        await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
+                            action: 'ROLE_CHANGE',
+                            details: `${target ? target.ign : uid} demoted to member by ${State.profile.ign}`,
+                            timestamp: serverTimestamp()
+                        });
+
+                        App.ui.toast("Role Updated");
+                        App.actions.loadRoster();
+                    } catch(e) { App.ui.toast("Error demoting member", "error"); }
                 },
 
                 openHistory: async () => {
@@ -1163,31 +1231,6 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
-                
-                // NEW: Open Editor for specific user (Admin/Manager)
-                editPlayer: async (uid) => {
-                    try {
-                        const snap = await getDoc(doc(App.db, 'profiles', uid));
-                        if(!snap.exists()) return;
-                        
-                        const raw = snap.data();
-                        const blankStats = { att:0, def:0, let:0, hp:0 };
-                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
-                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
-                        
-                        State.editorTarget = uid; // Set Target
-                        State.form = { 
-                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
-                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
-                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
-                            stats: s 
-                        };
-                        
-                        State.current = 'editor';
-                        App.render();
-                    } catch(e) { App.ui.toast("Error loading player", "error"); }
-                },
-
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
@@ -1306,6 +1349,7 @@
         window.rotateAllianceCode = () => App.actions.rotateAllianceCode();
         window.kickMember = (uid, name) => App.actions.kickMember(uid, name);
         window.promoteMember = (uid, role) => App.actions.promoteMember(uid, role);
+        window.demoteMember = (uid) => App.actions.demoteMember(uid);
         window.updateAlliance = () => App.actions.updateAlliance();
         window.deleteAlliance = () => App.actions.deleteAlliance();
         window.leaveAlliance = () => App.actions.leaveAlliance();
