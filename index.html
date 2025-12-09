@@ -338,4 +338,810 @@
                         <div class="space-y-6">
                             <div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500">
                                 <h3 class="font-bold text-white mb-2">Access Control</h3>
-                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-
+                                <div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Invite Code</label><div class="text-2xl font-mono text-white bg-slate-900 p-2 rounded text-center tracking-widest">${State.alliance.accessCode}</div></div>
+                                <button onclick="window.rotateAllianceCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-sm"><i class="fas fa-sync-alt mr-2"></i>Rotate Code</button>
+                            </div>
+                            <div class="bg-slate-800 p-6 rounded border-l-4 border-red-600 opacity-90 hover:opacity-100 transition">
+                                <h3 class="font-bold text-red-500 mb-2">Danger Zone</h3>
+                                <p class="text-xs text-slate-400 mb-4">Deleting the alliance will orphan all members. This action cannot be undone.</p>
+                                <button onclick="window.deleteAlliance()" class="w-full bg-red-900/50 border border-red-600 hover:bg-red-600 text-red-100 font-bold py-2 rounded text-sm">Delete Alliance</button>
+                            </div>
+                        </div>
+                    </div>`;
+                },
+
+                managerRecruit: () => {
+                    return `
+                    <div class="bg-slate-800 rounded shadow overflow-hidden">
+                        <div class="p-4 border-b border-slate-700 bg-slate-900">
+                            <h3 class="font-bold text-white">Scout Freelancers (Kingdom ${State.alliance.kingdom})</h3>
+                            <p class="text-xs text-slate-400">Players currently without an alliance. Message them in-game to recruit.</p>
+                        </div>
+                        <div class="overflow-x-auto h-96 overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0">
+                                    <tr>
+                                        <th class="p-3">Commander</th>
+                                        <th class="p-3">Kingdom</th>
+                                        <th class="p-3">True Score</th>
+                                        <th class="p-3">Stats</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recruit-body" class="divide-y divide-slate-700">
+                                    ${App.ui.generateRecruitRows(State.data.freelancers)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                },
+
+                editorForm: (btnText) => {
+                    return `
+                    <form onsubmit="event.preventDefault(); window.saveProfile()">
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <div class="col-span-2"><label class="text-[10px] text-slate-400 uppercase font-bold">In-Game Name</label><input type="text" id="frm-ign" name="ign" class="input-field" required value="${State.form.ign}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Kingdom #</label><input type="number" id="frm-kingdom" name="kingdom" class="input-field" required value="${State.form.kingdom}"></div>
+                            <div><label class="text-[10px] text-slate-400 uppercase font-bold">Player ID (Max 9)</label><input type="number" id="frm-pid" name="pid" class="input-field" required value="${State.form.pid}"></div>
+                        </div>
+                        <div class="bg-slate-900 p-3 rounded border border-slate-700 mb-4 flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideName" name="hideName" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideName ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Name</span></label>
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="frm-hideStats" name="hideStats" class="form-checkbox text-blue-600 rounded bg-slate-700 border-slate-600" ${State.form.privacy?.hideStats ? 'checked' : ''}><span class="text-xs text-slate-300">Hide Stats</span></label>
+                        </div>
+                        
+                        <div class="space-y-4 mb-6">
+                            ${App.ui.statRow('inf', 'Infantry', 'text-blue-400')}
+                            ${App.ui.statRow('cav', 'Cavalry', 'text-green-400')}
+                            ${App.ui.statRow('arc', 'Archer', 'text-red-400')}
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            ${App.ui.troopRow('inf', 'Infantry', 'text-blue-400')}
+                            ${App.ui.troopRow('cav', 'Cavalry', 'text-green-400')}
+                            ${App.ui.troopRow('arc', 'Archer', 'text-red-400')}
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded transition">${btnText}</button>
+                    </form>`;
+                },
+
+                statRow: (type, label, color) => {
+                    return `
+                    <div class="bg-slate-900 p-2 rounded border border-slate-700">
+                        <div class="grid grid-cols-5 gap-2 items-center">
+                            <div class="text-[10px] font-bold ${color} uppercase text-right pr-2">${label}</div>
+                            <input type="number" id="${type}_att" name="${type}_att" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','att',this)" placeholder="ATT" class="input-field text-center" value="${State.form.stats[type].att||''}">
+                            <input type="number" id="${type}_def" name="${type}_def" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','def',this)" placeholder="DEF" class="input-field text-center" value="${State.form.stats[type].def||''}">
+                            <input type="number" id="${type}_let" name="${type}_let" step="0.1" min="0" onkeydown="window.handleEnter(event)" onchange="window.handleStatChange('${type}','let',this)" placeholder="LET" class="input-field text-center" value="${State.form.stats[type].let||''}">
+                            <input type="number" id="${type}_hp" name="${type}_hp" step="0.1" min="0" onkeydown="${type==='arc'?'':'window.handleEnter(event)'}" onchange="window.handleStatChange('${type}','hp',this)" placeholder="HP" class="input-field text-center" value="${State.form.stats[type].hp||''}">
+                        </div>
+                    </div>`;
+                },
+
+                troopRow: (type, label, colorClass) => {
+                    return `
+                    <div class="bg-slate-900 p-2 rounded border border-slate-700">
+                        <div class="text-[9px] uppercase font-bold ${colorClass} mb-1 flex justify-between"><span>${label} Tier</span><span id="display-${type}" class="text-white">T10</span></div>
+                        <div class="grid grid-cols-4 gap-1 mb-1">${[8,9,10,11].map(t => `<div class="tier-card" data-group="${type}-tier" data-val="${t}" onclick="window.setTroop('${type}','tier',${t})">T${t}</div>`).join('')}</div>
+                        <div class="grid grid-cols-6 gap-1">${[0,1,2,3,4,5].map(g => `<div class="tier-card" data-group="${type}-tg" data-val="${g}" onclick="window.setTroop('${type}','tg',${g})">${g===0?'--':'TG'+g}</div>`).join('')}</div>
+                    </div>`;
+                },
+                
+                initEditor: () => { ['inf', 'cav', 'arc'].forEach(t => { window.setTroop(t, 'tier', State.form.troops[t].tier, false); window.setTroop(t, 'tg', State.form.troops[t].tg, false); }); },
+
+                renderGrowthChart: () => {
+                    const ctx = document.getElementById('growth-chart');
+                    if (!ctx || !State.data.history || State.data.history.length === 0) return;
+                    
+                    const data = [...State.data.history].reverse();
+                    if(App.chartInstance) App.chartInstance.destroy();
+
+                    App.chartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(h => new Date(h.date.toDate()).toLocaleDateString()),
+                            datasets: [{
+                                label: 'True Score',
+                                data: data.map(h => h.trueScore),
+                                borderColor: '#eab308',
+                                backgroundColor: 'rgba(234, 179, 8, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { ticks: { color: '#94a3b8', maxTicksLimit: 5 }, grid: { display: false } },
+                                y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                            }
+                        }
+                    });
+                },
+                
+                renderRows: (dataset) => {
+                    if (!dataset || dataset.length === 0) return `<tr><td colspan="17" class="p-4 text-center text-slate-500">No Commanders Found</td></tr>`;
+                    
+                    const sorted = [...dataset].sort((a,b) => {
+                        const valA = getValue(a, State.sort.field) || 0;
+                        const valB = getValue(b, State.sort.field) || 0;
+                        return State.sort.dir === 'asc' ? valA - valB : valB - valA;
+                    });
+
+                    function getValue(obj, path) {
+                        return path.split('.').reduce((o, i) => o?.[i], obj);
+                    }
+
+                    const getDelta = (val, old) => {
+                        if (old === undefined || old === null) return '';
+                        const diff = (val - old).toFixed(1);
+                        if (diff == 0) return '';
+                        const color = diff > 0 ? 'text-green-400' : 'text-red-400';
+                        return `<sup class="${color} stat-delta">${diff > 0 ? '+' : ''}${diff}</sup>`;
+                    };
+
+                    return sorted.map(p => {
+                        const isMe = State.user.uid === p.id;
+                        const sameAlliance = State.alliance && p.allianceID === State.alliance.id;
+                        const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !isMe && !sameAlliance;
+                        
+                        const displayName = (p.privacy?.hideName && !isMe && !sameAlliance) ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
+                        const s = p.stats || {inf:{att:0,def:0,let:0,hp:0},cav:{att:0,def:0,let:0,hp:0},arc:{att:0,def:0,let:0,hp:0}};
+                        const prev = p.previousStats || {};
+                        const dateStr = p.updatedAt ? new Date(p.updatedAt.toDate()).toLocaleDateString() : '-';
+                        
+                        const isSelected = State.selection.has(p.id) ? 'checked' : '';
+                        
+                        const cell = (path, val) => {
+                            if(isHidden) return '<td class="text-slate-500">?</td>';
+                            const oldVal = getValue(prev, path);
+                            return `<td class="text-slate-300">${val}${getDelta(val, oldVal)}</td>`;
+                        };
+
+                        // CONDITIONAL ALLIANCE COLUMN
+                        const allianceCol = State.current === 'view_global' 
+                            ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
+                            : '';
+
+                        return `
+                        <tr class="hover:bg-slate-800 transition cursor-pointer border-b border-slate-800" onclick="window.viewProfile('${p.id}')">
+                            <td onclick="event.stopPropagation()" class="pl-2"><input type="checkbox" class="ml-2 accent-blue-500" ${isSelected} onchange="window.toggleSelection('${p.id}')"></td>
+                            <td class="text-white font-bold text-left pl-3 py-2 text-xs">${displayName}</td>
+                            <td class="text-slate-300">${p.kingdom}</td>
+                            ${allianceCol}
+                            ${cell('inf.att', s.inf.att)} ${cell('inf.def', s.inf.def)} ${cell('inf.let', s.inf.let)} ${cell('inf.hp', s.inf.hp)}
+                            ${cell('cav.att', s.cav.att)} ${cell('cav.def', s.cav.def)} ${cell('cav.let', s.cav.let)} ${cell('cav.hp', s.cav.hp)}
+                            ${cell('arc.att', s.arc.att)} ${cell('arc.def', s.arc.def)} ${cell('arc.let', s.arc.let)} ${cell('arc.hp', s.arc.hp)}
+                            <td class="text-yellow-400 font-bold font-mono">${Math.round(p.trueScore||0).toLocaleString()}</td>
+                            <td class="text-xs text-slate-500">${dateStr}</td>
+                        </tr>`;
+                    }).join('');
+                },
+                
+                showProfile: (data) => {
+                    const modal = document.getElementById('modal-root');
+                    const isMe = State.user.uid === data.id;
+                    const sameAlliance = State.alliance && data.allianceID === State.alliance.id;
+                    const canInvite = State.user.uid === State.alliance?.leader || State.dbUser?.role === 'owner';
+                    const isRecruitable = !data.allianceID && data.kingdom == State.profile.kingdom;
+
+                    const hideStats = data.privacy?.hideStats && !isMe && !sameAlliance;
+                    const hideName = data.privacy?.hideName && !isMe && !sameAlliance;
+
+                    const t = data.troops || {inf:{tier:10,tg:0},cav:{tier:10,tg:0},arc:{tier:10,tg:0}};
+                    const s = data.stats || {inf:{att:0,def:0,let:0,hp:0},cav:{att:0,def:0,let:0,hp:0},arc:{att:0,def:0,let:0,hp:0}};
+                    const displayName = hideName ? "Classified" : data.ign;
+
+                    const renderStatRow = (label, obj, color) => {
+                        if (hideStats) return `<div class="bg-slate-900 p-3 rounded text-center text-slate-500 italic">Stats Classified</div>`;
+                        return `
+                        <div class="bg-slate-900 p-2 rounded mb-2">
+                            <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold ${color} uppercase">${label}</span><span class="text-xs text-white">T${t[label.toLowerCase().substr(0,3)].tier}</span></div>
+                            <div class="grid grid-cols-4 gap-2 text-center text-[10px] text-slate-300">
+                                <div><div class="font-bold text-white">${obj.att}%</div><div>ATT</div></div>
+                                <div><div class="font-bold text-white">${obj.def}%</div><div>DEF</div></div>
+                                <div><div class="font-bold text-white">${obj.let}%</div><div>LET</div></div>
+                                <div><div class="font-bold text-white">${obj.hp}%</div><div>HP</div></div>
+                            </div>
+                        </div>`;
+                    };
+
+                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom} • Score: <span class="text-yellow-400 font-bold">${Math.round(data.trueScore||0).toLocaleString()}</span></p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div><button onclick="window.compareVsAverage('${data.id}')" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-sm mb-2"><i class="fas fa-chart-bar mr-2"></i>COMPARE VS AVG</button>${isRecruitable && canInvite ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm"><i class="fas fa-envelope mr-2"></i>INVITE</button>` : ''}</div>`;
+                    modal.classList.remove('hidden');
+                },
+
+                showAnalytics: () => {
+                    const modal = document.getElementById('modal-root');
+                    
+                    const filterSameKingdom = State.data.roster.filter(p => p.kingdom === State.alliance.kingdom);
+                    
+                    let improvedHtml = '<div class="text-slate-500 text-xs italic">Not enough historical data.</div>';
+                    if (filterSameKingdom.length > 0) {
+                        const improved = filterSameKingdom
+                            .filter(p => p.previousStats)
+                            .map(p => {
+                                const ps = p.previousStats;
+                                const pScore = (parseFloat(ps.inf?.att||0) + parseFloat(ps.inf?.def||0) + (parseFloat(ps.inf?.let||0)*1.2) + (parseFloat(ps.inf?.hp||0)*1.1)) + 
+                                               (parseFloat(ps.cav?.att||0) + parseFloat(ps.cav?.def||0) + (parseFloat(ps.cav?.let||0)*1.2) + (parseFloat(ps.cav?.hp||0)*1.1)) + 
+                                               (parseFloat(ps.arc?.att||0) + parseFloat(ps.arc?.def||0) + (parseFloat(ps.arc?.let||0)*1.2) + (parseFloat(ps.arc?.hp||0)*1.1));
+                                return { ign: p.ign, delta: p.trueScore - pScore };
+                            })
+                            .sort((a,b) => b.delta - a.delta)
+                            .slice(0, 5);
+                        
+                        if(improved.length > 0) {
+                            improvedHtml = improved.map((p, i) => `<div class="flex justify-between text-sm py-1 border-b border-slate-700 last:border-0"><span class="text-white">${i+1}. ${p.ign}</span><span class="text-green-400 font-bold">+${Math.round(p.delta).toLocaleString()}</span></div>`).join('');
+                        }
+                    }
+
+                    const recent = [...State.data.roster]
+                        .sort((a,b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0))
+                        .slice(0, 5)
+                        .map(p => `<div class="flex justify-between text-sm py-1 border-b border-slate-700 last:border-0"><span class="text-white">${p.ign}</span><span class="text-slate-400 text-xs">${p.updatedAt ? new Date(p.updatedAt.toDate()).toLocaleDateString() : '-'}</span></div>`)
+                        .join('');
+
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-5xl w-full border-2 border-slate-600 modal-enter h-[85vh] flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-white"><i class="fas fa-chart-pie text-yellow-500 mr-2"></i>Alliance Analytics</h2>
+                                <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto">
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-blue-400 mb-2 uppercase">Troop Tech Breakdown</h3>
+                                    <div class="h-48"><canvas id="chart-tech"></canvas></div>
+                                </div>
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-green-400 mb-2 uppercase">Top 5 Most Improved</h3>
+                                    <div>${improvedHtml}</div>
+                                </div>
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-purple-400 mb-2 uppercase">Recently Updated</h3>
+                                    <div>${recent}</div>
+                                </div>
+                            </div>
+                        </div>`;
+                    modal.classList.remove('hidden');
+                    
+                    const techCounts = {};
+                    filterSameKingdom.forEach(m => {
+                        const t = m.troops || {inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0}};
+                        ['inf','cav','arc'].forEach(type => {
+                            const key = `T${t[type].tier}${t[type].tg > 0 ? '+TG'+t[type].tg : ''}`;
+                            techCounts[key] = (techCounts[key] || 0) + 1;
+                        });
+                    });
+                    
+                    new Chart(document.getElementById('chart-tech'), {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(techCounts),
+                            datasets: [{ label: 'Count', data: Object.values(techCounts), backgroundColor: '#3b82f6' }]
+                        },
+                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+                    });
+                },
+
+                showHistory: (history) => {
+                    const modal = document.getElementById('modal-root');
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-2xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-white"><i class="fas fa-history text-blue-400 mr-2"></i>Update History</h2>
+                                <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div class="flex-grow overflow-y-auto space-y-2">
+                                ${history.length === 0 ? '<div class="text-slate-500 text-center">No history found.</div>' : history.map(h => `
+                                    <div class="bg-slate-900 p-3 rounded flex justify-between items-center border border-slate-700">
+                                        <div>
+                                            <div class="text-white font-bold">${new Date(h.date?.toDate()).toLocaleString()}</div>
+                                            <div class="text-xs text-slate-400">Score: ${Math.round(h.trueScore)}</div>
+                                        </div>
+                                        <button onclick="window.revertHistory('${h.id}')" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded">Revert</button>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    modal.classList.remove('hidden');
+                },
+
+                allianceCard: () => {
+                    if (State.alliance) {
+                        const isLeader = State.alliance.leader === State.user.uid;
+                        return `
+                        <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center mb-6">
+                            <div class="w-full">
+                                <div class="flex justify-between items-start">
+                                    <div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div>
+                                    <div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}</div>
+                                </div>
+                                ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
+                            </div>
+                        </div>`;
+                    }
+                    return `
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500">
+                                <h3 class="font-bold text-white mb-2">Join Alliance</h3>
+                                <div class="flex gap-2"><input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1"><input type="text" id="join-code" placeholder="Code" class="input-field py-1"><button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button></div>
+                            </div>
+                            <div class="bg-slate-800 p-4 rounded border-l-4 border-green-500">
+                                <h3 class="font-bold text-white mb-2">Create Alliance</h3>
+                                <div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div>
+                            </div>
+                        </div>`;
+                },
+                
+                showHelp: () => {
+                    const modal = document.getElementById('modal-root');
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-2xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-white"><i class="fas fa-question-circle text-yellow-400 mr-2"></i>Help Center</h2>
+                                <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div class="space-y-4 text-slate-300 text-sm overflow-y-auto">
+                                <div class="bg-slate-900 p-3 rounded">
+                                    <h3 class="font-bold text-white mb-1"><i class="fas fa-user-edit text-blue-400 mr-2"></i>Profile & Stats</h3>
+                                    <p>Click <strong>Edit Profile</strong> to update your Kingdom, Name, and Troops. Your <strong>True Score</strong> is automatically calculated from your stats. View your <strong>Growth History</strong> chart at the bottom of the editor.</p>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded">
+                                    <h3 class="font-bold text-white mb-1"><i class="fas fa-users text-green-400 mr-2"></i>Alliances</h3>
+                                    <p>Join an alliance using a code from your leader, or create your own. Leaders can kick members, rotate invite codes, and set a public description.</p>
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded">
+                                    <h3 class="font-bold text-white mb-1"><i class="fas fa-chart-bar text-purple-400 mr-2"></i>Analytics</h3>
+                                    <p>Use checkboxes to select players and click <strong>Compare</strong> to see a bar chart. Click <strong>Analytics</strong> in your alliance view to see troop distribution and growth trends.</p>
+                                </div>
+                            </div>
+                        </div>`;
+                    modal.classList.remove('hidden');
+                }
+            },
+
+            // --- ACTIONS ---
+            actions: {
+                loadPersonalHistory: async () => {
+                    try {
+                        const q = query(collection(doc(App.db, 'profiles', State.user.uid), 'history'), orderBy('date', 'desc'), limit(10));
+                        const snap = await getDocs(q);
+                        State.data.history = snap.docs.map(d => d.data());
+                    } catch(e) { console.error("History Error", e); }
+                },
+
+                loadLeaderboard: async () => {
+                    try {
+                        let q = collection(App.db, 'profiles');
+                        if (State.viewMode === 'alliance' && State.profile?.allianceID) {
+                            q = query(q, where('allianceID', '==', State.profile.allianceID), orderBy('trueScore', 'desc'), limit(100)); 
+                        } else {
+                            // GLOBAL LOAD
+                            if (State.filters.ign) {
+                                q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
+                            } else if (State.filters.kingdom) {
+                                q = query(q, where('kingdom', '==', State.filters.kingdom), orderBy('trueScore', 'desc'), limit(50));
+                            } else {
+                                q = query(q, orderBy('trueScore', 'desc'), limit(100));
+                            }
+                        }
+                        const snap = await getDocs(q);
+                        State.data.global = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                        App.renderTableOnly();
+                    } catch (e) { console.error("Load Error", e); }
+                },
+
+                submitGate: async () => {
+                    const code = document.getElementById('gate-input').value.trim();
+                    try {
+                        const snap = await getDoc(doc(App.db, 'metadata', 'security'));
+                        if (snap.exists() && snap.data().accessCode === code) {
+                            localStorage.setItem('acc_gate_token', 'valid');
+                            App.handleAuth(State.user);
+                        } else { App.ui.toast("Access Denied", "error"); }
+                    } catch(e) { App.ui.toast("Error checking code", "error"); }
+                },
+
+                createAlliance: async () => {
+                    const tag = document.getElementById('create-tag').value.trim().toUpperCase();
+                    const name = document.getElementById('create-name').value.trim();
+                    if(!tag || !name) return App.ui.toast("Tag/Name Required", "error");
+                    const code = Math.floor(10000 + Math.random() * 90000).toString();
+                    try {
+                        const q = query(collection(App.db, 'alliances'), where('tag', '==', tag));
+                        const snap = await getDocs(q);
+                        if(!snap.empty) return App.ui.toast("Tag taken!", "error");
+                        const allyRef = await addDoc(collection(App.db, 'alliances'), { tag, name, kingdom: State.profile.kingdom, accessCode: code, leader: State.user.uid, createdAt: serverTimestamp(), description: '' });
+                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allyRef.id });
+                        if (State.dbUser.role !== 'owner') await updateDoc(doc(App.db, 'users', State.user.uid), { role: 'leader' });
+                        window.location.reload();
+                    } catch(e) { App.ui.toast("Error: " + e.message, "error"); }
+                },
+
+                joinAlliance: async () => {
+                    const tag = document.getElementById('join-tag').value.trim().toUpperCase();
+                    const code = document.getElementById('join-code').value.trim();
+                    try {
+                        const q = query(collection(App.db, 'alliances'), where('tag', '==', tag));
+                        const snap = await getDocs(q);
+                        if(snap.empty) return App.ui.toast("Alliance not found", "error");
+                        const allyDoc = snap.docs[0];
+                        if (allyDoc.data().accessCode !== code) return App.ui.toast("Wrong Access Code", "error");
+                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allyDoc.id });
+                        window.location.reload();
+                    } catch(e) { App.ui.toast("Error: " + e.message, "error"); }
+                },
+
+                leaveAlliance: async () => {
+                    if (!confirm("Are you sure you want to leave your alliance?")) return;
+                    try {
+                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: null });
+                        window.location.reload();
+                    } catch(e) { App.ui.toast("Error leaving alliance", "error"); }
+                },
+
+                loadRoster: async () => {
+                    if (!State.alliance) return;
+                    try {
+                        const q = query(collection(App.db, 'profiles'), where('allianceID', '==', State.alliance.id), limit(100));
+                        const snap = await getDocs(q);
+                        State.data.roster = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        App.renderTableOnly();
+                    } catch(e) { console.error(e); }
+                },
+
+                loadFreelancers: async () => {
+                    try {
+                        const q = query(collection(App.db, 'profiles'), where('kingdom', '==', State.alliance.kingdom), where('allianceID', '==', null), limit(50));
+                        const snap = await getDocs(q);
+                        State.data.freelancers = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        App.renderTableOnly();
+                    } catch(e) { console.error(e); }
+                },
+
+                updateAlliance: async () => {
+                    const name = document.getElementById('set-name').value.trim();
+                    const desc = document.getElementById('set-desc').value.trim();
+                    if (!name) return App.ui.toast("Name required", "error");
+                    try {
+                        await updateDoc(doc(App.db, 'alliances', State.alliance.id), { name, description: desc });
+                        State.alliance.name = name;
+                        State.alliance.description = desc;
+                        App.ui.toast("Settings Saved");
+                    } catch(e) { App.ui.toast("Update failed", "error"); }
+                },
+
+                deleteAlliance: async () => {
+                    if(!confirm("ARE YOU SURE? This will remove all members from the alliance.")) return;
+                    try {
+                        const q = query(collection(App.db, 'profiles'), where('allianceID', '==', State.alliance.id));
+                        const snap = await getDocs(q);
+                        const batch = writeBatch(App.db);
+                        snap.docs.forEach(d => { batch.update(doc(App.db, 'profiles', d.id), { allianceID: null }); });
+                        batch.delete(doc(App.db, 'alliances', State.alliance.id));
+                        if (State.dbUser.role !== 'owner') batch.update(doc(App.db, 'users', State.user.uid), { role: 'member' });
+                        await batch.commit();
+                        window.location.reload();
+                    } catch(e) { console.error(e); App.ui.toast("Delete failed", "error"); }
+                },
+
+                rotateAllianceCode: async () => {
+                    if (!State.alliance) return;
+                    const newCode = Math.floor(Math.random() * 90000 + 10000).toString();
+                    await updateDoc(doc(App.db, 'alliances', State.alliance.id), { accessCode: newCode });
+                    State.alliance.accessCode = newCode;
+                    App.render();
+                    App.ui.toast("Invite Code Updated");
+                },
+
+                kickMember: async (uid, name) => {
+                    if (!confirm(`Kick ${name} from alliance?`)) return;
+                    try {
+                        await updateDoc(doc(App.db, 'profiles', uid), { allianceID: null });
+                        State.data.roster = State.data.roster.filter(m => m.id !== uid);
+                        App.renderTableOnly();
+                        App.ui.toast(`${name} removed`);
+                    } catch(e) { App.ui.toast("Error kicking member", "error"); }
+                },
+
+                openHistory: async () => {
+                    try {
+                        const q = query(collection(doc(App.db, 'profiles', State.user.uid), 'history'), orderBy('date', 'desc'), limit(10));
+                        const snap = await getDocs(q);
+                        const history = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                        App.ui.showHistory(history);
+                    } catch(e) { console.error(e); App.ui.toast("Failed to load history", "error"); }
+                },
+
+                revertHistory: async (hid) => {
+                    if(!confirm("Revert to this entry? Current stats will be saved to history first.")) return;
+                    try {
+                        const hSnap = await getDoc(doc(App.db, `profiles/${State.user.uid}/history/${hid}`));
+                        if(!hSnap.exists()) return;
+                        
+                        const oldData = hSnap.data();
+                        
+                        State.form.stats = oldData;
+                        await App.actions.saveProfile();
+                        document.getElementById('modal-root').classList.add('hidden');
+                        App.ui.toast("Stats Reverted");
+                    } catch(e) { App.ui.toast("Revert Failed", "error"); }
+                },
+
+                compareSelected: () => {
+                    const selectedIds = Array.from(State.selection);
+                    if(selectedIds.length < 2) return App.ui.toast("Select at least 2 players", "error");
+                    
+                    const players = (State.currentTab === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
+                    
+                    const modal = document.getElementById('modal-root');
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-4xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-white"><i class="fas fa-chart-bar text-purple-500 mr-2"></i>Comparison</h2>
+                                <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div class="flex-grow relative">
+                                <canvas id="chart-compare"></canvas>
+                            </div>
+                        </div>`;
+                    modal.classList.remove('hidden');
+
+                    new Chart(document.getElementById('chart-compare'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['INF Att', 'INF HP', 'CAV Att', 'CAV HP', 'ARC Att', 'ARC HP'],
+                            datasets: players.map((p, i) => {
+                                const s = p.stats || { inf:{att:0,hp:0}, cav:{att:0,hp:0}, arc:{att:0,hp:0} };
+                                return {
+                                    label: p.ign,
+                                    data: [s.inf.att, s.inf.hp, s.cav.att, s.cav.hp, s.arc.att, s.arc.hp],
+                                    backgroundColor: `hsl(${i * 60}, 70%, 50%)`
+                                };
+                            })
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                    });
+                },
+                
+                compareVsAverage: (targetId) => {
+                    const target = State.data.global.find(p => p.id === targetId) || State.data.roster.find(p => p.id === targetId);
+                    if(!target) return;
+
+                    // PRIVACY CHECK
+                    const isMe = State.user.uid === target.id;
+                    const sameAlliance = State.alliance && target.allianceID === State.alliance.id;
+                    const canView = isMe || sameAlliance || State.dbUser?.role === 'owner';
+                    
+                    if(target.privacy?.hideStats && !canView) {
+                        return App.ui.toast("Commander has hidden their stats.", "error");
+                    }
+
+                    const dataset = State.viewMode === 'alliance' ? State.data.roster : State.data.global;
+                    const avg = {inf:{att:0,hp:0},cav:{att:0,hp:0},arc:{att:0,hp:0}};
+                    let count = 0;
+
+                    dataset.forEach(p => {
+                        if(p.stats) {
+                            avg.inf.att += parseFloat(p.stats.inf.att||0); avg.inf.hp += parseFloat(p.stats.inf.hp||0);
+                            avg.cav.att += parseFloat(p.stats.cav.att||0); avg.cav.hp += parseFloat(p.stats.cav.hp||0);
+                            avg.arc.att += parseFloat(p.stats.arc.att||0); avg.arc.hp += parseFloat(p.stats.arc.hp||0);
+                            count++;
+                        }
+                    });
+
+                    if(count > 0) {
+                        ['inf','cav','arc'].forEach(t => { avg[t].att /= count; avg[t].hp /= count; });
+                    }
+
+                    const modal = document.getElementById('modal-root');
+                    modal.innerHTML = `
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-4xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-white"><i class="fas fa-chart-bar text-purple-500 mr-2"></i>Vs Average</h2>
+                                <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div class="flex-grow relative">
+                                <canvas id="chart-compare-avg"></canvas>
+                            </div>
+                        </div>`;
+                    modal.classList.remove('hidden');
+
+                    const s = target.stats || { inf:{att:0,hp:0}, cav:{att:0,hp:0}, arc:{att:0,hp:0} };
+                    new Chart(document.getElementById('chart-compare-avg'), {
+                        type: 'bar',
+                        data: {
+                            labels: ['INF Att', 'INF HP', 'CAV Att', 'CAV HP', 'ARC Att', 'ARC HP'],
+                            datasets: [
+                                { label: target.ign, data: [s.inf.att, s.inf.hp, s.cav.att, s.cav.hp, s.arc.att, s.arc.hp], backgroundColor: '#3b82f6' },
+                                { label: 'Average', data: [avg.inf.att, avg.inf.hp, avg.cav.att, avg.cav.hp, avg.arc.att, avg.arc.hp], backgroundColor: '#64748b' }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                    });
+                },
+
+                saveProfile: async () => {
+                    const ign = document.getElementById('frm-ign').value.trim();
+                    const kingdom = document.getElementById('frm-kingdom').value.trim();
+                    const pid = document.getElementById('frm-pid').value.trim();
+                    const hideName = document.getElementById('frm-hideName').checked;
+                    const hideStats = document.getElementById('frm-hideStats').checked;
+                    
+                    if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
+                    
+                    const s = State.form.stats;
+                    const sum = (p) => parseFloat(s.inf[p]||0) + parseFloat(s.cav[p]||0) + parseFloat(s.arc[p]||0);
+                    const trueScore = (sum('att') + sum('def')) * 1.0 + sum('let') * 1.2 + sum('hp') * 1.1;
+
+                    // DELTA LOGIC
+                    const currentProfile = State.profile || {};
+                    const previousStats = currentProfile.stats || {}; 
+
+                    const profileData = { 
+                        ign, kingdom, pid, 
+                        privacy: { hideName, hideStats }, 
+                        troops: State.form.troops, 
+                        stats: State.form.stats,
+                        previousStats: previousStats, 
+                        trueScore: Math.round(trueScore),
+                        updatedAt: serverTimestamp() 
+                    };
+                    
+                    try {
+                        const batch = writeBatch(App.db);
+                        const pRef = doc(App.db, 'profiles', State.user.uid);
+                        const hRef = doc(collection(pRef, 'history'));
+
+                        batch.set(pRef, profileData, { merge: true });
+                        batch.set(hRef, { 
+                            ...State.form.stats, 
+                            date: serverTimestamp(), 
+                            trueScore: Math.round(trueScore) 
+                        });
+
+                        await batch.commit();
+                        
+                        // FIX: MERGE STATE SO ALLIANCE ID IS NOT LOST
+                        State.profile = { ...State.profile, ...profileData };
+                        await App.actions.loadLeaderboard();
+                        // Reload history for chart
+                        await App.actions.loadPersonalHistory();
+                        
+                        // FIX: RESTORE PREVIOUS VIEW
+                        State.current = State.previousView || 'view_global';
+                        App.render();
+                        
+                        App.ui.toast("Profile Updated");
+                    } catch (e) { App.ui.toast("Save Failed: " + e.message, "error"); }
+                },
+
+                // ... [Owner/Admin Init] ...
+                initOwnerView: async () => {
+                    if (State.listeners.security) return;
+                    const unsub = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
+                        if(snap.exists() && document.getElementById('owner-global-code')) {
+                            document.getElementById('owner-global-code').innerText = snap.data().accessCode;
+                        }
+                    });
+                    State.listeners.security = unsub;
+                    try {
+                        const coll = collection(App.db, "profiles");
+                        const snapshot = await getCountFromServer(coll);
+                        State.stats.totalProfiles = snapshot.data().count;
+                        // FIX: MANUALLY UPDATE DOM
+                        if(document.getElementById('stat-count')) {
+                             document.getElementById('stat-count').innerText = State.stats.totalProfiles;
+                        }
+                    } catch(e) { console.error(e); }
+                },
+                rotateCode: async () => {
+                    const newCode = Math.floor(Math.random() * 90000 + 10000).toString();
+                    await setDoc(doc(App.db, 'metadata', 'security'), { accessCode: newCode }, { merge: true });
+                    App.ui.toast("Gate Code Generated");
+                },
+                toggleLockdown: async () => {
+                    const newState = !State.config.lockdown;
+                    await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
+                    App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
+                },
+                viewProfile: (uid) => {
+                    const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
+                    if(p) App.ui.showProfile(p);
+                },
+                sendInvite: async (uid) => {
+                    try {
+                        await addDoc(collection(doc(App.db, 'profiles', uid), 'invites'), {
+                            allianceID: State.alliance.id,
+                            name: State.alliance.name,
+                            timestamp: serverTimestamp()
+                        });
+                        App.ui.toast("Invite Sent");
+                        document.getElementById('modal-root').classList.add('hidden');
+                    } catch(e) { App.ui.toast("Invite Failed", "error"); }
+                }
+            }
+        };
+
+        // GLOBAL EXPORTS
+        window.triggerLogin = () => signInWithPopup(App.auth, new GoogleAuthProvider());
+        window.triggerLogout = () => signOut(App.auth).then(() => window.location.reload());
+        window.openEditor = () => {
+            // FIX: SAVE CURRENT VIEW TO RETURN TO IT
+            State.previousView = State.current;
+            const raw = JSON.parse(JSON.stringify(State.profile));
+            const blankStats = { att:0, def:0, let:0, hp:0 };
+            const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
+            const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
+            State.form = { ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, privacy: raw.privacy || {hideName: false, hideStats: false}, troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, stats: s };
+            State.current = 'editor';
+            App.render();
+        };
+
+        window.navTo = (view) => { State.current = view; App.render(); if(view === 'view_global') App.actions.loadLeaderboard(); if(view === 'view_alliance') App.actions.loadRoster(); };
+        window.openOwner = () => { State.current = 'owner'; App.render(); };
+        window.openAllianceManager = () => { State.current = 'allianceManager'; State.managerTab = 'roster'; document.getElementById('app-root').innerHTML = ''; App.render(); App.actions.loadRoster(); };
+        window.cancelEdit = () => { State.current = State.previousView || 'view_global'; App.render(); };
+        window.switchManagerTab = (tab) => { State.managerTab = tab; document.querySelectorAll('.tab-btn').forEach(btn => { btn.classList.toggle('active', btn.innerText.toLowerCase() === tab); }); document.getElementById('manager-content').innerHTML = '<div class="p-8 text-center text-slate-500"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>'; if (tab === 'roster') App.actions.loadRoster(); if (tab === 'recruit') App.actions.loadFreelancers(); if (tab === 'settings') document.getElementById('manager-content').innerHTML = App.ui.managerSettings(); };
+        window.refreshData = () => { if(State.current === 'view_global') App.actions.loadLeaderboard(); if(State.current === 'view_alliance') App.actions.loadRoster(); };
+        window.ownerRotateCode = () => App.actions.rotateCode();
+        window.ownerToggleLockdown = () => App.actions.toggleLockdown();
+        window.saveProfile = () => App.actions.saveProfile();
+        window.triggerRegister = () => App.actions.saveProfile();
+        
+        window.createAlliance = () => App.actions.createAlliance();
+        window.joinAlliance = () => App.actions.joinAlliance();
+        window.rotateAllianceCode = () => App.actions.rotateAllianceCode();
+        window.kickMember = (uid, name) => App.actions.kickMember(uid, name);
+        window.updateAlliance = () => App.actions.updateAlliance();
+        window.deleteAlliance = () => App.actions.deleteAlliance();
+        window.leaveAlliance = () => App.actions.leaveAlliance();
+        window.submitGate = () => App.actions.submitGate();
+        
+        window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
+        window.viewProfile = (uid) => App.actions.viewProfile(uid);
+        window.sendInvite = (uid) => App.actions.sendInvite(uid);
+        
+        window.openHistory = () => App.actions.openHistory();
+        window.revertHistory = (hid) => App.actions.revertHistory(hid);
+        window.compareSelected = () => App.actions.compareSelected();
+        window.compareVsAverage = (uid) => App.actions.compareVsAverage(uid);
+        window.toggleSelection = (uid) => { 
+            if(State.selection.has(uid)) State.selection.delete(uid); 
+            else State.selection.add(uid);
+            const count = document.getElementById('compare-count');
+            if(count) count.innerText = State.selection.size;
+        };
+        // FIXED: Select All
+        window.toggleSelectAll = (source) => {
+            const dataset = State.currentTab === 'global' ? State.data.global : State.data.roster;
+            if (source.checked) { dataset.forEach(p => State.selection.add(p.id)); } 
+            else { dataset.forEach(p => State.selection.delete(p.id)); }
+            const count = document.getElementById('compare-count');
+            if(count) count.innerText = State.selection.size;
+            App.renderTableOnly();
+        };
+
+        window.showHelp = () => App.ui.showHelp();
+        window.openAllianceAnalytics = () => App.ui.showAnalytics();
+
+        window.setTroop = (type, prop, val, updateState = true) => { if (updateState) State.form.troops[type][prop] = val; const cards = document.querySelectorAll(`[data-group="${type}-${prop}"]`); cards.forEach(c => { c.classList.toggle(prop === 'tier' ? 'selected-tier' : 'selected-tg', parseInt(c.dataset.val) === val); }); const t = State.form.troops[type]; const summary = document.getElementById(`display-${type}`); if(summary) summary.innerText = `T${t.tier} ${t.tg > 0 ? '+TG'+t.tg : ''}`; };
+        
+        // REPLACED: NEW CLEAN HANDLERS
+        window.handleEnter = (e) => { if(e.key === 'Enter') e.preventDefault(); };
+        window.handleStatChange = (type, prop, el) => {
+            let val = parseFloat(el.value);
+            if(val < 0) val = 0; // No negatives
+            State.form.stats[type][prop] = val;
+            el.value = val; // Reflect clean value
+        };
+
+        window.setSort = (field) => { if (State.sort.field === field) { State.sort.dir = State.sort.dir === 'asc' ? 'desc' : 'asc'; } else { State.sort.field = field; State.sort.dir = 'desc'; } App.renderTableOnly(); };
+        
+        let debounceTimer;
+        window.handleSearch = (val) => { clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { State.filters.ign = val.trim(); State.filters.kingdom = ''; App.actions.loadLeaderboard(); }, 500); };
+        window.handleKingdom = (val) => { State.filters.kingdom = val.trim(); State.filters.ign = ''; App.actions.loadLeaderboard(); };
+
+        document.addEventListener('DOMContentLoaded', App.init);
+    </script>
+</body>
+</html>
