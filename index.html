@@ -11,29 +11,22 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
         .input-field { background: #1e293b; border: 1px solid #334155; color: white; padding: 0.5rem; border-radius: 0.3rem; width: 100%; font-size: 0.875rem; transition: border-color 0.2s; }
         .input-field:focus { border-color: #3b82f6; outline: none; }
-        
         .tier-card { cursor: pointer; background: #1e293b; border: 1px solid #334155; padding: 4px; text-align: center; border-radius: 4px; font-size: 10px; font-weight: bold; transition: all 0.1s; user-select: none; }
         .tier-card:hover { border-color: #64748b; }
         .tier-card.selected-tier { background: #1e3a8a; border-color: #60a5fa; color: white; }
         .tier-card.selected-tg { background: #422006; border-color: #eab308; color: #facc15; }
-        
         .tab-btn { padding: 0.5rem 1rem; border-bottom: 2px solid transparent; color: #94a3b8; font-weight: bold; font-size: 0.875rem; transition: all 0.2s; cursor: pointer; }
         .tab-btn:hover { color: white; }
         .tab-btn.active { border-color: #eab308; color: #eab308; }
-        
         .nav-link { cursor: pointer; padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; font-weight: 600; color: #94a3b8; transition: all 0.2s; }
         .nav-link:hover { color: white; background: #1e293b; }
         .nav-link.active { color: white; background: #3b82f6; }
-        
         .stat-delta { font-size: 0.65rem; margin-left: 2px; font-weight: bold; }
-        
         .stat-table th { white-space: nowrap; padding: 8px; background: #1e293b; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; font-size: 0.7rem; text-transform: uppercase; border-bottom: 2px solid #334155; }
         .stat-table td { white-space: nowrap; padding: 6px 8px; border-bottom: 1px solid #1e293b; font-size: 0.75rem; text-align: center; }
         .stat-table tr:hover { background-color: #1e293b; }
-        
         .modal-enter { animation: fadeIn 0.2s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -67,7 +60,6 @@
             selection: new Set(),
             current: 'loading',
             lastView: null,
-            viewMode: 'alliance',
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
@@ -111,6 +103,7 @@
                                 const allySnap = await getDoc(doc(App.db, 'alliances', State.profile.allianceID));
                                 if (allySnap.exists()) State.alliance = { id: allySnap.id, ...allySnap.data() };
                             }
+                            // Initial Load
                             if (State.profile.allianceID) {
                                 State.current = 'view_alliance';
                                 await App.actions.loadRoster();
@@ -128,10 +121,11 @@
             render: () => {
                 if (State.current === State.lastView) return;
 
+                // NAV BAR
                 const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
                 const navBar = `
                     <nav class="bg-slate-800 border-b border-slate-700 p-3 sticky top-0 z-20 shadow-md">
-                        <div class="max-w-6xl mx-auto flex justify-between items-center">
+                        <div class="max-w-7xl mx-auto flex justify-between items-center">
                             <div class="flex gap-2">
                                 <button onclick="window.navTo('view_global')" class="nav-link ${State.current === 'view_global' ? 'active' : ''}"><i class="fas fa-globe mr-2"></i>Global</button>
                                 <button onclick="window.navTo('view_alliance')" class="nav-link ${State.current === 'view_alliance' ? 'active' : ''}"><i class="fas fa-users mr-2"></i>${allianceBtnText}</button>
@@ -147,13 +141,14 @@
                         </div>
                     </nav>`;
 
+                // MOVED: Chart now in Editor
                 const growthChart = `
-                    <div class="bg-slate-800 rounded shadow border border-slate-700 mt-6 p-4">
+                    <div class="bg-slate-900 rounded border border-slate-700 mt-6 p-4">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-white"><i class="fas fa-chart-line text-green-500 mr-2"></i>Personal Growth</h3>
-                            <button onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">View History Log</button>
+                            <h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3>
+                            <button type="button" onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button>
                         </div>
-                        <div class="h-48">
+                        <div class="h-40">
                             <canvas id="growth-chart"></canvas>
                         </div>
                     </div>
@@ -168,7 +163,7 @@
                     
                     register: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-yellow-500"><h2 class="text-xl font-bold text-white mb-4">Initial Setup</h2>${App.ui.editorForm('Register')}</div></div>`,
                     
-                    editor: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-white">Update Profile</h2><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button></div>${App.ui.editorForm('Save Changes')}<div class="mt-4 border-t border-slate-700 pt-4"><button onclick="window.openHistory()" class="text-yellow-400 hover:text-white text-sm"><i class="fas fa-history mr-2"></i>View Update History</button></div></div></div>`,
+                    editor: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500"><div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-white">Update Profile</h2><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button></div>${App.ui.editorForm('Save Changes')} ${growthChart}</div></div>`,
                     
                     owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
                     
@@ -187,7 +182,6 @@
                                     </div>
                                     <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><i class="fas fa-check-square"></i></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.global)}</tbody></table></div>
                                 </div>
-                                ${growthChart}
                             </div>
                         </div>`,
 
@@ -202,24 +196,30 @@
                                         <div class="text-white font-bold text-lg flex items-center gap-2"><i class="fas fa-users text-yellow-500"></i>Alliance Roster</div>
                                         <div class="flex gap-2">
                                             <button onclick="window.openAllianceAnalytics()" class="bg-yellow-600 hover:bg-yellow-500 text-white px-3 py-1 rounded text-xs font-bold"><i class="fas fa-chart-pie mr-1"></i> Analytics</button>
+                                            <button onclick="window.compareSelected()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap"><i class="fas fa-chart-bar mr-1"></i> Compare (<span id="compare-count">0</span>)</button>
                                             <button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button>
                                         </div>
                                     </div>
                                     <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><i class="fas fa-check-square"></i></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
                                 </div>` : ''}
-                                ${growthChart}
                             </div>
                         </div>`
                 };
+
+                // SAFETY CHECK: Prevent undefined write
+                if (!views[State.current]) {
+                    console.error("View not found:", State.current);
+                    State.current = 'view_global'; // Fallback
+                }
+
                 document.getElementById('app-root').innerHTML = views[State.current];
                 State.lastView = State.current;
 
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
+                if (State.current === 'editor') App.ui.renderGrowthChart();
                 if (State.current === 'owner') App.actions.initOwnerView();
-                if (document.getElementById('growth-chart')) App.ui.renderGrowthChart();
             },
 
-            // --- PARTIAL UPDATER ---
             renderTableOnly: () => {
                 if (State.current === 'view_global') {
                     const tbody = document.getElementById('global-body');
@@ -247,7 +247,6 @@
                     setTimeout(() => el.remove(), 3000);
                 },
 
-                // --- HELPER METHODS FOR ROW GENERATION (Fixes Syntax Error) ---
                 generateManagerRosterRows: (rosterData) => {
                     return rosterData.map(m => {
                         const isLeader = m.id === State.user.uid;
@@ -383,7 +382,6 @@
                 },
 
                 statRow: (type, label, color) => {
-                    // FIX: REMOVE INLINE LOGIC, USE HANDLER
                     return `
                     <div class="bg-slate-900 p-2 rounded border border-slate-700">
                         <div class="grid grid-cols-5 gap-2 items-center">
@@ -617,10 +615,9 @@
                                 <div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div>
                             </div>
                         </div>`;
-                }
+                },
             },
 
-            // --- ACTIONS ---
             actions: {
                 loadPersonalHistory: async () => {
                     try {
@@ -650,7 +647,7 @@
                     } catch (e) { console.error("Load Error", e); }
                 },
 
-                // ... (Auth/Gate Actions) ...
+                // ... [Gate/Auth] ...
                 submitGate: async () => {
                     const code = document.getElementById('gate-input').value.trim();
                     try {
@@ -662,7 +659,7 @@
                     } catch(e) { App.ui.toast("Error checking code", "error"); }
                 },
 
-                // ... (Alliance Logic) ...
+                // ... [Alliance Logic] ...
                 createAlliance: async () => {
                     const tag = document.getElementById('create-tag').value.trim().toUpperCase();
                     const name = document.getElementById('create-name').value.trim();
