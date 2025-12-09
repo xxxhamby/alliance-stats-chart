@@ -67,13 +67,14 @@
             selection: new Set(),
             current: 'loading',
             lastView: null,
-            previousView: null,
-            viewMode: 'alliance',
+            previousView: 'view_global',
+            viewMode: 'global',
             managerTab: 'roster',
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
             config: { lockdown: false, accessCode: '' },
             listeners: { security: null, invites: null },
+            editorTarget: null,
             form: {
                 ign: '', kingdom: '', pid: '',
                 privacy: { hideName: false, hideStats: false },
@@ -104,7 +105,6 @@
 
                         const profileSnap = await getDoc(doc(App.db, 'profiles', user.uid));
                         
-                        // LISTENERS
                         if (!State.listeners.security) {
                             State.listeners.security = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
                                 if(snap.exists()) { State.config = snap.data(); App.render(); }
@@ -113,7 +113,7 @@
                         if (!State.listeners.invites) {
                             State.listeners.invites = onSnapshot(collection(doc(App.db, 'profiles', user.uid), 'invites'), (snap) => {
                                 State.data.invites = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                                App.render(); // Redraw to show badge
+                                App.render();
                             });
                         }
 
@@ -152,7 +152,6 @@
                 const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
                 const inviteBadge = State.data.invites.length > 0 ? `<span class="bg-red-500 text-white text-[10px] px-1.5 rounded-full ml-2 animate-pulse">${State.data.invites.length}</span>` : '';
                 
-                // LOCKDOWN BANNER
                 const lockdownBanner = State.config.lockdown 
                     ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE - EDITS DISABLED</div>` 
                     : '';
@@ -191,17 +190,18 @@
                         <div class="min-h-screen bg-slate-900 p-4 flex justify-center">
                             <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-blue-500">
                                 <div class="flex justify-between items-center mb-4">
-                                    <h2 class="text-xl font-bold text-white">Update Profile</h2>
+                                    <h2 class="text-xl font-bold text-white">${State.editorTarget ? 'Admin Edit: ' + State.form.ign : 'Update Profile'}</h2>
                                     <button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
                                 </div>
                                 ${App.ui.editorForm('Save Changes')}
+                                ${!State.editorTarget ? `
                                 <div class="mt-4 border-t border-slate-700 pt-4">
                                     <div class="flex justify-between items-center mb-2">
                                         <h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3>
                                         <button onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button>
                                     </div>
                                     <div class="h-40"><canvas id="growth-chart"></canvas></div>
-                                </div>
+                                </div>` : ''}
                             </div>
                         </div>`,
                     
@@ -249,7 +249,7 @@
                 State.lastView = State.current;
 
                 if (State.current === 'register' || State.current === 'editor') App.ui.initEditor();
-                if (State.current === 'editor') App.ui.renderGrowthChart();
+                if (State.current === 'editor' && !State.editorTarget) App.ui.renderGrowthChart();
                 if (State.current === 'owner') App.actions.initOwnerView();
             },
 
@@ -283,10 +283,16 @@
                 generateManagerRosterRows: (rosterData) => {
                     return rosterData.map(m => {
                         const isLeader = m.id === State.user.uid;
+                        const role = State.dbUser?.role;
+                        const isManager = role === 'manager' || role === 'owner' || role === 'leader';
                         const escapedIgn = m.ign.replace(/'/g, "\\'");
-                        const actionBtn = isLeader 
-                            ? '<span class="text-xs text-green-500 font-bold">LEADER</span>' 
-                            : `<button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>`;
+                        
+                        let actionBtn = '';
+                        if (isLeader) actionBtn = '<span class="text-xs text-green-500 font-bold">LEADER</span>';
+                        else if (isManager) actionBtn = `
+                            <button onclick="event.stopPropagation(); window.kickMember('${m.id}', '${escapedIgn}')" class="text-red-400 hover:text-red-300 text-xs font-bold border border-red-900 bg-red-900/20 px-2 py-1 rounded">KICK</button>
+                            <button onclick="event.stopPropagation(); window.promoteMember('${m.id}', 'manager')" class="text-blue-400 hover:text-blue-300 text-xs font-bold border border-blue-900 bg-blue-900/20 px-2 py-1 rounded ml-1">PROMOTE</button>
+                        `;
                         
                         return `
                         <tr class="hover:bg-slate-700 cursor-pointer" onclick="window.viewProfile('${m.id}')">
@@ -494,9 +500,10 @@
                     return sorted.map(p => {
                         const isMe = State.user.uid === p.id;
                         const sameAlliance = State.alliance && p.allianceID === State.alliance.id;
-                        const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !isMe && !sameAlliance;
+                        const isAdmin = State.dbUser?.role === 'owner';
+                        const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !isMe && !sameAlliance && !isAdmin;
                         
-                        const displayName = (p.privacy?.hideName && !isMe && !sameAlliance) ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
+                        const displayName = (p.privacy?.hideName && !isMe && !sameAlliance && !isAdmin) ? `<span class="italic text-slate-500">Classified</span>` : p.ign;
                         const s = p.stats || {inf:{att:0,def:0,let:0,hp:0},cav:{att:0,def:0,let:0,hp:0},arc:{att:0,def:0,let:0,hp:0}};
                         const prev = p.previousStats || {};
                         const dateStr = p.updatedAt ? new Date(p.updatedAt.toDate()).toLocaleDateString() : '-';
@@ -508,6 +515,9 @@
                             const oldVal = getValue(prev, path);
                             return `<td class="text-slate-300">${val}${getDelta(val, oldVal)}</td>`;
                         };
+                        
+                        const hasEditAuth = isMe || isAdmin || (State.dbUser?.role === 'manager' && sameAlliance);
+                        const editBtn = hasEditAuth ? `<button onclick="event.stopPropagation(); window.editPlayer('${p.id}')" class="text-blue-500 hover:text-white ml-2" title="Edit"><i class="fas fa-pencil-alt text-xs"></i></button>` : '';
 
                         // CONDITIONAL ALLIANCE COLUMN (Only in Global View)
                         const allianceCol = State.current === 'view_global' 
@@ -517,7 +527,7 @@
                         return `
                         <tr class="hover:bg-slate-800 transition cursor-pointer border-b border-slate-800" onclick="window.viewProfile('${p.id}')">
                             <td onclick="event.stopPropagation()" class="pl-2"><input type="checkbox" class="ml-2 accent-blue-500" ${isSelected} onchange="window.toggleSelection('${p.id}')"></td>
-                            <td class="text-white font-bold text-left pl-3 py-2 text-xs">${displayName}</td>
+                            <td class="text-white font-bold text-left pl-3 py-2 text-xs flex items-center">${displayName} ${editBtn}</td>
                             <td class="text-slate-300">${p.kingdom}</td>
                             ${allianceCol}
                             ${cell('inf.att', s.inf.att)} ${cell('inf.def', s.inf.def)} ${cell('inf.let', s.inf.let)} ${cell('inf.hp', s.inf.hp)}
@@ -659,6 +669,13 @@
                 allianceCard: () => {
                     if (State.alliance) {
                         const isLeader = State.alliance.leader === State.user.uid;
+                        
+                        // NEW: Show pending invites for leaders
+                        let inviteSection = '';
+                        if (isLeader && State.data.invites.length > 0) {
+                            inviteSection = `<div class="mt-4 border-t border-slate-700 pt-2"><div class="text-xs text-slate-400 uppercase mb-2">Pending Requests</div>${State.data.invites.map(i => `<div class="flex justify-between items-center bg-slate-900 p-2 rounded mb-1"><span class="text-sm text-white">${i.ign}</span><div><button onclick="window.acceptInvite('${i.id}', '${i.uid}')" class="text-green-400 text-xs font-bold mr-2">ACCEPT</button><button onclick="window.declineInvite('${i.id}')" class="text-red-400 text-xs font-bold">DECLINE</button></div></div>`).join('')}</div>`;
+                        }
+
                         return `
                         <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center mb-6">
                             <div class="w-full">
@@ -667,10 +684,33 @@
                                     <div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}</div>
                                 </div>
                                 ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
+                                ${inviteSection}
                             </div>
                         </div>`;
                     }
+                    
+                    // FREELANCER VIEW: Show Pending Invites
+                    let pendingInvitesHtml = '';
+                    if (State.data.invites.length > 0) {
+                        pendingInvitesHtml = `
+                        <div class="bg-slate-800 p-4 rounded border-l-4 border-purple-500 mb-4">
+                            <h3 class="font-bold text-white mb-2">Pending Invitations</h3>
+                            <div class="space-y-2">
+                                ${State.data.invites.map(i => `
+                                    <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
+                                        <div><span class="text-white font-bold">${i.name}</span> <span class="text-xs text-slate-400">invited you</span></div>
+                                        <div class="flex gap-2">
+                                            <button onclick="window.acceptInvite('${i.id}', '${i.allianceID}')" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded">ACCEPT</button>
+                                            <button onclick="window.declineInvite('${i.id}')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1 rounded">DECLINE</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>`;
+                    }
+
                     return `
+                        ${pendingInvitesHtml}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                             <div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500">
                                 <h3 class="font-bold text-white mb-2">Join Alliance</h3>
@@ -730,9 +770,11 @@
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
+                                // Fallback sort by updated to show everyone including 0 scores
                                 q = query(q, where('kingdom', '==', State.filters.kingdom), orderBy('updatedAt', 'desc'), limit(50));
                             } else {
-                                q = query(q, orderBy('updatedAt', 'desc'), limit(500)); // Increased limit
+                                // CHANGED: Default sort by updatedAt to capture all profiles, then client sort by Score
+                                q = query(q, orderBy('updatedAt', 'desc'), limit(500)); 
                             }
                         }
                         const snap = await getDocs(q);
@@ -854,6 +896,16 @@
                     } catch(e) { App.ui.toast("Error kicking member", "error"); }
                 },
 
+                // NEW: Promote/Demote
+                promoteMember: async (uid, role) => {
+                    if (!confirm(`Change role to ${role}?`)) return;
+                    try {
+                        await updateDoc(doc(App.db, 'users', uid), { role: role });
+                        App.ui.toast("Role Updated");
+                        App.actions.loadRoster();
+                    } catch(e) { App.ui.toast("Error updating role", "error"); }
+                },
+
                 openHistory: async () => {
                     try {
                         const q = query(collection(doc(App.db, 'profiles', State.user.uid), 'history'), orderBy('date', 'desc'), limit(10));
@@ -882,7 +934,7 @@
                     const selectedIds = Array.from(State.selection);
                     if(selectedIds.length < 2) return App.ui.toast("Select at least 2 players", "error");
                     
-                    const players = State.data.global.filter(p => selectedIds.includes(p.id));
+                    const players = (State.currentTab === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
                     
                     const modal = document.getElementById('modal-root');
                     modal.innerHTML = `
@@ -1055,6 +1107,31 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
+                
+                // NEW: Open Editor for specific user (Admin/Manager)
+                editPlayer: async (uid) => {
+                    try {
+                        const snap = await getDoc(doc(App.db, 'profiles', uid));
+                        if(!snap.exists()) return;
+                        
+                        const raw = snap.data();
+                        const blankStats = { att:0, def:0, let:0, hp:0 };
+                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
+                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
+                        
+                        State.editorTarget = uid; // Set Target
+                        State.form = { 
+                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
+                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
+                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
+                            stats: s 
+                        };
+                        
+                        State.current = 'editor';
+                        App.render();
+                    } catch(e) { App.ui.toast("Error loading player", "error"); }
+                },
+
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
@@ -1069,6 +1146,22 @@
                         App.ui.toast("Invite Sent");
                         document.getElementById('modal-root').classList.add('hidden');
                     } catch(e) { App.ui.toast("Invite Failed", "error"); }
+                },
+                acceptInvite: async (inviteID, allianceID) => {
+                    try {
+                        // 1. Update Profile
+                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allianceID });
+                        // 2. Delete Invite
+                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
+                        // 3. Reload
+                        window.location.reload();
+                    } catch(e) { App.ui.toast("Error accepting invite", "error"); }
+                },
+                declineInvite: async (inviteID) => {
+                    try {
+                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
+                        App.ui.toast("Invite Declined");
+                    } catch(e) { App.ui.toast("Error declining invite", "error"); }
                 }
             }
         };
@@ -1079,6 +1172,7 @@
         window.openEditor = () => {
             // FIX: SAVE CURRENT VIEW TO RETURN TO IT
             State.previousView = State.current;
+            State.editorTarget = null; // Clear target (edit self)
             const raw = JSON.parse(JSON.stringify(State.profile));
             const blankStats = { att:0, def:0, let:0, hp:0 };
             const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
@@ -1088,7 +1182,16 @@
             App.render();
         };
 
-        window.navTo = (view) => { State.current = view; App.render(); if(view === 'view_global') App.actions.loadLeaderboard(); if(view === 'view_alliance') App.actions.loadRoster(); };
+        window.navTo = (view) => { 
+            State.current = view; 
+            // FIX: Sync ViewMode
+            if (view === 'view_global') State.viewMode = 'global';
+            if (view === 'view_alliance') State.viewMode = 'alliance';
+            
+            App.render(); 
+            if(view === 'view_global') App.actions.loadLeaderboard(); 
+            if(view === 'view_alliance') App.actions.loadRoster(); 
+        };
         window.openOwner = () => { State.current = 'owner'; App.render(); };
         window.openAllianceManager = () => { State.current = 'allianceManager'; State.managerTab = 'roster'; document.getElementById('app-root').innerHTML = ''; App.render(); App.actions.loadRoster(); };
         window.cancelEdit = () => { State.current = State.previousView || 'view_global'; App.render(); };
@@ -1103,6 +1206,7 @@
         window.joinAlliance = () => App.actions.joinAlliance();
         window.rotateAllianceCode = () => App.actions.rotateAllianceCode();
         window.kickMember = (uid, name) => App.actions.kickMember(uid, name);
+        window.promoteMember = (uid, role) => App.actions.promoteMember(uid, role);
         window.updateAlliance = () => App.actions.updateAlliance();
         window.deleteAlliance = () => App.actions.deleteAlliance();
         window.leaveAlliance = () => App.actions.leaveAlliance();
@@ -1110,7 +1214,10 @@
         
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
+        window.editPlayer = (uid) => App.actions.editPlayer(uid);
         window.sendInvite = (uid) => App.actions.sendInvite(uid);
+        window.acceptInvite = (id, aid) => App.actions.acceptInvite(id, aid);
+        window.declineInvite = (id) => App.actions.declineInvite(id);
         
         window.openHistory = () => App.actions.openHistory();
         window.revertHistory = (hid) => App.actions.revertHistory(hid);
