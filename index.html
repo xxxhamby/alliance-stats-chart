@@ -55,7 +55,7 @@
         const State = {
             user: null, dbUser: null,
             profile: null, alliance: null,
-            data: { global: [], alliance: [], roster: [], freelancers: [], history: [], logs: [] }, // Removed invites
+            data: { global: [], alliance: [], roster: [], freelancers: [], history: [], logs: [] },
             stats: { totalProfiles: 0 },
             selection: new Set(),
             current: 'loading',
@@ -65,7 +65,7 @@
             managerTab: 'main', 
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
-            config: { lockdown: false, accessCode: '', creationCode: '' },
+            config: { lockdown: false, accessCode: '' },
             listeners: { security: null },
             editorTarget: null,
             form: {
@@ -145,6 +145,7 @@
                     if (me === targetUid) return true;
                     if (!State.alliance) return false;
                     
+                    // Leader/Manager Logic
                     const targetInAlliance = State.data.roster.some(m => m.id === targetUid);
                     if (!targetInAlliance) return false;
 
@@ -160,6 +161,7 @@
                     if (State.user.uid === target.id) return true;
                     if (!State.alliance) return false;
                     
+                    // Same Alliance Check
                     if (target.allianceID === State.alliance.id) {
                         if (App.permissions.isManager()) return true; 
                     }
@@ -168,18 +170,13 @@
             },
 
             render: () => {
-                // DEFINED FIRST - FIXES CRASH
-                const growthChart = `
-                    <div class="bg-slate-900 rounded border border-slate-700 mt-6 p-4">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3>
-                            <button type="button" onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button>
-                        </div>
-                        <div class="h-40">
-                            <canvas id="growth-chart"></canvas>
-                        </div>
-                    </div>
-                `;
+                if (State.current === State.lastView && !['view_global', 'view_alliance'].includes(State.current)) return;
+
+                const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
+                
+                const lockdownBanner = State.config.lockdown 
+                    ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE</div>` 
+                    : '';
 
                 const brandedHeader = `
                     <div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500 mb-6 shadow-lg">
@@ -193,22 +190,10 @@
                     </div>
                 `;
 
-                if (State.current === State.lastView && !['view_global', 'view_alliance'].includes(State.current)) return;
-
-                const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
-                
-                const lockdownBanner = State.config.lockdown 
-                    ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE</div>` 
-                    : '';
-
                 const footer = `
                     <footer class="p-4 text-center text-xs text-slate-500 mt-auto border-t border-slate-800">
                         <a href="https://ko-fi.com/logoutgg" target="_blank" class="hover:text-yellow-400 transition flex items-center justify-center gap-2">
                             <i class="fas fa-coffee"></i> Support the project on Ko-fi
-                        </a>
-                        <span class="mx-2">|</span>
-                        <a href="https://docs.google.com/document/d/1UD2GrMhZkWcxSCVg5Rfs9i2rx5wUnuzsSOaYqFMAZms/edit?tab=t.0" target="_blank" class="hover:text-blue-400 transition flex items-center justify-center gap-2">
-                            <i class="fas fa-book"></i> User Guide
                         </a>
                     </footer>`;
 
@@ -232,6 +217,18 @@
                             </div>
                         </div>
                     </nav>`;
+
+                const growthChart = `
+                    <div class="bg-slate-900 rounded border border-slate-700 mt-6 p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-white text-sm"><i class="fas fa-chart-line text-green-500 mr-2"></i>Growth History</h3>
+                            <button type="button" onclick="window.openHistory()" class="text-xs text-slate-400 hover:text-white">Full Log</button>
+                        </div>
+                        <div class="h-40">
+                            <canvas id="growth-chart"></canvas>
+                        </div>
+                    </div>
+                `;
 
                 const views = {
                     loading: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><h2 class="font-bold tracking-widest">LOADING...</h2></div>`,
@@ -257,7 +254,7 @@
                             </div>
                         </div>`,
                     
-                    owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div><div class="mt-4"><label class="text-xs text-slate-400 uppercase font-bold">Set Creation Code</label><input type="text" id="creation-code-input" class="input-field mt-1 mb-2" placeholder="Secret Code" value="${State.config.creationCode||''}"><button onclick="window.setCreationCode()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded text-xs">Update Code</button></div><div class="mt-6 border-t border-slate-700 pt-4"><h3 class="text-sm font-bold text-white mb-2">User Management</h3><div class="flex gap-2"><input type="text" id="admin-search-user" class="input-field" placeholder="Search by IGN..."><button onclick="window.adminSearchUser()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded"><i class="fas fa-search"></i></button></div><div id="admin-search-results" class="mt-2 text-xs text-slate-300"></div></div></div></div></div>`,
+                    owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div></div></div></div>`,
                     
                     allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag || '...'}] ${State.alliance?.name || 'Loading...'}</span></p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('main')" class="tab-btn ${State.managerTab === 'main' ? 'active' : ''}">Command</button><button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button></div><div id="manager-content">${State.managerTab === 'main' ? App.ui.managerMain() : App.ui.managerAudit()}</div></div>`,
 
@@ -269,7 +266,7 @@
                                 ${State.config.lockdown && !App.permissions.isOwner() ? 
                                     `<div class="bg-slate-800 p-12 rounded text-center border border-red-600 shadow-2xl flex flex-col items-center">
                                         <div class="w-full max-w-lg mb-4">
-                                            <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.appspot.com/o/daf29c5a-720b-434f-825a-8d3766753036.jpg?alt=media&token=054e403a-b638-4976-aee5-96a79cd9ec52" class="w-full rounded-lg shadow-2xl" alt="Lockdown Active">
+                                            <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.appspot.com/o/image_b97b19.jpg?alt=media&token=86d49821-396a-4638-b76b-95155c65f02c" class="w-full rounded-lg shadow-2xl" alt="Lockdown Active">
                                         </div>
                                     </div>` :
                                     `<div class="bg-slate-800 rounded shadow border border-slate-700">
@@ -616,6 +613,7 @@
                             return `<td class="text-slate-300">${val}${getDelta(val, oldVal)}</td>`;
                         };
                         
+                        const hasEditAuth = isMe || isAdmin || (State.dbUser?.role === 'manager' && sameAlliance);
                         const canEditTarget = App.permissions.canEdit(p.id);
                         const editBtn = canEditTarget ? `<button onclick="event.stopPropagation(); window.editPlayer('${p.id}')" class="text-blue-500 hover:text-white ml-2" title="Edit"><i class="fas fa-pencil-alt text-xs"></i></button>` : '';
 
@@ -624,7 +622,7 @@
                         if (isLeader) badge = '👑 ';
                         else if (isManager) badge = '🛡️ ';
 
-                        const allianceCol = State.current === 'view_global' 
+                        const allianceCol = State.viewMode === 'global' 
                             ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
                             : '';
 
@@ -700,7 +698,7 @@
                         .join('');
 
                     modal.innerHTML = `
-                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-5xl w-full border-2 border-slate-600 modal-enter h-[85vh] flex flex-col">
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-5xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-white"><i class="fas fa-chart-pie text-yellow-500 mr-2"></i>Alliance Analytics</h2>
                                 <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
@@ -794,31 +792,6 @@
 
             // --- ACTIONS ---
             actions: {
-                // FIXED: Export Function added to actions
-                exportRosterCSV: () => {
-                    if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
-                    
-                    const headers = ["IGN", "PID", "Kingdom", "True Score", "Inf Tier", "Cav Tier", "Arc Tier"];
-                    const rows = State.data.roster.map(p => {
-                        const t = p.troops || {inf:{tier:10},cav:{tier:10},arc:{tier:10}};
-                        return [
-                            `"${p.ign}"`, p.pid, p.kingdom, p.trueScore,
-                            `T${t.inf.tier}${t.inf.tg ? '+TG'+t.inf.tg : ''}`,
-                            `T${t.cav.tier}${t.cav.tg ? '+TG'+t.cav.tg : ''}`,
-                            `T${t.arc.tier}${t.arc.tg ? '+TG'+t.arc.tg : ''}`
-                        ].join(",");
-                    });
-                    
-                    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", `alliance_roster_${new Date().toISOString().split('T')[0]}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                },
-
                 loadAuditLogs: async () => {
                     if (!State.alliance) return;
                     try {
@@ -965,6 +938,12 @@
 
                 deleteAlliance: async () => {
                     if(!confirm("ARE YOU SURE? This will remove all members from the alliance.")) return;
+                    
+                    // PERMISSION CHECK ALERT
+                    if (State.alliance.leader !== State.user.uid && State.dbUser?.role !== 'owner') {
+                         return alert("PERMISSION ERROR: Only the Leader or Owner can delete the alliance. If you are the leader, update your Firestore Rules.");
+                    }
+                    
                     try {
                         const q = query(collection(App.db, 'profiles'), where('allianceID', '==', State.alliance.id));
                         const snap = await getDocs(q);
@@ -974,7 +953,10 @@
                         if (State.dbUser.role !== 'owner') batch.update(doc(App.db, 'users', State.user.uid), { role: 'member' });
                         await batch.commit();
                         window.location.reload();
-                    } catch(e) { console.error(e); App.ui.toast("Delete failed", "error"); }
+                    } catch(e) { 
+                        console.error(e); 
+                        alert("Delete Failed. Check Console for Permission Error."); 
+                    }
                 },
 
                 rotateAllianceCode: async () => {
@@ -1016,7 +998,11 @@
                 promoteMember: async (uid, role) => {
                     if (!confirm(`Change role to ${role}?`)) return;
                     try {
-                        await updateDoc(doc(App.db, 'users', uid), { role: role });
+                        // REMOVED: await updateDoc(doc(App.db, 'users', uid), { role: role });
+                        // ADDED: Update Alliance Doc Only
+                        await updateDoc(doc(App.db, 'alliances', State.alliance.id), {
+                            managers: arrayUnion(uid)
+                        });
                         
                         // AUDIT LOG
                         const target = State.data.roster.find(m => m.id === uid);
@@ -1026,16 +1012,24 @@
                             timestamp: serverTimestamp()
                         });
 
+                        // Local state update
+                        if(!State.alliance.managers) State.alliance.managers = [];
+                        State.alliance.managers.push(uid);
+
                         App.ui.toast("Role Updated");
-                        App.actions.loadRoster();
-                    } catch(e) { App.ui.toast("Error updating role", "error"); }
+                        App.renderTableOnly(); // Refresh buttons
+                    } catch(e) { console.error(e); App.ui.toast("Error updating role", "error"); }
                 },
 
                 // NEW: Demote Action
                 demoteMember: async (uid) => {
                     if (!confirm(`Demote member to regular status?`)) return;
                     try {
-                        await updateDoc(doc(App.db, 'users', uid), { role: 'member' });
+                        // REMOVED: await updateDoc(doc(App.db, 'users', uid), { role: 'member' });
+                        // ADDED: Update Alliance Doc Only
+                        await updateDoc(doc(App.db, 'alliances', State.alliance.id), {
+                            managers: arrayRemove(uid)
+                        });
                         
                         // AUDIT LOG
                         const target = State.data.roster.find(m => m.id === uid);
@@ -1044,10 +1038,13 @@
                             details: `${target ? target.ign : uid} demoted to member by ${State.profile.ign}`,
                             timestamp: serverTimestamp()
                         });
+                        
+                         // Local state update
+                        State.alliance.managers = State.alliance.managers.filter(id => id !== uid);
 
                         App.ui.toast("Role Updated");
-                        App.actions.loadRoster();
-                    } catch(e) { App.ui.toast("Error demoting member", "error"); }
+                        App.renderTableOnly();
+                    } catch(e) { console.error(e); App.ui.toast("Error demoting member", "error"); }
                 },
 
                 openHistory: async () => {
@@ -1078,7 +1075,8 @@
                     const selectedIds = Array.from(State.selection);
                     if(selectedIds.length < 2) return App.ui.toast("Select at least 2 players", "error");
                     
-                    const players = (State.currentTab === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
+                    // FIXED: USE VIEWMODE
+                    const players = (State.viewMode === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
                     
                     const modal = document.getElementById('modal-root');
                     modal.innerHTML = `
@@ -1280,33 +1278,8 @@
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
                 },
-                sendInvite: async (uid) => {
-                    try {
-                        await addDoc(collection(doc(App.db, 'profiles', uid), 'invites'), {
-                            allianceID: State.alliance.id,
-                            name: State.alliance.name,
-                            timestamp: serverTimestamp()
-                        });
-                        App.ui.toast("Invite Sent");
-                        document.getElementById('modal-root').classList.add('hidden');
-                    } catch(e) { App.ui.toast("Invite Failed", "error"); }
-                },
-                acceptInvite: async (inviteID, allianceID) => {
-                    try {
-                        // 1. Update Profile
-                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allianceID });
-                        // 2. Delete Invite
-                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
-                        // 3. Reload
-                        window.location.reload();
-                    } catch(e) { App.ui.toast("Error accepting invite", "error"); }
-                },
-                declineInvite: async (inviteID) => {
-                    try {
-                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
-                        App.ui.toast("Invite Declined");
-                    } catch(e) { App.ui.toast("Error declining invite", "error"); }
-                },
+                
+                // FIXED: Export Function added to actions
                 exportRosterCSV: () => {
                     if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
                     
@@ -1394,9 +1367,8 @@
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
         window.editPlayer = (uid) => App.actions.editPlayer(uid);
-        window.sendInvite = (uid) => App.actions.sendInvite(uid);
-        window.acceptInvite = (id, aid) => App.actions.acceptInvite(id, aid);
-        window.declineInvite = (id) => App.actions.declineInvite(id);
+        
+        // MAPPED CORRECTLY
         window.exportRosterCSV = () => App.actions.exportRosterCSV();
         
         window.openHistory = () => App.actions.openHistory();
