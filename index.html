@@ -145,7 +145,6 @@
                     if (me === targetUid) return true;
                     if (!State.alliance) return false;
                     
-                    // Leader/Manager Logic
                     const targetInAlliance = State.data.roster.some(m => m.id === targetUid);
                     if (!targetInAlliance) return false;
 
@@ -161,7 +160,6 @@
                     if (State.user.uid === target.id) return true;
                     if (!State.alliance) return false;
                     
-                    // Same Alliance Check
                     if (target.allianceID === State.alliance.id) {
                         if (App.permissions.isManager()) return true; 
                     }
@@ -218,6 +216,7 @@
                         </div>
                     </nav>`;
 
+                // DEFINE GROWTH CHART HERE
                 const growthChart = `
                     <div class="bg-slate-900 rounded border border-slate-700 mt-6 p-4">
                         <div class="flex justify-between items-center mb-4">
@@ -266,7 +265,7 @@
                                 ${State.config.lockdown && !App.permissions.isOwner() ? 
                                     `<div class="bg-slate-800 p-12 rounded text-center border border-red-600 shadow-2xl flex flex-col items-center">
                                         <div class="w-full max-w-lg mb-4">
-                                            <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.appspot.com/o/image_b97b19.jpg?alt=media&token=86d49821-396a-4638-b76b-95155c65f02c" class="w-full rounded-lg shadow-2xl" alt="Lockdown Active">
+                                            <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.firebasestorage.app/o/daf29c5a-720b-434f-825a-8d3766753036.jpg?alt=media&token=054e403a-b638-4976-aee5-96a79cd9ec52" class="w-full rounded-lg shadow-2xl" alt="Lockdown Active">
                                         </div>
                                     </div>` :
                                     `<div class="bg-slate-800 rounded shadow border border-slate-700">
@@ -595,8 +594,6 @@
                     return sorted.map(p => {
                         const isMe = State.user.uid === p.id;
                         const sameAlliance = State.alliance && p.allianceID === State.alliance.id;
-                        const isLeader = State.alliance && State.alliance.leader === p.id;
-                        const isManager = State.alliance && State.alliance.managers?.includes(p.id);
                         const isAdmin = State.dbUser?.role === 'owner';
                         const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !App.permissions.canViewHidden(p);
                         
@@ -618,11 +615,13 @@
                         const editBtn = canEditTarget ? `<button onclick="event.stopPropagation(); window.editPlayer('${p.id}')" class="text-blue-500 hover:text-white ml-2" title="Edit"><i class="fas fa-pencil-alt text-xs"></i></button>` : '';
 
                         // Visual Badge
+                        const isLeader = State.alliance && State.alliance.leader === p.id;
+                        const isManager = State.alliance && State.alliance.managers?.includes(p.id);
                         let badge = '';
                         if (isLeader) badge = '👑 ';
                         else if (isManager) badge = '🛡️ ';
 
-                        const allianceCol = State.viewMode === 'global' 
+                        const allianceCol = State.current === 'view_global' 
                             ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
                             : '';
 
@@ -792,6 +791,31 @@
 
             // --- ACTIONS ---
             actions: {
+                // FIXED: Export Function added to actions
+                exportRosterCSV: () => {
+                    if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
+                    
+                    const headers = ["IGN", "PID", "Kingdom", "True Score", "Inf Tier", "Cav Tier", "Arc Tier"];
+                    const rows = State.data.roster.map(p => {
+                        const t = p.troops || {inf:{tier:10},cav:{tier:10},arc:{tier:10}};
+                        return [
+                            `"${p.ign}"`, p.pid, p.kingdom, p.trueScore,
+                            `T${t.inf.tier}${t.inf.tg ? '+TG'+t.inf.tg : ''}`,
+                            `T${t.cav.tier}${t.cav.tg ? '+TG'+t.cav.tg : ''}`,
+                            `T${t.arc.tier}${t.arc.tg ? '+TG'+t.arc.tg : ''}`
+                        ].join(",");
+                    });
+                    
+                    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `alliance_roster_${new Date().toISOString().split('T')[0]}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                },
+
                 loadAuditLogs: async () => {
                     if (!State.alliance) return;
                     try {
@@ -907,15 +931,6 @@
                     } catch(e) { console.error(e); }
                 },
 
-                loadFreelancers: async () => {
-                    try {
-                        const q = query(collection(App.db, 'profiles'), where('kingdom', '==', State.alliance.kingdom), where('allianceID', '==', null), limit(50));
-                        const snap = await getDocs(q);
-                        State.data.freelancers = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                        App.renderTableOnly();
-                    } catch(e) { console.error(e); }
-                },
-
                 updateAlliance: async () => {
                     const name = document.getElementById('set-name').value.trim();
                     const desc = document.getElementById('set-desc').value.trim();
@@ -995,11 +1010,10 @@
                 },
 
                 // NEW: Promote/Demote
-                promoteMember: async (uid, role) => {
-                    if (!confirm(`Change role to ${role}?`)) return;
+                promoteMember: async (uid) => {
+                    if (!confirm(`Promote to Manager?`)) return;
                     try {
-                        // REMOVED: await updateDoc(doc(App.db, 'users', uid), { role: role });
-                        // ADDED: Update Alliance Doc Only
+                        // Update Alliance Doc array
                         await updateDoc(doc(App.db, 'alliances', State.alliance.id), {
                             managers: arrayUnion(uid)
                         });
@@ -1007,8 +1021,8 @@
                         // AUDIT LOG
                         const target = State.data.roster.find(m => m.id === uid);
                         await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
-                            action: 'ROLE_CHANGE',
-                            details: `${target ? target.ign : uid} promoted to ${role} by ${State.profile.ign}`,
+                            action: 'PROMOTION',
+                            details: `${target ? target.ign : uid} promoted to Manager by ${State.profile.ign}`,
                             timestamp: serverTimestamp()
                         });
 
@@ -1016,17 +1030,14 @@
                         if(!State.alliance.managers) State.alliance.managers = [];
                         State.alliance.managers.push(uid);
 
-                        App.ui.toast("Role Updated");
+                        App.ui.toast("Member Promoted");
                         App.renderTableOnly(); // Refresh buttons
-                    } catch(e) { console.error(e); App.ui.toast("Error updating role", "error"); }
+                    } catch(e) { App.ui.toast("Error promoting member", "error"); }
                 },
 
-                // NEW: Demote Action
                 demoteMember: async (uid) => {
-                    if (!confirm(`Demote member to regular status?`)) return;
+                    if (!confirm(`Demote to Member?`)) return;
                     try {
-                        // REMOVED: await updateDoc(doc(App.db, 'users', uid), { role: 'member' });
-                        // ADDED: Update Alliance Doc Only
                         await updateDoc(doc(App.db, 'alliances', State.alliance.id), {
                             managers: arrayRemove(uid)
                         });
@@ -1034,17 +1045,17 @@
                         // AUDIT LOG
                         const target = State.data.roster.find(m => m.id === uid);
                         await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
-                            action: 'ROLE_CHANGE',
-                            details: `${target ? target.ign : uid} demoted to member by ${State.profile.ign}`,
+                            action: 'DEMOTION',
+                            details: `${target ? target.ign : uid} demoted to Member by ${State.profile.ign}`,
                             timestamp: serverTimestamp()
                         });
                         
                          // Local state update
                         State.alliance.managers = State.alliance.managers.filter(id => id !== uid);
 
-                        App.ui.toast("Role Updated");
+                        App.ui.toast("Member Demoted");
                         App.renderTableOnly();
-                    } catch(e) { console.error(e); App.ui.toast("Error demoting member", "error"); }
+                    } catch(e) { App.ui.toast("Error demoting member", "error"); }
                 },
 
                 openHistory: async () => {
@@ -1077,6 +1088,12 @@
                     
                     // FIXED: USE VIEWMODE
                     const players = (State.viewMode === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
+                    // FIXED: FILTER PRIVACY
+                    const visiblePlayers = players.filter(p => {
+                        return !p.privacy?.hideStats || App.permissions.canViewHidden(p);
+                    });
+
+                    if (visiblePlayers.length < 2) return App.ui.toast("Selected players have hidden stats", "error");
                     
                     const modal = document.getElementById('modal-root');
                     modal.innerHTML = `
@@ -1095,7 +1112,7 @@
                         type: 'bar',
                         data: {
                             labels: ['INF Att', 'INF HP', 'CAV Att', 'CAV HP', 'ARC Att', 'ARC HP'],
-                            datasets: players.map((p, i) => {
+                            datasets: visiblePlayers.map((p, i) => {
                                 const s = p.stats || { inf:{att:0,hp:0}, cav:{att:0,hp:0}, arc:{att:0,hp:0} };
                                 return {
                                     label: p.ign,
@@ -1249,31 +1266,6 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
-                
-                // NEW: Open Editor for specific user (Admin/Manager)
-                editPlayer: async (uid) => {
-                    try {
-                        const snap = await getDoc(doc(App.db, 'profiles', uid));
-                        if(!snap.exists()) return;
-                        
-                        const raw = snap.data();
-                        const blankStats = { att:0, def:0, let:0, hp:0 };
-                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
-                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
-                        
-                        State.editorTarget = uid; // Set Target
-                        State.form = { 
-                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
-                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
-                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
-                            stats: s 
-                        };
-                        
-                        State.current = 'editor';
-                        App.render();
-                    } catch(e) { App.ui.toast("Error loading player", "error"); }
-                },
-
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
@@ -1357,7 +1349,7 @@
         window.joinAlliance = () => App.actions.joinAlliance();
         window.rotateAllianceCode = () => App.actions.rotateAllianceCode();
         window.kickMember = (uid, name) => App.actions.kickMember(uid, name);
-        window.promoteMember = (uid, role) => App.actions.promoteMember(uid, role);
+        window.promoteMember = (uid) => App.actions.promoteMember(uid);
         window.demoteMember = (uid) => App.actions.demoteMember(uid);
         window.updateAlliance = () => App.actions.updateAlliance();
         window.deleteAlliance = () => App.actions.deleteAlliance();
@@ -1367,8 +1359,7 @@
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
         window.editPlayer = (uid) => App.actions.editPlayer(uid);
-        
-        // MAPPED CORRECTLY
+        window.sendInvite = (uid) => App.actions.sendInvite(uid);
         window.exportRosterCSV = () => App.actions.exportRosterCSV();
         
         window.openHistory = () => App.actions.openHistory();
