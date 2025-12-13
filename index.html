@@ -309,7 +309,7 @@
                             ${navBar}
                             <div class="p-4 max-w-7xl mx-auto">
                                 ${brandedHeader}
-                                ${State.config.hideGlobal && !App.permissions.isOwner() ? 
+                                ${(State.config.lockdown || State.config.hideGlobal) && !App.permissions.isOwner() ? 
                                     `<div class="bg-slate-800 p-12 rounded text-center border border-red-600 shadow-2xl flex flex-col items-center">
                                         <div class="w-full max-w-lg mb-4">
                                             <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.firebasestorage.app/o/daf29c5a-720b-434f-825a-8d3766753036.jpg?alt=media&token=054e403a-b638-4976-aee5-96a79cd9ec52" class="w-full rounded-lg shadow-2xl" alt="Lockdown Active">
@@ -667,7 +667,7 @@
                         if (isLeader) badge = '👑 ';
                         else if (isManager) badge = '🛡️ ';
 
-                        const allianceCol = State.viewMode === 'global' 
+                        const allianceCol = State.current === 'view_global' 
                             ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
                             : '';
 
@@ -881,11 +881,6 @@
                 },
 
                 submitGate: async () => {
-                    // NEW: Force lockout if owner enabled it
-                    if(State.config.lockdown && State.dbUser?.role !== 'owner') {
-                         return App.ui.toast("SYSTEM LOCKED", "error");
-                    }
-                    
                     const code = document.getElementById('gate-input').value.trim();
                     try {
                         const snap = await getDoc(doc(App.db, 'metadata', 'security'));
@@ -1388,33 +1383,8 @@
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
                 },
-                sendInvite: async (uid) => {
-                    try {
-                        await addDoc(collection(doc(App.db, 'profiles', uid), 'invites'), {
-                            allianceID: State.alliance.id,
-                            name: State.alliance.name,
-                            timestamp: serverTimestamp()
-                        });
-                        App.ui.toast("Invite Sent");
-                        document.getElementById('modal-root').classList.add('hidden');
-                    } catch(e) { App.ui.toast("Invite Failed", "error"); }
-                },
-                acceptInvite: async (inviteID, allianceID) => {
-                    try {
-                        // 1. Update Profile
-                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allianceID });
-                        // 2. Delete Invite
-                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
-                        // 3. Reload
-                        window.location.reload();
-                    } catch(e) { App.ui.toast("Error accepting invite", "error"); }
-                },
-                declineInvite: async (inviteID) => {
-                    try {
-                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
-                        App.ui.toast("Invite Declined");
-                    } catch(e) { App.ui.toast("Error declining invite", "error"); }
-                },
+                
+                // MAPPED CORRECTLY
                 exportRosterCSV: () => {
                     if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
                     
