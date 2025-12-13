@@ -89,7 +89,6 @@
             handleAuth: async (user) => {
                 State.user = user;
                 if (!user) {
-                    // Check local token
                     State.current = localStorage.getItem('acc_gate_token') ? 'login' : 'gate';
                 } else {
                     try {
@@ -105,29 +104,33 @@
                                 if(snap.exists()) { 
                                     State.config = snap.data();
                                     
-                                    // REAL-TIME LOCKDOWN CHECK
-                                    if(State.config.lockdown && State.dbUser?.role !== 'owner' && State.current !== 'locked') {
+                                    // REAL-TIME LOCKDOWN CHECK (Nuanced)
+                                    // Only kick if Lockdown is ON AND user has NO PROFILE AND is NOT owner
+                                    const hasProfile = State.profile && State.profile.ign;
+                                    const isOwner = State.dbUser?.role === 'owner';
+                                    
+                                    if(State.config.lockdown && !isOwner && !hasProfile && State.current !== 'locked') {
                                         State.current = 'locked'; 
                                         App.render();
-                                    }
-                                    // AUTO-REFRESH UI on Config Change
-                                    if(!State.config.lockdown && State.current === 'locked') {
-                                        window.location.reload();
                                     }
                                 }
                             });
                         }
 
                         // INITIAL LOCKDOWN CHECK
-                        // We need to fetch config once here to be sure
                         const configSnap = await getDoc(doc(App.db, 'metadata', 'security'));
                         if(configSnap.exists()) State.config = configSnap.data();
 
-                        if (State.config.lockdown && State.dbUser?.role !== 'owner') {
-                            State.current = 'locked';
-                        } else if (!profileSnap.exists()) {
-                            State.current = 'register';
-                            State.form = { ign: '', kingdom: '', pid: '', privacy: {hideName: false, hideStats: false}, troops: { inf: {tier:10, tg:0}, cav: {tier:10, tg:0}, arc: {tier:10, tg:0} }, stats: { inf: { att:0,def:0,let:0,hp:0 }, cav: { att:0,def:0,let:0,hp:0 }, arc: { att:0,def:0,let:0,hp:0 } } };
+                        const isOwner = State.dbUser?.role === 'owner';
+
+                        if (!profileSnap.exists()) {
+                            // If lockdown active, block new registrations
+                            if (State.config.lockdown && !isOwner) {
+                                State.current = 'locked';
+                            } else {
+                                State.current = 'register';
+                                State.form = { ign: '', kingdom: '', pid: '', privacy: {hideName: false, hideStats: false}, troops: { inf: {tier:10, tg:0}, cav: {tier:10, tg:0}, arc: {tier:10, tg:0} }, stats: { inf: { att:0,def:0,let:0,hp:0 }, cav: { att:0,def:0,let:0,hp:0 }, arc: { att:0,def:0,let:0,hp:0 } } };
+                            }
                         } else {
                             State.profile = profileSnap.data();
                             if (State.profile.allianceID) {
@@ -135,7 +138,7 @@
                                 if (allySnap.exists()) State.alliance = { id: allySnap.id, ...allySnap.data() };
                             }
                             
-                            // DEFAULT ROUTE
+                            // DEFAULT ROUTE - Existing users can enter
                             if (State.profile.allianceID) {
                                 State.current = 'view_alliance';
                                 State.viewMode = 'alliance';
@@ -196,7 +199,7 @@
 
                 const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
                 
-                // TOP LEVEL VARIABLES (Prevent ReferenceError)
+                // TOP LEVEL VARIABLES
                 const lockdownBanner = State.config.lockdown 
                     ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE</div>` 
                     : '';
@@ -262,9 +265,8 @@
                     <div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6">
                          <div class="bg-slate-800 p-12 rounded-lg text-center border-4 border-red-600 shadow-2xl max-w-2xl w-full">
                             <h1 class="text-4xl font-extrabold text-red-500 mb-4 animate-pulse">SYSTEM LOCKED</h1>
-                            <p class="text-slate-300 text-lg mb-6">Kingshotalytics is currently in **Blackout Mode** for Kingdom vs Kingdom operations.</p>
+                            <p class="text-slate-300 text-lg mb-6">Kingshotalytics is currently in **Blackout Mode** for Kingdom vs Kingdom operations. New registrations are disabled.</p>
                             <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.firebasestorage.app/o/daf29c5a-720b-434f-825a-8d3766753036.jpg?alt=media&token=054e403a-b638-4976-aee5-96a79cd9ec52" class="w-full rounded shadow-lg mb-6">
-                            <p class="text-xs text-slate-500">Only the Site Owner can bypass this lock.</p>
                          </div>
                     </div>
                 `;
@@ -291,6 +293,9 @@
                                 ${!State.editorTarget ? `
                                 <div class="mt-4 border-t border-slate-700 pt-4">
                                     ${growthChart}
+                                    <div class="mt-4 border-t border-slate-700 pt-4 text-center">
+                                        <button onclick="window.deleteProfile()" class="text-red-500 text-xs font-bold hover:text-red-400 border border-red-900 bg-red-900/10 px-3 py-2 rounded uppercase tracking-widest"><i class="fas fa-skull mr-2"></i>Delete Profile & Data</button>
+                                    </div>
                                 </div>` : ''}
                             </div>
                         </div>`,
@@ -313,11 +318,11 @@
                                     `<div class="bg-slate-800 rounded shadow border border-slate-700">
                                         <div class="p-4 border-b border-slate-700 bg-slate-900 flex flex-col md:flex-row gap-4 items-center">
                                             <div class="text-white font-bold text-lg"><i class="fas fa-globe-americas text-blue-500 mr-2"></i>Global Rankings</div>
-                                            <div class="flex-grow w-full md:w-auto relative"><i class="fas fa-search absolute left-3 top-3 text-slate-500"></i><input type="text" name="search-ign" oninput="window.handleSearch(this.value)" placeholder="Search Commander... (Case Sensitive)" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full pl-10 p-2.5 outline-none focus:border-blue-500"></div>
+                                            <div class="flex-grow w-full md:w-auto relative"><i class="fas fa-search absolute left-3 top-3 text-slate-500"></i><input type="text" name="search-ign" oninput="window.handleSearch(this.value)" placeholder="Search Commander..." class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full pl-10 p-2.5 outline-none focus:border-blue-500"></div>
                                             <div class="flex gap-2 w-full md:w-auto"><div class="relative w-24"><input type="text" name="search-kingdom" id="filter-kingdom" oninput="window.handleKingdom(this.value)" placeholder="K#" class="bg-slate-800 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 outline-none focus:border-blue-500 text-center"><button onclick="window.clearKingdom()" class="absolute right-2 top-2 text-slate-500 hover:text-white">&times;</button></div><button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button></div>
                                             <button onclick="window.compareSelected()" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap"><i class="fas fa-chart-bar mr-1"></i> Compare (<span id="compare-count">0</span>)</button>
                                         </div>
-                                        <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><button onclick="window.toggleSelectAll(this)" class="text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.global)}</tbody></table></div>
+                                        <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th onclick="window.setSort('allianceID')">Alli</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="global-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.global)}</tbody></table></div>
                                     </div>`
                                 }
                             </div>
@@ -340,7 +345,7 @@
                                             <button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button>
                                         </div>
                                     </div>
-                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><button onclick="window.toggleSelectAll(this)" class="text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
+                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
                                 </div>` : ''}
                             </div>
                             ${footer}
@@ -738,7 +743,7 @@
                         .join('');
 
                     modal.innerHTML = `
-                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-5xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
+                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-5xl w-full border-2 border-slate-600 modal-enter h-[85vh] flex flex-col">
                             <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-white"><i class="fas fa-chart-pie text-yellow-500 mr-2"></i>Alliance Analytics</h2>
                                 <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
@@ -876,6 +881,11 @@
                 },
 
                 submitGate: async () => {
+                    // NEW: Force lockout if owner enabled it
+                    if(State.config.lockdown && State.dbUser?.role !== 'owner') {
+                         return App.ui.toast("SYSTEM LOCKED", "error");
+                    }
+                    
                     const code = document.getElementById('gate-input').value.trim();
                     try {
                         const snap = await getDoc(doc(App.db, 'metadata', 'security'));
@@ -1012,8 +1022,10 @@
                         timestamp: serverTimestamp()
                     });
 
+                    // Force Re-render to show new code
                     State.alliance.accessCode = newCode;
                     App.render();
+                    
                     App.ui.toast("Invite Code Updated");
                 },
 
@@ -1082,6 +1094,20 @@
                         App.ui.toast("Member Demoted");
                         App.renderTableOnly();
                     } catch(e) { console.error(e); App.ui.toast("Error demoting member", "error"); }
+                },
+                
+                // NEW: Delete Profile (GDPR)
+                deleteProfile: async () => {
+                    if(!confirm("WARNING: This will permanently delete your profile, stats, and history. This cannot be undone. Are you sure?")) return;
+                    try {
+                        // Delete Profile Doc
+                        await deleteDoc(doc(App.db, 'profiles', State.user.uid));
+                        // Delete User Doc
+                        await deleteDoc(doc(App.db, 'users', State.user.uid));
+                        // Logout
+                        await signOut(App.auth);
+                        window.location.reload();
+                    } catch(e) { console.error(e); App.ui.toast("Delete Failed", "error"); }
                 },
 
                 openHistory: async () => {
@@ -1216,6 +1242,17 @@
                     const hideStats = document.getElementById('frm-hideStats').checked;
                     
                     if(!ign || !kingdom || !pid) return App.ui.toast("Missing Fields", "error");
+
+                    // DUPLICATE CHECKS
+                    const currentId = State.editorTarget || State.user.uid;
+                    const pidQ = query(collection(App.db, 'profiles'), where('pid', '==', pid));
+                    const pidSnap = await getDocs(pidQ);
+                    if(!pidSnap.empty && pidSnap.docs[0].id !== currentId) return App.ui.toast("PID already registered", "error");
+
+                    const ignQ = query(collection(App.db, 'profiles'), where('ign', '==', ign), where('kingdom', '==', parseInt(kingdom)));
+                    const ignSnap = await getDocs(ignQ);
+                    if(!ignSnap.empty && ignSnap.docs[0].id !== currentId) return App.ui.toast("IGN exists in this Kingdom", "error");
+
                     
                     const s = State.form.stats;
                     const sum = (p) => parseFloat(s.inf[p]||0) + parseFloat(s.cav[p]||0) + parseFloat(s.arc[p]||0);
@@ -1468,9 +1505,9 @@
         window.clearKingdom = () => { document.getElementById('filter-kingdom').value = ''; window.handleKingdom(''); };
         window.viewProfile = (uid) => App.actions.viewProfile(uid);
         window.editPlayer = (uid) => App.actions.editPlayer(uid);
-        window.sendInvite = (uid) => App.actions.sendInvite(uid);
-        window.acceptInvite = (id, aid) => App.actions.acceptInvite(id, aid);
-        window.declineInvite = (id) => App.actions.declineInvite(id);
+        window.deleteProfile = () => App.actions.deleteProfile();
+        
+        // MAPPED CORRECTLY
         window.exportRosterCSV = () => App.actions.exportRosterCSV();
         
         window.openHistory = () => App.actions.openHistory();
@@ -1483,12 +1520,13 @@
             const count = document.getElementById('compare-count');
             if(count) count.innerText = State.selection.size;
         };
-        // FIXED: Select All = Clear Selection if already selected, or just Clear
+        // FIXED: Select All
         window.toggleSelectAll = (source) => {
-            // Simplified: The Trash Icon button calls this
-            State.selection.clear();
+            const dataset = State.currentTab === 'global' ? State.data.global : State.data.roster;
+            if (source.checked) { dataset.forEach(p => State.selection.add(p.id)); } 
+            else { dataset.forEach(p => State.selection.delete(p.id)); }
             const count = document.getElementById('compare-count');
-            if(count) count.innerText = 0;
+            if(count) count.innerText = State.selection.size;
             App.renderTableOnly();
         };
 
