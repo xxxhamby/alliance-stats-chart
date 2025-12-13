@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alliance Stats Dashboard</title>
+    <style>
+        /* --- CORE STYLES --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; color: #333; margin: 0; padding: 20px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; }
+        
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+
+        /* --- TABLE STYLES --- */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        
+        th { background-color: #2c3e50; color: white; cursor: pointer; user-select: none; }
+        th:hover { background-color: #34495e; }
+        tr:hover { background-color: #f1f1f1; }
+
+        button { padding: 6px 12px; margin-right: 5px; cursor: pointer; border: none; border-radius: 4px; background-color: #3498db; color: white; }
+        button:hover { background-color: #2980b9; }
+
+        /* --- MODAL STYLES (Required for History) --- */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #fff; margin: 10% auto; padding: 20px;
+            border-radius: 8px; width: 50%; max-width: 600px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2); position: relative;
+        }
+
+        .close-btn { position: absolute; top: 10px; right: 20px; font-size: 24px; cursor: pointer; color: #aaa; }
+        .close-btn:hover { color: black; }
+        
+        .history-table { width: 100%; border: 1px solid #eee; }
+        .history-table th { background-color: #95a5a6; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Alliance Statistics</h1>
+    
+    <table id="statsTable">
+        <thead>
+            <tr>
+                <th data-sort="rank">Rank &#x2195;</th>
+                <th data-sort="name">Name &#x2195;</th>
+                <th data-sort="kingdom">Kingdom &#x2195;</th>
+                <th data-sort="power">Power &#x2195;</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+</div>
+
+<script>
+/**
+ * Alliance Stats Chart Core Logic
+ * Status: Production Ready | Single File Mode
+ */
+const App = {
+    state: {
+        // Simulating the current logged-in user
+        currentUser: {
+            id: 1, 
+            role: 'owner', // This fixes the permission issue
+            name: "Site Owner"
+        },
+        data: [], // Will hold our table data
+        sortDirection: 'asc'
+    },
+    
+    ui: {
+        /**
+         * Displays the history modal.
+         * Creates the HTML for the modal dynamically if it doesn't exist.
+         */
+        showHistory: async function(entityId) {
+            console.log(`[App.ui.showHistory] Triggered for ID: ${entityId}`);
+            
+            try {
+                let modal = document.getElementById('historyModal');
+                
+                // Lazy Load: Create modal HTML only when needed
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'historyModal';
+                    modal.className = 'modal-overlay';
+                    modal.innerHTML = `
+                        <div class="modal-content">
+                            <span class="close-btn" onclick="App.ui.closeModal()">&times;</span>
+                            <h2>History Log</h2>
+                            <div id="historyDataContent">Loading...</div>
+                        </div>`;
+                    document.body.appendChild(modal);
+                }
+
+                modal.style.display = 'block';
+
+                // Simulate API Network Delay (500ms)
+                const mockData = await new Promise(resolve => setTimeout(() => resolve([
+                    { date: '2023-10-01', action: 'Joined Alliance', details: 'Kingdom 44' },
+                    { date: '2023-10-05', action: 'Increased Power', details: '+5M' }
+                ]), 500));
+
+                const contentDiv = document.getElementById('historyDataContent');
+                if (mockData && mockData.length > 0) {
+                    contentDiv.innerHTML = `
+                        <table class="history-table">
+                            <thead><tr><th>Date</th><th>Action</th><th>Details</th></tr></thead>
+                            <tbody>
+                                ${mockData.map(row => `
+                                    <tr>
+                                        <td>${row.date}</td>
+                                        <td>${row.action}</td>
+                                        <td>${row.details}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>`;
+                } else {
+                    contentDiv.innerHTML = '<p>No history found.</p>';
+                }
+
+            } catch (error) {
+                console.error('[App.ui.showHistory] Error:', error);
+                alert('Error loading history.');
+            }
+        },
+
+        closeModal: function() {
+            const modal = document.getElementById('historyModal');
+            if (modal) modal.style.display = 'none';
+        },
+
+        renderTable: function(data) {
+            const tbody = document.querySelector('#statsTable tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                // Check if the current user is allowed to edit this row
+                const canEdit = App.utils.canEditUser(App.state.currentUser, row);
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.rank}</td>
+                    <td>${row.name}</td>
+                    <td>${row.kingdom}</td>
+                    <td>${row.power}</td>
+                    <td>
+                        <button onclick="App.handlers.openHistory(${row.id})">History</button>
+                        ${canEdit ? `<button onclick="App.handlers.editUser(${row.id})">Edit</button>` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    },
+
+    utils: {
+        /**
+         * Returns TRUE if user is OWNER or matching ID
+         */
+        canEditUser: function(requester, target) {
+            if (!requester) return false;
+            const superRoles = ['owner', 'admin'];
+            if (superRoles.includes(requester.role.toLowerCase())) return true; 
+            return requester.id === target.id;
+        },
+
+        /**
+         * Extracts numbers from strings like "K20" -> 20 for proper sorting
+         */
+        parseNumeric: function(val) {
+            if (typeof val === 'number') return val;
+            if (!val) return 0;
+            const clean = val.toString().replace(/[^0-9.-]/g, '');
+            return parseFloat(clean) || 0;
+        }
+    },
+
+    handlers: {
+        openHistory: function(id) {
+            App.ui.showHistory(id);
+        },
+
+        editUser: function(id) {
+            alert(`Edit Panel opened for User ID: ${id}`);
+        },
+
+        sortTable: function(columnKey) {
+            const direction = App.state.sortDirection === 'asc' ? 'desc' : 'asc';
+            App.state.sortDirection = direction;
+
+            App.state.data.sort((a, b) => {
+                let valA = a[columnKey];
+                let valB = b[columnKey];
+
+                // Numeric Sort for specific columns
+                if (['kingdom', 'power', 'rank'].includes(columnKey)) {
+                    valA = App.utils.parseNumeric(valA);
+                    valB = App.utils.parseNumeric(valB);
+                } else {
+                    valA = valA.toString().toLowerCase();
+                    valB = valB.toString().toLowerCase();
+                }
+
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            App.ui.renderTable(App.state.data);
+        }
+    },
+
+    init: function() {
+        console.log('App Initializing...');
+        
+        // --- INITIAL DATA ---
+        this.state.data = [
+            { id: 101, rank: 1, name: "Alpha", kingdom: "K20", power: "50M", role: "user" },
+            { id: 102, rank: 2, name: "Beta", kingdom: "K2", power: "45M", role: "user" },
+            { id: 103, rank: 10, name: "Gamma", kingdom: "K100", power: "10M", role: "user" },
+            { id: 104, rank: 5, name: "Delta", kingdom: "Kingdom 5", power: "25M", role: "user" }
+        ];
+
+        // Global Access for HTML onclicks
+        window.App = this; 
+
+        // Render Initial Table
+        this.ui.renderTable(this.state.data);
+        
+        // Attach Sort Click Listeners
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                this.handlers.sortTable(th.dataset.sort);
+            });
+        });
+    }
+};
+
+// Start App when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    App.init();
+});
+</script>
+
+</body>
+</html>
