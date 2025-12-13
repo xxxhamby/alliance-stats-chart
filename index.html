@@ -65,7 +65,7 @@
             managerTab: 'main', 
             filters: { ign: '', kingdom: '' },
             sort: { field: 'trueScore', dir: 'desc' }, 
-            config: { lockdown: false, accessCode: '' },
+            config: { lockdown: false, accessCode: '', creationCode: '', hideGlobal: false },
             listeners: { security: null },
             editorTarget: null,
             form: {
@@ -89,6 +89,7 @@
             handleAuth: async (user) => {
                 State.user = user;
                 if (!user) {
+                    // Check local token
                     State.current = localStorage.getItem('acc_gate_token') ? 'login' : 'gate';
                 } else {
                     try {
@@ -98,21 +99,33 @@
 
                         const profileSnap = await getDoc(doc(App.db, 'profiles', user.uid));
                         
-                        // SECURITY CHECKER
+                        // SECURITY LISTENER
                         if (!State.listeners.security) {
                             State.listeners.security = onSnapshot(doc(App.db, 'metadata', 'security'), (snap) => {
                                 if(snap.exists()) { 
-                                    State.config = snap.data(); 
-                                    // FORCE KICK IF LOCKDOWN
-                                    if(State.config.lockdown && State.dbUser?.role !== 'owner') {
-                                        State.current = 'gate';
+                                    State.config = snap.data();
+                                    
+                                    // REAL-TIME LOCKDOWN CHECK
+                                    if(State.config.lockdown && State.dbUser?.role !== 'owner' && State.current !== 'locked') {
+                                        State.current = 'locked'; 
+                                        App.render();
                                     }
-                                    App.render(); 
+                                    // AUTO-REFRESH UI on Config Change
+                                    if(!State.config.lockdown && State.current === 'locked') {
+                                        window.location.reload();
+                                    }
                                 }
                             });
                         }
 
-                        if (!profileSnap.exists()) {
+                        // INITIAL LOCKDOWN CHECK
+                        // We need to fetch config once here to be sure
+                        const configSnap = await getDoc(doc(App.db, 'metadata', 'security'));
+                        if(configSnap.exists()) State.config = configSnap.data();
+
+                        if (State.config.lockdown && State.dbUser?.role !== 'owner') {
+                            State.current = 'locked';
+                        } else if (!profileSnap.exists()) {
                             State.current = 'register';
                             State.form = { ign: '', kingdom: '', pid: '', privacy: {hideName: false, hideStats: false}, troops: { inf: {tier:10, tg:0}, cav: {tier:10, tg:0}, arc: {tier:10, tg:0} }, stats: { inf: { att:0,def:0,let:0,hp:0 }, cav: { att:0,def:0,let:0,hp:0 }, arc: { att:0,def:0,let:0,hp:0 } } };
                         } else {
@@ -144,10 +157,11 @@
             // --- PERMISSION HELPERS ---
             permissions: {
                 isOwner: () => State.dbUser?.role === 'owner',
-                isLeader: () => State.alliance && State.alliance.leader === State.user.uid,
-                isManager: () => State.alliance && (State.alliance.leader === State.user.uid || State.alliance.managers?.includes(State.user.uid)),
+                isLeader: () => State.alliance && State.alliance.leader === State.user?.uid,
+                isManager: () => State.alliance && (State.alliance.leader === State.user?.uid || State.alliance.managers?.includes(State.user?.uid)),
                 
                 canEdit: (targetUid) => {
+                    if (!State.user) return false;
                     const me = State.user.uid;
                     if (App.permissions.isOwner()) return true;
                     if (me === targetUid) return true;
@@ -164,6 +178,7 @@
                 },
 
                 canViewHidden: (target) => {
+                    if (!State.user) return false;
                     if (App.permissions.isOwner()) return true;
                     if (State.user.uid === target.id) return true;
                     if (!State.alliance) return false;
@@ -176,11 +191,12 @@
             },
 
             render: () => {
-                // GUARD: Prevent loop but allow updates
-                if (State.current === State.lastView && !['view_global', 'view_alliance'].includes(State.current)) return;
+                // GUARD: Prevent loop
+                if (State.current === State.lastView && !['view_global', 'view_alliance', 'allianceManager'].includes(State.current)) return;
 
                 const allianceBtnText = State.profile?.allianceID ? 'My Alliance' : 'Join Alliance';
                 
+                // TOP LEVEL VARIABLES (Prevent ReferenceError)
                 const lockdownBanner = State.config.lockdown 
                     ? `<div class="bg-red-600 text-white text-center text-xs font-bold py-1 tracking-widest"><i class="fas fa-lock mr-2"></i>GLOBAL LOCKDOWN ACTIVE</div>` 
                     : '';
@@ -201,6 +217,10 @@
                     <footer class="p-4 text-center text-xs text-slate-500 mt-auto border-t border-slate-800">
                         <a href="https://ko-fi.com/logoutgg" target="_blank" class="hover:text-yellow-400 transition flex items-center justify-center gap-2">
                             <i class="fas fa-coffee"></i> Support the project on Ko-fi
+                        </a>
+                        <span class="mx-2">|</span>
+                        <a href="https://docs.google.com/document/d/1UD2GrMhZkWcxSCVg5Rfs9i2rx5wUnuzsSOaYqFMAZms/edit?tab=t.0" target="_blank" class="hover:text-blue-400 transition flex items-center justify-center gap-2">
+                            <i class="fas fa-book"></i> User Guide
                         </a>
                     </footer>`;
 
@@ -237,12 +257,26 @@
                     </div>
                 `;
 
+                // LOCKED SCREEN
+                const lockedView = `
+                    <div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6">
+                         <div class="bg-slate-800 p-12 rounded-lg text-center border-4 border-red-600 shadow-2xl max-w-2xl w-full">
+                            <h1 class="text-4xl font-extrabold text-red-500 mb-4 animate-pulse">SYSTEM LOCKED</h1>
+                            <p class="text-slate-300 text-lg mb-6">Kingshotalytics is currently in **Blackout Mode** for Kingdom vs Kingdom operations.</p>
+                            <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.firebasestorage.app/o/daf29c5a-720b-434f-825a-8d3766753036.jpg?alt=media&token=054e403a-b638-4976-aee5-96a79cd9ec52" class="w-full rounded shadow-lg mb-6">
+                            <p class="text-xs text-slate-500">Only the Site Owner can bypass this lock.</p>
+                         </div>
+                    </div>
+                `;
+
                 const views = {
                     loading: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 text-white"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i><h2 class="font-bold tracking-widest">LOADING...</h2></div>`,
                     
                     gate: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-6"><div class="bg-slate-800 p-8 rounded-lg border-t-4 border-red-500 max-w-md w-full text-center shadow-2xl"><i class="fas fa-dungeon text-5xl text-red-500 mb-4"></i><h1 class="text-2xl font-bold text-white mb-2">Restricted Access</h1><p class="text-slate-400 text-xs mb-4">This system is protected. Enter the global access code.</p><form onsubmit="event.preventDefault(); window.submitGate()"><input type="password" id="gate-input" class="input-field text-center text-xl tracking-[0.5em] font-mono mb-4" placeholder="•••••"><button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow-lg">AUTHORIZE</button></form></div></div>`,
                     
                     login: `<div class="flex flex-col items-center justify-center h-screen bg-slate-900 p-4"><div class="bg-slate-800 p-8 rounded-lg shadow-xl max-w-sm w-full text-center border-t-4 border-blue-500"><h1 class="text-2xl font-bold text-white mb-2">Alliance Command</h1><button onclick="window.triggerLogin()" class="w-full bg-white hover:bg-gray-100 text-slate-900 font-bold py-3 rounded flex items-center justify-center gap-2 mt-6"><i class="fab fa-google text-red-500"></i> Sign in</button></div></div>`,
+                    
+                    locked: lockedView,
                     
                     register: `<div class="min-h-screen bg-slate-900 p-4 flex justify-center"><div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-lg w-full h-fit border-t-4 border-yellow-500"><h2 class="text-xl font-bold text-white mb-4">Initial Setup</h2>${App.ui.editorForm('Register')}</div></div>`,
                     
@@ -261,7 +295,7 @@
                             </div>
                         </div>`,
                     
-                    owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div><div class="mt-4"><label class="text-xs text-slate-400 uppercase font-bold">User Search</label><div class="flex gap-2 mt-1"><input type="text" id="admin-search" class="input-field" placeholder="Exact IGN..."><button onclick="window.adminSearchUser()" class="bg-blue-600 px-3 rounded text-white"><i class="fas fa-search"></i></button></div></div></div></div></div>`,
+                    owner: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-8"><h1 class="text-3xl font-bold text-red-500 uppercase tracking-widest"><i class="fas fa-crown mr-3"></i>God Mode</h1><button onclick="window.cancelEdit()" class="text-slate-400 hover:text-white">Exit</button></header><div class="grid grid-cols-1 md:grid-cols-2 gap-6"><div class="bg-slate-800 p-6 rounded border-l-4 border-red-500"><h3 class="text-xl font-bold text-white mb-4">Security Override</h3><div class="mb-4"><label class="text-xs text-slate-400 uppercase font-bold">Current Gate Code</label><div id="owner-global-code" class="text-3xl font-mono text-yellow-400 tracking-widest mt-1">${State.config.accessCode || '...'}</div></div><button onclick="window.ownerRotateCode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded mb-6"><i class="fas fa-random mr-2"></i>Generate Random Code</button><div class="border-t border-slate-700 pt-4"><label class="text-xs text-slate-400 uppercase font-bold mb-2 block">Emergency Protocol</label><button onclick="window.ownerToggleLockdown()" class="w-full py-3 rounded font-bold transition ${State.config.lockdown ? 'bg-red-600 animate-pulse text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}">${State.config.lockdown ? '⚠️ LOCKDOWN ACTIVE (UNLOCK)' : 'ACTIVATE LOCKDOWN'}</button></div></div><div class="bg-slate-800 p-6 rounded border-l-4 border-blue-500"><h3 class="text-xl font-bold text-white mb-4">Database Intelligence</h3><div class="text-4xl font-bold text-white" id="stat-count">${State.stats.totalProfiles}</div><div class="text-sm text-slate-400 mb-4">Active Profiles</div><div class="mt-4"><label class="text-xs text-slate-400 uppercase font-bold">Set Creation Code</label><div class="flex gap-2 mt-1"><input type="text" id="admin-creation-code" class="input-field" value="${State.config.creationCode || ''}"><button onclick="window.setCreationCode()" class="bg-blue-600 px-3 rounded text-white text-xs font-bold">SET</button></div></div><div class="mt-6 border-t border-slate-700 pt-4"><h3 class="text-sm font-bold text-white mb-2">User Management</h3><div class="flex gap-2"><input type="text" id="admin-search" class="input-field" placeholder="Exact IGN..."><button onclick="window.adminSearchUser()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 rounded"><i class="fas fa-search"></i></button></div><div class="mt-2 text-xs text-slate-400 italic">Enter EXACT In-Game Name to edit profile.</div></div><div class="mt-6 border-t border-slate-700 pt-4"><div class="flex justify-between items-center"><span class="text-sm font-bold text-white">Hide Global Leaderboard</span><button onclick="window.ownerToggleGlobal()" class="px-3 py-1 rounded text-xs font-bold ${State.config.hideGlobal ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-400'}">${State.config.hideGlobal ? 'HIDDEN' : 'VISIBLE'}</button></div></div></div></div></div>`,
                     
                     allianceManager: `<div class="min-h-screen bg-slate-900 p-6"><header class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold text-yellow-500 uppercase tracking-widest"><i class="fas fa-users-cog mr-3"></i>Alliance Manager</h1><p class="text-sm text-slate-400">Managing: <span class="text-white font-bold">[${State.alliance?.tag || '...'}] ${State.alliance?.name || 'Loading...'}</span></p></div><div class="flex gap-2">${State.dbUser?.role === 'owner' ? `<button onclick="window.openOwner()" class="bg-red-600 hover:bg-red-500 text-white px-3 py-2 rounded font-bold text-sm shadow-lg animate-pulse" title="Admin Panel"><i class="fas fa-user-shield"></i></button>` : ''}<button onclick="window.cancelEdit()" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded text-sm font-bold"><i class="fas fa-arrow-left mr-2"></i>Back</button></div></header><div class="flex border-b border-slate-700 mb-6"><button onclick="window.switchManagerTab('main')" class="tab-btn ${State.managerTab === 'main' ? 'active' : ''}">Command</button><button onclick="window.switchManagerTab('audit')" class="tab-btn ${State.managerTab === 'audit' ? 'active' : ''}">Audit Log</button></div><div id="manager-content">${State.managerTab === 'main' ? App.ui.managerMain() : App.ui.managerAudit()}</div></div>`,
 
@@ -270,7 +304,7 @@
                             ${navBar}
                             <div class="p-4 max-w-7xl mx-auto">
                                 ${brandedHeader}
-                                ${State.config.lockdown && !App.permissions.isOwner() ? 
+                                ${State.config.hideGlobal && !App.permissions.isOwner() ? 
                                     `<div class="bg-slate-800 p-12 rounded text-center border border-red-600 shadow-2xl flex flex-col items-center">
                                         <div class="w-full max-w-lg mb-4">
                                             <img src="https://firebasestorage.googleapis.com/v0/b/alliance-stats-96973.firebasestorage.app/o/daf29c5a-720b-434f-825a-8d3766753036.jpg?alt=media&token=054e403a-b638-4976-aee5-96a79cd9ec52" class="w-full rounded-lg shadow-2xl" alt="Lockdown Active">
@@ -306,7 +340,7 @@
                                             <button onclick="window.refreshData()" class="text-blue-400 hover:text-white px-3"><i class="fas fa-sync"></i></button>
                                         </div>
                                     </div>
-                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><input type="checkbox" onchange="window.toggleSelectAll(this)"></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
+                                    <div class="overflow-x-auto"><table class="w-full stat-table"><thead class="bg-slate-900 text-slate-400"><tr><th class="pl-2 w-8"><button onclick="window.toggleSelectAll(this)" class="text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button></th><th onclick="window.setSort('ign')" class="text-left pl-3">Commander</th><th onclick="window.setSort('kingdom')">K#</th><th class="text-blue-400" onclick="window.setSort('stats.inf.att')">I.Att</th><th class="text-blue-400" onclick="window.setSort('stats.inf.def')">I.Def</th><th class="text-blue-400" onclick="window.setSort('stats.inf.let')">I.Let</th><th class="text-blue-400" onclick="window.setSort('stats.inf.hp')">I.HP</th><th class="text-green-400" onclick="window.setSort('stats.cav.att')">C.Att</th><th class="text-green-400" onclick="window.setSort('stats.cav.def')">C.Def</th><th class="text-green-400" onclick="window.setSort('stats.cav.let')">C.Let</th><th class="text-green-400" onclick="window.setSort('stats.cav.hp')">C.HP</th><th class="text-red-400" onclick="window.setSort('stats.arc.att')">A.Att</th><th class="text-red-400" onclick="window.setSort('stats.arc.def')">A.Def</th><th class="text-red-400" onclick="window.setSort('stats.arc.let')">A.Let</th><th class="text-red-400" onclick="window.setSort('stats.arc.hp')">A.HP</th><th class="text-yellow-400" onclick="window.setSort('trueScore')">Score ▼</th><th>Updated</th></tr></thead><tbody id="alliance-body" class="divide-y divide-slate-800">${App.ui.renderRows(State.data.roster)}</tbody></table></div>
                                 </div>` : ''}
                             </div>
                             ${footer}
@@ -602,8 +636,6 @@
                     return sorted.map(p => {
                         const isMe = State.user.uid === p.id;
                         const sameAlliance = State.alliance && p.allianceID === State.alliance.id;
-                        const isLeader = State.alliance && State.alliance.leader === p.id;
-                        const isManager = State.alliance && State.alliance.managers?.includes(p.id);
                         const isAdmin = State.dbUser?.role === 'owner';
                         const isHidden = (p.privacy?.hideName || p.privacy?.hideStats) && !App.permissions.canViewHidden(p);
                         
@@ -620,16 +652,17 @@
                             return `<td class="text-slate-300">${val}${getDelta(val, oldVal)}</td>`;
                         };
                         
-                        const hasEditAuth = isMe || isAdmin || (State.dbUser?.role === 'manager' && sameAlliance);
                         const canEditTarget = App.permissions.canEdit(p.id);
                         const editBtn = canEditTarget ? `<button onclick="event.stopPropagation(); window.editPlayer('${p.id}')" class="text-blue-500 hover:text-white ml-2" title="Edit"><i class="fas fa-pencil-alt text-xs"></i></button>` : '';
 
                         // Visual Badge
+                        const isLeader = State.alliance && State.alliance.leader === p.id;
+                        const isManager = State.alliance && State.alliance.managers?.includes(p.id);
                         let badge = '';
                         if (isLeader) badge = '👑 ';
                         else if (isManager) badge = '🛡️ ';
 
-                        const allianceCol = State.current === 'view_global' 
+                        const allianceCol = State.viewMode === 'global' 
                             ? `<td class="text-slate-300">${p.allianceID ? 'Yes' : '-'}</td>` 
                             : '';
 
@@ -650,20 +683,14 @@
                 
                 showProfile: (data) => {
                     const modal = document.getElementById('modal-root');
-                    const isMe = State.user.uid === data.id;
-                    const sameAlliance = State.alliance && data.allianceID === State.alliance.id;
-                    const canInvite = State.user.uid === State.alliance?.leader || State.dbUser?.role === 'owner';
-                    const isRecruitable = !data.allianceID && data.kingdom == State.profile.kingdom;
-
-                    const hideStats = data.privacy?.hideStats && !isMe && !sameAlliance;
-                    const hideName = data.privacy?.hideName && !isMe && !sameAlliance;
-
+                    const canView = App.permissions.canViewHidden(data);
+                    
                     const t = data.troops || {inf:{tier:10,tg:0},cav:{tier:10,tg:0},arc:{tier:10,tg:0}};
                     const s = data.stats || {inf:{att:0,def:0,let:0,hp:0},cav:{att:0,def:0,let:0,hp:0},arc:{att:0,def:0,let:0,hp:0}};
-                    const displayName = hideName ? "Classified" : data.ign;
+                    const displayName = (data.privacy?.hideName && !canView) ? "Classified" : data.ign;
 
                     const renderStatRow = (label, obj, color) => {
-                        if (hideStats) return `<div class="bg-slate-900 p-3 rounded text-center text-slate-500 italic">Stats Classified</div>`;
+                        if (data.privacy?.hideStats && !canView) return `<div class="bg-slate-900 p-3 rounded text-center text-slate-500 italic">Stats Classified</div>`;
                         return `
                         <div class="bg-slate-900 p-2 rounded mb-2">
                             <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold ${color} uppercase">${label}</span><span class="text-xs text-white">T${t[label.toLowerCase().substr(0,3)].tier}</span></div>
@@ -676,7 +703,7 @@
                         </div>`;
                     };
 
-                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom} • Score: <span class="text-yellow-400 font-bold">${Math.round(data.trueScore||0).toLocaleString()}</span></p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div><button onclick="window.compareVsAverage('${data.id}')" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-sm mb-2"><i class="fas fa-chart-bar mr-2"></i>COMPARE VS AVG</button>${isRecruitable && canInvite ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm"><i class="fas fa-envelope mr-2"></i>INVITE</button>` : ''}</div>`;
+                    modal.innerHTML = `<div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-sm w-full border-2 border-slate-600 modal-enter max-h-[90vh] overflow-y-auto"><div class="flex justify-between items-start mb-4"><div><h2 class="text-2xl font-bold text-white">${displayName}</h2><p class="text-slate-400 text-sm">Kingdom ${data.kingdom} • Score: <span class="text-yellow-400 font-bold">${Math.round(data.trueScore||0).toLocaleString()}</span></p></div><button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button></div><div class="space-y-1 mb-6">${renderStatRow('Infantry', s.inf, 'text-blue-400')}${renderStatRow('Cavalry', s.cav, 'text-green-400')}${renderStatRow('Archer', s.arc, 'text-red-400')}</div><button onclick="window.compareVsAverage('${data.id}')" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded text-sm mb-2"><i class="fas fa-chart-bar mr-2"></i>COMPARE VS AVG</button>${!State.alliance ? `<button onclick="window.sendInvite('${data.id}')" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded text-sm"><i class="fas fa-envelope mr-2"></i>INVITE</button>` : ''}</div>`;
                     modal.classList.remove('hidden');
                 },
 
@@ -718,8 +745,16 @@
                             </div>
                             <div class="flex-grow grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto">
                                 <div class="bg-slate-900 p-4 rounded border border-slate-700">
-                                    <h3 class="text-xs font-bold text-blue-400 mb-2 uppercase">Troop Tech Breakdown</h3>
-                                    <div class="h-48"><canvas id="chart-tech"></canvas></div>
+                                    <h3 class="text-xs font-bold text-blue-400 mb-2 uppercase">Infantry Tech</h3>
+                                    <div class="h-32"><canvas id="chart-inf"></canvas></div>
+                                </div>
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-green-400 mb-2 uppercase">Cavalry Tech</h3>
+                                    <div class="h-32"><canvas id="chart-cav"></canvas></div>
+                                </div>
+                                <div class="bg-slate-900 p-4 rounded border border-slate-700">
+                                    <h3 class="text-xs font-bold text-red-400 mb-2 uppercase">Archer Tech</h3>
+                                    <div class="h-32"><canvas id="chart-arc"></canvas></div>
                                 </div>
                                 <div class="bg-slate-900 p-4 rounded border border-slate-700">
                                     <h3 class="text-xs font-bold text-green-400 mb-2 uppercase">Top 5 Most Improved</h3>
@@ -733,103 +768,39 @@
                         </div>`;
                     modal.classList.remove('hidden');
                     
-                    const techCounts = {};
+                    const techCounts = { inf: {}, cav: {}, arc: {} };
                     filterSameKingdom.forEach(m => {
                         const t = m.troops || {inf:{tier:10,tg:0}, cav:{tier:10,tg:0}, arc:{tier:10,tg:0}};
                         ['inf','cav','arc'].forEach(type => {
                             const key = `T${t[type].tier}${t[type].tg > 0 ? '+TG'+t[type].tg : ''}`;
-                            techCounts[key] = (techCounts[key] || 0) + 1;
+                            techCounts[type][key] = (techCounts[type][key] || 0) + 1;
                         });
                     });
+
+                    // Weighted Sort Helper
+                    const techSort = (a, b) => {
+                        const parse = (s) => {
+                            const tier = parseInt(s.match(/T(\d+)/)?.[1] || 0);
+                            const tg = parseInt(s.match(/TG(\d+)/)?.[1] || 0);
+                            return tier * 100 + tg;
+                        };
+                        return parse(b) - parse(a); // Descending
+                    };
                     
-                    new Chart(document.getElementById('chart-tech'), {
-                        type: 'bar',
-                        data: {
-                            labels: Object.keys(techCounts),
-                            datasets: [{ label: 'Count', data: Object.values(techCounts), backgroundColor: '#3b82f6' }]
-                        },
-                        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8' } }, y: { ticks: { color: '#94a3b8' } } } }
+                    ['inf', 'cav', 'arc'].forEach(type => {
+                         const ctx = document.getElementById(`chart-${type}`);
+                         if(ctx) {
+                             const sortedKeys = Object.keys(techCounts[type]).sort(techSort);
+                             new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                    labels: sortedKeys,
+                                    datasets: [{ label: 'Count', data: sortedKeys.map(k => techCounts[type][k]), backgroundColor: type === 'inf' ? '#3b82f6' : (type === 'cav' ? '#22c55e' : '#ef4444') }]
+                                },
+                                options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: 'white' } }, y: { ticks: { color: 'white' } } } }
+                            });
+                         }
                     });
-                },
-
-                showHistory: (history) => {
-                    const modal = document.getElementById('modal-root');
-                    modal.innerHTML = `
-                        <div class="bg-slate-800 p-6 rounded-lg shadow-2xl max-w-2xl w-full border-2 border-slate-600 modal-enter h-[80vh] flex flex-col">
-                            <div class="flex justify-between items-center mb-4">
-                                <h2 class="text-xl font-bold text-white"><i class="fas fa-history text-blue-400 mr-2"></i>Update History</h2>
-                                <button onclick="document.getElementById('modal-root').classList.add('hidden')" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-                            </div>
-                            <div class="flex-grow overflow-y-auto space-y-2">
-                                ${history.length === 0 ? '<div class="text-slate-500 text-center">No history found.</div>' : history.map(h => `
-                                    <div class="bg-slate-900 p-3 rounded flex justify-between items-center border border-slate-700">
-                                        <div>
-                                            <div class="text-white font-bold">${new Date(h.date?.toDate()).toLocaleString()}</div>
-                                            <div class="text-xs text-slate-400">Score: ${Math.round(h.trueScore)}</div>
-                                        </div>
-                                        <button onclick="window.revertHistory('${h.id}')" class="text-xs bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded">Revert</button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>`;
-                    modal.classList.remove('hidden');
-                },
-
-                allianceCard: () => {
-                    if (State.alliance) {
-                        const isLeader = State.alliance.leader === State.user.uid;
-                        
-                        // NEW: Show pending invites for leaders
-                        let inviteSection = '';
-                        if (isLeader && State.data.invites.length > 0) {
-                            inviteSection = `<div class="mt-4 border-t border-slate-700 pt-2"><div class="text-xs text-slate-400 uppercase mb-2">Pending Requests</div>${State.data.invites.map(i => `<div class="flex justify-between items-center bg-slate-900 p-2 rounded mb-1"><span class="text-sm text-white">${i.ign}</span><div><button onclick="window.acceptInvite('${i.id}', '${i.uid}')" class="text-green-400 text-xs font-bold mr-2">ACCEPT</button><button onclick="window.declineInvite('${i.id}')" class="text-red-400 text-xs font-bold">DECLINE</button></div></div>`).join('')}</div>`;
-                        }
-
-                        return `
-                        <div class="bg-slate-800 p-4 rounded border-l-4 border-yellow-500 flex justify-between items-center mb-6">
-                            <div class="w-full">
-                                <div class="flex justify-between items-start">
-                                    <div><div class="text-xs text-slate-400 uppercase">Current Alliance</div><div class="text-2xl font-bold text-white">[${State.alliance.tag}] ${State.alliance.name}</div><div class="text-xs text-slate-500">Kingdom ${State.alliance.kingdom}</div></div>
-                                    <div class="text-right flex flex-col gap-2 items-end">${isLeader ? `<button onclick="window.openAllianceManager()" class="bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-bold px-3 py-2 rounded"><i class="fas fa-users-cog mr-1"></i> MANAGE</button>` : `<button onclick="window.leaveAlliance()" class="bg-red-900/50 hover:bg-red-800 text-red-300 border border-red-800 text-xs font-bold px-3 py-2 rounded">LEAVE</button>`}</div>
-                                </div>
-                                ${State.alliance.description ? `<div class="mt-3 p-2 bg-slate-900/50 rounded text-xs text-slate-300 italic border border-slate-700">"${State.alliance.description}"</div>` : ''}
-                                ${inviteSection}
-                            </div>
-                        </div>`;
-                    }
-                    
-                    // FREELANCER VIEW: Show Pending Invites
-                    let pendingInvitesHtml = '';
-                    if (State.data.invites.length > 0) {
-                        pendingInvitesHtml = `
-                        <div class="bg-slate-800 p-4 rounded border-l-4 border-purple-500 mb-4">
-                            <h3 class="font-bold text-white mb-2">Pending Invitations</h3>
-                            <div class="space-y-2">
-                                ${State.data.invites.map(i => `
-                                    <div class="flex justify-between items-center bg-slate-900 p-2 rounded">
-                                        <div><span class="text-white font-bold">${i.name}</span> <span class="text-xs text-slate-400">invited you</span></div>
-                                        <div class="flex gap-2">
-                                            <button onclick="window.acceptInvite('${i.id}', '${i.allianceID}')" class="bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-3 py-1 rounded">ACCEPT</button>
-                                            <button onclick="window.declineInvite('${i.id}')" class="bg-red-600 hover:bg-red-500 text-white text-xs font-bold px-3 py-1 rounded">DECLINE</button>
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>`;
-                    }
-
-                    return `
-                        ${pendingInvitesHtml}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                            <div class="bg-slate-800 p-4 rounded border-l-4 border-blue-500">
-                                <h3 class="font-bold text-white mb-2">Join Alliance</h3>
-                                <div class="flex gap-2"><input type="text" id="join-tag" placeholder="Alliance Tag" class="input-field py-1"><input type="text" id="join-code" placeholder="Code" class="input-field py-1"><button onclick="window.joinAlliance()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 rounded text-sm">Join</button></div>
-                            </div>
-                            <div class="bg-slate-800 p-4 rounded border-l-4 border-green-500">
-                                <h3 class="font-bold text-white mb-2">Create Alliance</h3>
-                                <div class="flex gap-2"><input type="text" id="create-tag" placeholder="TAG" class="input-field py-1 w-20"><input type="text" id="create-name" placeholder="Full Name" class="input-field py-1 flex-grow"><button onclick="window.createAlliance()" class="bg-green-600 hover:bg-green-500 text-white font-bold px-4 rounded text-sm">Create</button></div>
-                            </div>
-                        </div>`;
                 },
                 
                 showHelp: () => {
@@ -889,8 +860,11 @@
                             if (State.filters.ign) {
                                 q = query(q, orderBy('ign'), startAt(State.filters.ign), endAt(State.filters.ign + '\uf8ff'), limit(50));
                             } else if (State.filters.kingdom) {
-                                // Fallback sort by updated to show everyone including 0 scores
-                                q = query(q, where('kingdom', '==', State.filters.kingdom), orderBy('updatedAt', 'desc'), limit(50));
+                                // FIXED: Number Conversion
+                                const kingdomNum = parseInt(State.filters.kingdom);
+                                if (!isNaN(kingdomNum)) {
+                                    q = query(q, where('kingdom', '==', kingdomNum), orderBy('updatedAt', 'desc'), limit(50));
+                                }
                             } else {
                                 q = query(q, orderBy('updatedAt', 'desc'), limit(500)); // Increased limit
                             }
@@ -915,6 +889,13 @@
                 createAlliance: async () => {
                     const tag = document.getElementById('create-tag').value.trim().toUpperCase();
                     const name = document.getElementById('create-name').value.trim();
+                    // NEW: Creation Code Check
+                    const creationCode = document.getElementById('admin-creation-code')?.value || '';
+                    
+                    if (State.config.creationCode && creationCode !== State.config.creationCode) {
+                         return App.ui.toast("Invalid Creation Code", "error");
+                    }
+                    
                     if(!tag || !name) return App.ui.toast("Tag/Name Required", "error");
                     const code = Math.floor(10000 + Math.random() * 90000).toString();
                     try {
@@ -976,15 +957,6 @@
                     } catch(e) { console.error(e); }
                 },
 
-                loadFreelancers: async () => {
-                    try {
-                        const q = query(collection(App.db, 'profiles'), where('kingdom', '==', State.alliance.kingdom), where('allianceID', '==', null), limit(50));
-                        const snap = await getDocs(q);
-                        State.data.freelancers = snap.docs.map(d => ({id: d.id, ...d.data()}));
-                        App.renderTableOnly();
-                    } catch(e) { console.error(e); }
-                },
-
                 updateAlliance: async () => {
                     const name = document.getElementById('set-name').value.trim();
                     const desc = document.getElementById('set-desc').value.trim();
@@ -1007,6 +979,12 @@
 
                 deleteAlliance: async () => {
                     if(!confirm("ARE YOU SURE? This will remove all members from the alliance.")) return;
+                    
+                    // PERMISSION CHECK ALERT
+                    if (State.alliance.leader !== State.user.uid && State.dbUser?.role !== 'owner') {
+                         return alert("PERMISSION ERROR: Only the Leader or Owner can delete the alliance. If you are the leader, update your Firestore Rules.");
+                    }
+                    
                     try {
                         const q = query(collection(App.db, 'profiles'), where('allianceID', '==', State.alliance.id));
                         const snap = await getDocs(q);
@@ -1016,7 +994,10 @@
                         if (State.dbUser.role !== 'owner') batch.update(doc(App.db, 'users', State.user.uid), { role: 'member' });
                         await batch.commit();
                         window.location.reload();
-                    } catch(e) { console.error(e); App.ui.toast("Delete failed", "error"); }
+                    } catch(e) { 
+                        console.error(e); 
+                        alert("Delete Failed. Check Console for Permission Error."); 
+                    }
                 },
 
                 rotateAllianceCode: async () => {
@@ -1055,41 +1036,52 @@
                 },
 
                 // NEW: Promote/Demote
-                promoteMember: async (uid, role) => {
-                    if (!confirm(`Change role to ${role}?`)) return;
+                promoteMember: async (uid) => {
+                    if (!confirm(`Promote this user to Manager?`)) return; // FIXED: No variable dependency
                     try {
-                        await updateDoc(doc(App.db, 'users', uid), { role: role });
+                        // Update Alliance Doc array
+                        await updateDoc(doc(App.db, 'alliances', State.alliance.id), {
+                            managers: arrayUnion(uid)
+                        });
                         
                         // AUDIT LOG
                         const target = State.data.roster.find(m => m.id === uid);
                         await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
-                            action: 'ROLE_CHANGE',
-                            details: `${target ? target.ign : uid} promoted to ${role} by ${State.profile.ign}`,
+                            action: 'PROMOTION',
+                            details: `${target ? target.ign : uid} promoted to Manager by ${State.profile.ign}`,
                             timestamp: serverTimestamp()
                         });
 
-                        App.ui.toast("Role Updated");
-                        App.actions.loadRoster();
-                    } catch(e) { App.ui.toast("Error updating role", "error"); }
+                        // Local state update
+                        if(!State.alliance.managers) State.alliance.managers = [];
+                        State.alliance.managers.push(uid);
+
+                        App.ui.toast("Member Promoted");
+                        App.renderTableOnly(); // Refresh buttons
+                    } catch(e) { console.error(e); App.ui.toast("Error promoting member", "error"); }
                 },
 
-                // NEW: Demote Action
                 demoteMember: async (uid) => {
-                    if (!confirm(`Demote member to regular status?`)) return;
+                    if (!confirm(`Demote to Member?`)) return;
                     try {
-                        await updateDoc(doc(App.db, 'users', uid), { role: 'member' });
+                        await updateDoc(doc(App.db, 'alliances', State.alliance.id), {
+                            managers: arrayRemove(uid)
+                        });
                         
                         // AUDIT LOG
                         const target = State.data.roster.find(m => m.id === uid);
                         await addDoc(collection(App.db, 'alliances', State.alliance.id, 'logs'), {
-                            action: 'ROLE_CHANGE',
-                            details: `${target ? target.ign : uid} demoted to member by ${State.profile.ign}`,
+                            action: 'DEMOTION',
+                            details: `${target ? target.ign : uid} demoted to Member by ${State.profile.ign}`,
                             timestamp: serverTimestamp()
                         });
+                        
+                         // Local state update
+                        State.alliance.managers = State.alliance.managers.filter(id => id !== uid);
 
-                        App.ui.toast("Role Updated");
-                        App.actions.loadRoster();
-                    } catch(e) { App.ui.toast("Error demoting member", "error"); }
+                        App.ui.toast("Member Demoted");
+                        App.renderTableOnly();
+                    } catch(e) { console.error(e); App.ui.toast("Error demoting member", "error"); }
                 },
 
                 openHistory: async () => {
@@ -1120,7 +1112,14 @@
                     const selectedIds = Array.from(State.selection);
                     if(selectedIds.length < 2) return App.ui.toast("Select at least 2 players", "error");
                     
-                    const players = (State.currentTab === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
+                    // FIXED: USE VIEWMODE
+                    const players = (State.viewMode === 'global' ? State.data.global : State.data.roster).filter(p => selectedIds.includes(p.id));
+                    // FIXED: FILTER PRIVACY
+                    const visiblePlayers = players.filter(p => {
+                        return !p.privacy?.hideStats || App.permissions.canViewHidden(p);
+                    });
+
+                    if (visiblePlayers.length < 2) return App.ui.toast("Selected players have hidden stats", "error");
                     
                     const modal = document.getElementById('modal-root');
                     modal.innerHTML = `
@@ -1139,7 +1138,7 @@
                         type: 'bar',
                         data: {
                             labels: ['INF Att', 'INF HP', 'CAV Att', 'CAV HP', 'ARC Att', 'ARC HP'],
-                            datasets: players.map((p, i) => {
+                            datasets: visiblePlayers.map((p, i) => {
                                 const s = p.stats || { inf:{att:0,hp:0}, cav:{att:0,hp:0}, arc:{att:0,hp:0} };
                                 return {
                                     label: p.ign,
@@ -1227,7 +1226,9 @@
                     const previousStats = currentProfile.stats || {}; 
 
                     const profileData = { 
-                        ign, kingdom, pid, 
+                        ign, 
+                        kingdom: parseInt(kingdom), // FORCE NUMBER
+                        pid, 
                         privacy: { hideName, hideStats }, 
                         troops: State.form.troops, 
                         stats: State.form.stats,
@@ -1238,7 +1239,7 @@
                     
                     try {
                         const batch = writeBatch(App.db);
-                        const pRef = doc(App.db, 'profiles', State.user.uid);
+                        const pRef = doc(App.db, 'profiles', State.editorTarget || State.user.uid);
                         const hRef = doc(collection(pRef, 'history'));
 
                         batch.set(pRef, profileData, { merge: true });
@@ -1251,7 +1252,13 @@
                         await batch.commit();
                         
                         // FIX: MERGE STATE SO ALLIANCE ID IS NOT LOST
-                        State.profile = { ...State.profile, ...profileData };
+                        if (!State.editorTarget) {
+                            State.profile = { ...State.profile, ...profileData };
+                        }
+                        
+                        // If Admin Edit, reset target
+                        State.editorTarget = null;
+
                         await App.actions.loadLeaderboard();
                         // Reload history for chart
                         await App.actions.loadPersonalHistory();
@@ -1293,6 +1300,53 @@
                     await setDoc(doc(App.db, 'metadata', 'security'), { lockdown: newState }, { merge: true });
                     App.ui.toast(newState ? "GLOBAL LOCKDOWN ACTIVE" : "System Unlocked");
                 },
+                
+                // NEW: Admin Functions
+                ownerToggleGlobal: async () => {
+                    const newState = !State.config.hideGlobal;
+                    await setDoc(doc(App.db, 'metadata', 'security'), { hideGlobal: newState }, { merge: true });
+                    App.ui.toast("Global Visibility Updated");
+                },
+                setCreationCode: async () => {
+                    const code = document.getElementById('admin-creation-code').value.trim();
+                    await setDoc(doc(App.db, 'metadata', 'security'), { creationCode: code }, { merge: true });
+                    App.ui.toast("Creation Code Updated");
+                },
+                adminSearchUser: async () => {
+                     const ign = document.getElementById('admin-search').value.trim();
+                     if (!ign) return;
+                     const q = query(collection(App.db, 'profiles'), where('ign', '==', ign));
+                     const snap = await getDocs(q);
+                     if (snap.empty) return App.ui.toast("User not found", "error");
+                     // Open Editor for first match
+                     const target = snap.docs[0];
+                     App.actions.editPlayer(target.id);
+                },
+
+                // NEW: Open Editor for specific user (Admin/Manager)
+                editPlayer: async (uid) => {
+                    try {
+                        const snap = await getDoc(doc(App.db, 'profiles', uid));
+                        if(!snap.exists()) return;
+                        
+                        const raw = snap.data();
+                        const blankStats = { att:0, def:0, let:0, hp:0 };
+                        const s = raw.stats || { inf: {...blankStats}, cav: {...blankStats}, arc: {...blankStats} };
+                        const normalize = (val) => (typeof val === 'object' && val !== null) ? val : { tier: 10, tg: 0 };
+                        
+                        State.editorTarget = uid; // Set Target
+                        State.form = { 
+                            ign: raw.ign, kingdom: raw.kingdom, pid: raw.pid, 
+                            privacy: raw.privacy || {hideName: false, hideStats: false}, 
+                            troops: { inf: normalize(raw.troops?.inf), cav: normalize(raw.troops?.cav), arc: normalize(raw.troops?.arc) }, 
+                            stats: s 
+                        };
+                        
+                        State.current = 'editor';
+                        App.render();
+                    } catch(e) { App.ui.toast("Error loading player", "error"); }
+                },
+
                 viewProfile: (uid) => {
                     const p = State.data.global.find(x => x.id === uid) || State.data.alliance.find(x => x.id === uid) || State.data.roster.find(x => x.id === uid) || State.data.freelancers.find(x => x.id === uid);
                     if(p) App.ui.showProfile(p);
@@ -1307,6 +1361,45 @@
                         App.ui.toast("Invite Sent");
                         document.getElementById('modal-root').classList.add('hidden');
                     } catch(e) { App.ui.toast("Invite Failed", "error"); }
+                },
+                acceptInvite: async (inviteID, allianceID) => {
+                    try {
+                        // 1. Update Profile
+                        await updateDoc(doc(App.db, 'profiles', State.user.uid), { allianceID: allianceID });
+                        // 2. Delete Invite
+                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
+                        // 3. Reload
+                        window.location.reload();
+                    } catch(e) { App.ui.toast("Error accepting invite", "error"); }
+                },
+                declineInvite: async (inviteID) => {
+                    try {
+                        await deleteDoc(doc(App.db, `profiles/${State.user.uid}/invites/${inviteID}`));
+                        App.ui.toast("Invite Declined");
+                    } catch(e) { App.ui.toast("Error declining invite", "error"); }
+                },
+                exportRosterCSV: () => {
+                    if (State.data.roster.length === 0) return App.ui.toast("No data to export", "error");
+                    
+                    const headers = ["IGN", "PID", "Kingdom", "True Score", "Inf Tier", "Cav Tier", "Arc Tier"];
+                    const rows = State.data.roster.map(p => {
+                        const t = p.troops || {inf:{tier:10},cav:{tier:10},arc:{tier:10}};
+                        return [
+                            `"${p.ign}"`, p.pid, p.kingdom, p.trueScore,
+                            `T${t.inf.tier}${t.inf.tg ? '+TG'+t.inf.tg : ''}`,
+                            `T${t.cav.tier}${t.cav.tg ? '+TG'+t.cav.tg : ''}`,
+                            `T${t.arc.tier}${t.arc.tg ? '+TG'+t.arc.tg : ''}`
+                        ].join(",");
+                    });
+                    
+                    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.setAttribute("download", `alliance_roster_${new Date().toISOString().split('T')[0]}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 }
             }
         };
@@ -1355,6 +1448,9 @@
         window.refreshData = () => { if(State.current === 'view_global') App.actions.loadLeaderboard(); if(State.current === 'view_alliance') App.actions.loadRoster(); };
         window.ownerRotateCode = () => App.actions.rotateCode();
         window.ownerToggleLockdown = () => App.actions.toggleLockdown();
+        window.ownerToggleGlobal = () => App.actions.ownerToggleGlobal();
+        window.setCreationCode = () => App.actions.setCreationCode();
+        window.adminSearchUser = () => App.actions.adminSearchUser();
         window.saveProfile = () => App.actions.saveProfile();
         window.triggerRegister = () => App.actions.saveProfile();
         
@@ -1387,13 +1483,12 @@
             const count = document.getElementById('compare-count');
             if(count) count.innerText = State.selection.size;
         };
-        // FIXED: Select All
+        // FIXED: Select All = Clear Selection if already selected, or just Clear
         window.toggleSelectAll = (source) => {
-            const dataset = State.currentTab === 'global' ? State.data.global : State.data.roster;
-            if (source.checked) { dataset.forEach(p => State.selection.add(p.id)); } 
-            else { dataset.forEach(p => State.selection.delete(p.id)); }
+            // Simplified: The Trash Icon button calls this
+            State.selection.clear();
             const count = document.getElementById('compare-count');
-            if(count) count.innerText = State.selection.size;
+            if(count) count.innerText = 0;
             App.renderTableOnly();
         };
 
